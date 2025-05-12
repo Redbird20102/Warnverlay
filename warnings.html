@@ -141,8 +141,8 @@
           testWarningContainer.classList.add("pdsTornado");
           testCountyContainer.classList.add("pdsTornado");
         } else {
-          testWarningContainer.style.color = "rgb(0, 0, 0)";
-          testCountyContainer.style.color  = "rgb(255, 0, 0)";
+          testWarningContainer.style.color = "rgb(255, 255, 255)";
+          testCountyContainer.style.color  = "rgb(255, 255, 255)";
         }
       } else if (type === "flashFlood") {
         testWarningContainer.className = "text-container flashFlood";
@@ -154,14 +154,14 @@
           testWarningContainer.classList.add("considerableFlashFlood");
           testCountyContainer.classList.add("considerableFlashFlood");
         } else {
-          testWarningContainer.style.color = "rgb(77, 255, 0)";
-          testCountyContainer.style.color  = "rgb(0, 0, 255)";
+          testWarningContainer.style.color = "rgb(255, 255, 255)";
+          testCountyContainer.style.color  = "rgb(255, 255, 255)";
         }
       } else {  // severe thunderstorm
         testWarningContainer.className = "text-container severe";
         testCountyContainer.className  = "text-container severe";
-        testWarningContainer.style.color = "rgb(255, 170, 0)";
-        testCountyContainer.style.color  = "rgb(255, 255, 0)";
+        testWarningContainer.style.color = "rgb(255, 255, 255)";
+        testCountyContainer.style.color  = "rgb(255, 255, 255)";
         testCountyContainer.style.fontSize = "1.3rem";
         if (destructive) {
           testWarningContainer.classList.add("destructiveSevere");
