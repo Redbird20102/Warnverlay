@@ -688,9 +688,9 @@
       // Severe Thunderstorm branch:
       else if (alert.eventType.toLowerCase().includes("severe thunderstorm warning")) {
         if (alert.thunderstormDamageThreatConsiderable) {
-          eventElement.textContent = "Considerable Severe TSW";
+          eventElement.textContent = "Severe Thunderstorm Warning";
         } else if (alert.thunderstormDamageThreatDestructive) {
-          eventElement.textContent = "Destructive Severe TSW";
+          eventElement.textContent = "Severe Thunderstorm Warning";
         } else {
           eventElement.textContent = alert.eventType;
         }
