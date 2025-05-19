@@ -45,55 +45,49 @@
     
     /* ------------------ Severe Thunderstorm (Default) ------------------ */
     .severe#testWarningContainer {
-      top: 73%;
-      left: 64.5%;
+      top: 73%; left: 64.5%;
       transform: translate(-50%,-50%);
       color: rgb(255,255,255);
     }
     .severe#testCountyContainer {
-      top: 77%;
-      left: 64.5%;
+      top: 77%; left: 64.5%;
       transform: translate(-50%,-50%);
       color: rgb(255,255,255);
-      font-size: 1.7rem;
+      font-size: 1.3rem;
     }
-    .considerableSevere#testWarningContainer { color: rgb(183,88,0) !important; }
-    .considerableSevere#testCountyContainer { color: rgb(167,151,0) !important; }
-    .destructiveSevere#testWarningContainer { color: rgb(0,0,0) !important; }
-    .destructiveSevere#testCountyContainer { color: rgb(255,128,0) !important; }
+    .considerableSevere#testWarningContainer { color: rgb(255,255,255) !important; }
+    .considerableSevere#testCountyContainer { color: rgb(255,255,255) !important; }
+    .destructiveSevere#testWarningContainer { color: rgb(255,255,255) !important; }
+    .destructiveSevere#testCountyContainer { color: rgb(255,255,255) !important; }
     
     /* ------------------ Flash Flood (Default) ------------------ */
     .flashFlood#testWarningContainer {
-      top: 73%;
-      left: 64.5%;
+      top: 73%; left: 64.5%;
       transform: translate(-50%,-50%);
       color: rgb(255,255,255);
     }
     .flashFlood#testCountyContainer {
-      top: 77%;
-      left: 64.5%;
+      top: 77%; left: 64.5%;
       transform: translate(-50%,-50%);
       color: rgb(255,255,255);
-      font-size: 1.7rem;
+      font-size: 1.3rem;
     }
-    .considerableFlashFlood#testWarningContainer { color: rgb(51,169,0) !important; }
-    .considerableFlashFlood#testCountyContainer { color: rgb(0,0,142) !important; }
-    .catastrophicFlashFlood#testWarningContainer { color: rgb(77,255,0) !important; }
-    .catastrophicFlashFlood#testCountyContainer { color: rgb(0,0,0) !important; }
+    .considerableFlashFlood#testWarningContainer { color: rgb(255,255,255) !important; }
+    .considerableFlashFlood#testCountyContainer { color: rgb(255,255,255) !important; }
+    .catastrophicFlashFlood#testWarningContainer { color: rgb(255,255,255) !important; }
+    .catastrophicFlashFlood#testCountyContainer { color: rgb(255,255,255) !important; }
     
     /* ------------------ Tornado (Default) ------------------ */
     .tornado#testWarningContainer {
-      top: 77%;
-      left: 64.5%;
+      top: 73%; left: 64.5%;
       transform: translate(-50%,-50%);
       color: rgb(255,255,255);
     }
     .tornado#testCountyContainer {
-      top: 82.7%;
-      left: 61%;
+      top: 77%; left: 64.5%;
       transform: translate(-50%,-50%);
       color: rgb(255,255,255);
-      font-size: 1.7rem;
+      font-size: 1.3rem;
     }
     .pdsTornado#testWarningContainer { color: rgb(255,255,255) !important; }
     .pdsTornado#testCountyContainer { color: rgb(255,255,255) !important; }
@@ -102,42 +96,61 @@
   </style>
 </head>
 <body>
+  <!-- Overlay element to display warnings -->
   <div id="overlay">
-    <img id="overlayImage" src="" alt="Warning Image" />
+    <img id="overlayImage" src="" alt="Warning Image">
     <audio id="overlayAudio"></audio>
     <div id="testWarningContainer" class="text-container severe"></div>
     <div id="testCountyContainer" class="text-container severe"></div>
   </div>
   
   <script>
-    // Global queue and flag for sequential processing.
+    // Global alert queue and flag.
     let alertQueue = [];
     let isOverlayActive = false;
-    // Flag to mark the first feed load (so active alerts register without overlaying).
+    
+    // initialLoad prevents showing overlays on startup.
     let initialLoad = true;
     
-    // Dictionaries to record alerts that have been displayed.
-    const displayedTornadoAlerts = {};
-    const displayedSevereAlerts = {};
-    const displayedFlashFloodAlerts = {};
+    // These objects keep track of each issued alert per type.
+    let issuedTornadoAlerts = {};
+    let issuedSevereAlerts = {};
+    let issuedFlashFloodAlerts = {};
     
-    // Global dictionaries to handle upgrade detection.
-    let activeTornadoAlerts = {};
-    let activeFlashFloodAlerts = {};
+    // Throttle tracking: last queued time per type.
+    let lastQueuedTime = { tornado: 0, severe: 0, flashFlood: 0 };
+    const throttleDelay = 15000;
     
-    // Helper: Returns the text content for the first matching tag.
+    // Helper function to get text from the first matching tag.
     function getText(node, tagName) {
       return node.querySelector(tagName)?.textContent || "";
     }
     
-    // Utility: Normalize area text.
+    // Normalize area text.
     const normalizeArea = area => area.trim();
     
-    // Generate a unique key from event text and area description.
+    // Generate a unique alert key.
     const generateAlertKey = (eventText, areaDesc) =>
       `${eventText.trim()}|${normalizeArea(areaDesc)}`;
       
-    // Process the next alert in the queue.
+    // Enqueue an alert if it isn’t already in the queue.
+    function enqueueAlert(options) {
+      const type = options.type;
+      const now = Date.now();
+      if (now - lastQueuedTime[type] < throttleDelay) {
+        console.log("Throttling alert of type", type, "for alert key", options.alertKey);
+        return;
+      }
+      lastQueuedTime[type] = now;
+      
+      if (!alertQueue.some(alert => alert.alertKey === options.alertKey && alert.type === options.type)) {
+        alertQueue.push(options);
+      } else {
+        console.log("Alert", options.alertKey, "of type", options.type, "already queued; skipping.");
+      }
+    }
+    
+    // Process the next alert in the queue, if any.
     function processNextAlert() {
       if (alertQueue.length === 0) return;
       isOverlayActive = true;
@@ -145,16 +158,16 @@
       triggerWarning(options);
     }
     
-    // The triggerWarning function displays the overlay.
+    // Show the overlay, play any audio, and apply proper classes.
     function triggerWarning(options) {
-      const { imageSrc, audioSrc, eventText, areaDesc, type, pds, emergency, destructive, alertKey } = options;
+      const { imageSrc, audioSrc, eventText, areaDesc, type, pds, emergency, destructive, flashFloodConsiderable, flashFloodCatastrophic } = options;
       const overlay = document.getElementById("overlay");
       const overlayImage = document.getElementById("overlayImage");
       const overlayAudio = document.getElementById("overlayAudio");
       const testWarningContainer = document.getElementById("testWarningContainer");
       const testCountyContainer = document.getElementById("testCountyContainer");
       
-      // Set CSS classes based on the type.
+      // Set CSS classes based on alert type.
       if (type === "tornado") {
         testWarningContainer.className = "text-container tornado";
         testCountyContainer.className = "text-container tornado";
@@ -171,17 +184,18 @@
       } else if (type === "flashFlood") {
         testWarningContainer.className = "text-container flashFlood";
         testCountyContainer.className = "text-container flashFlood";
-        if (options.flashFloodCatastrophic) {
+        if (flashFloodCatastrophic) {
           testWarningContainer.classList.add("catastrophicFlashFlood");
           testCountyContainer.classList.add("catastrophicFlashFlood");
-        } else if (options.flashFloodConsiderable) {
+        } else if (flashFloodConsiderable) {
           testWarningContainer.classList.add("considerableFlashFlood");
           testCountyContainer.classList.add("considerableFlashFlood");
         } else {
           testWarningContainer.style.color = "rgb(255,255,255)";
           testCountyContainer.style.color  = "rgb(255,255,255)";
         }
-      } else {  // Severe Thunderstorm warning.
+      } else {
+        // Severe Thunderstorm Warning.
         testWarningContainer.className = "text-container severe";
         testCountyContainer.className = "text-container severe";
         testWarningContainer.style.color = "rgb(255,255,255)";
@@ -193,7 +207,7 @@
         }
       }
       
-      // Set the image source without an initial fade‑in.
+      // Update the image with cache busting.
       overlayImage.src = imageSrc + "?t=" + new Date().getTime();
       overlayImage.style.transition = "none";
       overlayImage.style.opacity = "1";
@@ -201,7 +215,7 @@
         overlayImage.style.transition = "opacity 2s ease-in-out";
       }, 50);
       
-      // Set audio if provided.
+      // Play audio if provided.
       if (audioSrc) {
         overlayAudio.src = audioSrc;
         overlayAudio.play().catch(err => console.error("Audio playback error:", err));
@@ -210,345 +224,372 @@
         overlayAudio.src = "";
       }
       
-      // Set the text.
+      // Set text for the overlay.
       testWarningContainer.textContent = eventText;
       testCountyContainer.textContent  = areaDesc;
       
-      // Display the overlay.
+      // Show the overlay.
       overlay.style.display = "flex";
       
-      // Fade in text after 2 seconds.
       setTimeout(() => {
         testWarningContainer.style.opacity = "1";
-        testCountyContainer.style.opacity  = "1";
+        testCountyContainer.style.opacity = "1";
       }, 2000);
       
-      // Fade out text after 16 seconds.
       setTimeout(() => {
         testWarningContainer.style.opacity = "0";
-        testCountyContainer.style.opacity  = "0";
+        testCountyContainer.style.opacity = "0";
       }, 16000);
       
-      // Fade out image after 18.37 seconds.
       setTimeout(() => {
         overlayImage.style.opacity = "0";
       }, 18370);
       
-      // Hide overlay after 19.63 seconds then process next alert.
+      // After completion, hide overlay and reset the queued flag so that upgrades
+      // can be queued later if the threat level changes.
       setTimeout(() => {
         overlay.style.display = "none";
         overlayImage.style.opacity = "1";
         isOverlayActive = false;
+        switch(options.type) {
+          case "tornado":
+            if (issuedTornadoAlerts[options.alertKey]) {
+              issuedTornadoAlerts[options.alertKey].queued = false;
+            }
+            break;
+          case "severe":
+            if (issuedSevereAlerts[options.alertKey]) {
+              issuedSevereAlerts[options.alertKey].queued = false;
+            }
+            break;
+          case "flashFlood":
+            if (issuedFlashFloodAlerts[options.alertKey]) {
+              issuedFlashFloodAlerts[options.alertKey].queued = false;
+            }
+            break;
+        }
         processNextAlert();
       }, 19630);
     }
     
-    // Fetch alerts from NOAA every 1 seconds.
+    // Main fetch function that polls NOAA’s alert feed every 5 seconds.
     function fetchAlerts() {
       fetch("https://api.weather.gov/alerts/active.atom?urgency=Past%2CFuture%2CExpected%2CImmediate")
-      .then(response => response.text())
-      .then(str => {
-        const parser = new DOMParser();
-        const xml = parser.parseFromString(str, "application/xml");
-        const entries = xml.getElementsByTagName("entry");
-        if (!entries || entries.length === 0) return;
-        
-        // Track alert keys in the current feed.
-        const currentFeedKeys = new Set();
-        
-        // Loop over each alert entry.
-        for (let i = 0; i < entries.length; i++) {
-          const entry = entries[i];
-          const eventElem = entry.getElementsByTagName("cap:event")[0];
-          const areaDescElem = entry.getElementsByTagName("cap:areaDesc")[0];
-          if (!eventElem || !areaDescElem) continue;
+        .then(response => response.text())
+        .then(str => {
+          const parser = new DOMParser();
+          const xml = parser.parseFromString(str, "application/xml");
+          const entries = xml.getElementsByTagName("entry");
+          if (!entries || entries.length === 0) return;
           
-          const eventTextRaw = eventElem.textContent.trim();
-          const areaDesc = areaDescElem.textContent.trim();
-          const parameters = Array.from(entry.getElementsByTagName("cap:parameter"));
-          const alertKey = generateAlertKey(eventTextRaw, areaDesc);
-          currentFeedKeys.add(alertKey);
+          // Keep track of alert keys seen this poll.
+          const currentFeedKeys = new Set();
           
-          // ----- Tornado Warnings -----
-          if (eventTextRaw.toLowerCase().includes("tornado warning")) {
-            console.log("Tornado warning detected:", eventTextRaw);
-            const tornadoDamageParam = parameters.find(param =>
-              getText(param, "valueName") === "tornadoDamageThreat"
-            );
-            const tornadoDamageThreat = tornadoDamageParam ? getText(tornadoDamageParam, "value") : null;
-            const tornadoDetectionParam = parameters.find(param =>
-              getText(param, "valueName") === "tornadoDetection"
-            );
-            const tornadoDetection = tornadoDetectionParam ? getText(tornadoDetectionParam, "value") : null;
+          for (let i = 0; i < entries.length; i++) {
+            const entry = entries[i];
+            const eventElem = entry.getElementsByTagName("cap:event")[0];
+            const areaDescElem = entry.getElementsByTagName("cap:areaDesc")[0];
+            if (!eventElem || !areaDescElem) continue;
             
-            console.log("tornadoDamageThreat:", tornadoDamageThreat, "tornadoDetection:", tornadoDetection);
+            const eventTextRaw = eventElem.textContent.trim();
+            const areaDesc = areaDescElem.textContent.trim();
+            const parameters = Array.from(entry.getElementsByTagName("cap:parameter"));
             
-            let currentState = "DEFAULT";
-            if (tornadoDamageThreat === "CATASTROPHIC") {
-              currentState = "EMERGENCY";
-            } else if (((tornadoDetection === "OBSERVED" || (tornadoDetection && tornadoDetection.includes("RADAR INDICATED"))) &&
-                        tornadoDamageThreat === "CONSIDERABLE")) {
-              currentState = "PDS";
-            } else if (tornadoDetection === "OBSERVED") {
-              currentState = "OBSERVED";
-            }
-            
-            // Use activeTornadoAlerts to check for new or upgraded tornado alerts.
-            if (!activeTornadoAlerts.hasOwnProperty(alertKey)) {
-              let finalAlertText, finalAudio, finalImage;
-              let pds = false, emergencyFlag = false;
-              if (currentState === "EMERGENCY") {
-                emergencyFlag = true;
-                finalAlertText = "Tornado Emergency";
-                finalAudio = "TORE.mp3";
-                finalImage = "TORE.gif";
-              } else if (currentState === "PDS") {
-                pds = true;
-                finalAlertText = "PDS Tornado Warning";
-                finalAudio = "PDS TOR.mp3";
-                finalImage = "PDS TOR.gif";
-              } else if (currentState === "OBSERVED") {
-                finalAlertText = "Observed Tornado Warning";
-                finalAudio = "TOR.mp3";
-                finalImage = "TOR.gif";
-              } else {
-                finalAlertText = eventTextRaw;
-                finalAudio = "TOR.mp3";
-                finalImage = "TOR.gif";
+            // ---- Severe Thunderstorm Warnings ----
+            if (eventTextRaw.toLowerCase().includes("severe thunderstorm warning")) {
+              // Use a constant key so that even if the text upgrades, the county is the same.
+              const severeAlertKey = generateAlertKey("Severe Thunderstorm Warning", areaDesc);
+              currentFeedKeys.add(severeAlertKey);
+              
+              const thunderstormDamageParam = parameters.find(param =>
+                getText(param, "valueName") === "thunderstormDamageThreat"
+              );
+              const rawThreat = thunderstormDamageParam ? getText(thunderstormDamageParam, "value") : null;
+              const normalizedThreat = rawThreat ? rawThreat.trim().toUpperCase() : "DEFAULT";
+              let currentThreat = "DEFAULT";
+              if (normalizedThreat === "DESTRUCTIVE") {
+                currentThreat = "DESTRUCTIVE";
+              } else if (normalizedThreat === "CONSIDERABLE") {
+                currentThreat = "CONSIDERABLE";
               }
-              activeTornadoAlerts[alertKey] = currentState;
-              console.log("Triggering tornado overlay with text:", finalAlertText);
-              triggerWarning({
-                alertKey: alertKey,
-                imageSrc: finalImage,
-                audioSrc: finalAudio,
-                eventText: finalAlertText,
-                areaDesc: areaDesc,
-                type: "tornado",
-                pds: pds,
-                emergency: emergencyFlag
-              });
-              break;
-            } else if (activeTornadoAlerts[alertKey] !== currentState) {
-              let finalAlertText, finalAudio, finalImage;
-              let pds = false, emergencyFlag = false;
-              if (currentState === "EMERGENCY") {
-                emergencyFlag = true;
-                finalAlertText = "Tornado Emergency Upgraded";
-                finalAudio = "TORE Upgraded.mp3";
-                finalImage = "TORE.gif";
-              } else if (currentState === "PDS") {
-                pds = true;
-                finalAlertText = "PDS Tornado Warning Upgraded";
-                finalAudio = "PDS TOR - TOR Upgraded.mp3";
-                finalImage = "PDS TOR.gif";
-              } else if (currentState === "OBSERVED") {
-                finalAlertText = "Observed Tornado Warning Upgraded";
-                finalAudio = "PDS - TOR.mp3";
-                finalImage = "TOR.gif";
+              
+              if (initialLoad) {
+                issuedSevereAlerts[severeAlertKey] = { state: currentThreat, queued: true };
               } else {
-                finalAlertText = eventTextRaw + " Upgraded";
-                finalAudio = "TOR.mp3";
-                finalImage = "TOR.gif";
+                let record = issuedSevereAlerts[severeAlertKey];
+                if (!record) {
+                  issuedSevereAlerts[severeAlertKey] = { state: currentThreat, queued: true };
+                  let finalEventText, severeImage, severeAudio;
+                  let destructive = false;
+                  if (currentThreat === "DESTRUCTIVE") {
+                    destructive = true;
+                    finalEventText = "PDS Severe Thunderstorm Warning - Destructive";
+                    severeImage = "PDS SVR.gif";
+                    severeAudio = "PDS SVR.mp3";
+                  } else if (currentThreat === "CONSIDERABLE") {
+                    finalEventText = "Severe Thunderstorm Warning – Considerable";
+                    severeImage = "SVR - Considerable.gif";
+                    severeAudio = "SVR.mp3";
+                  } else {
+                    finalEventText = "Severe Thunderstorm Warning";
+                    severeImage = "SVR.gif";
+                    severeAudio = "SVR.mp3";
+                  }
+                  console.log("Queuing severe thunderstorm overlay with text:", finalEventText);
+                  enqueueAlert({
+                    alertKey: severeAlertKey,
+                    imageSrc: severeImage,
+                    audioSrc: severeAudio,
+                    eventText: finalEventText,
+                    areaDesc: areaDesc,
+                    type: "severe",
+                    destructive: destructive
+                  });
+                } else if (record.state !== currentThreat && record.queued === false) {
+                  record.state = currentThreat;
+                  record.queued = true;
+                  let finalEventText, severeImage, severeAudio;
+                  let destructive = false;
+                  if (currentThreat === "DESTRUCTIVE") {
+                    destructive = true;
+                    finalEventText = "PDS Severe Thunderstorm Warning - Destructive Upgraded";
+                    severeImage = "PDS SVR.gif";
+                    severeAudio = "PDS SVR.mp3";
+                  } else if (currentThreat === "CONSIDERABLE") {
+                    finalEventText = "Severe Thunderstorm Warning – Considerable Upgraded";
+                    severeImage = "SVR - Considerable.gif";
+                    severeAudio = "SVR.mp3";
+                  } else {
+                    finalEventText = "Severe Thunderstorm Warning";
+                    severeImage = "SVR.gif";
+                    severeAudio = "SVR.mp3";
+                  }
+                  console.log("Queuing severe thunderstorm overlay with text:", finalEventText);
+                  enqueueAlert({
+                    alertKey: severeAlertKey,
+                    imageSrc: severeImage,
+                    audioSrc: severeAudio,
+                    eventText: finalEventText,
+                    areaDesc: areaDesc,
+                    type: "severe",
+                    destructive: destructive
+                  });
+                } else {
+                  console.log("Severe thunderstorm alert", severeAlertKey, "already recorded with same state—skipping.");
+                }
               }
-              activeTornadoAlerts[alertKey] = currentState;
-              console.log("Triggering tornado overlay with text:", finalAlertText);
-              triggerWarning({
-                alertKey: alertKey,
-                imageSrc: finalImage,
-                audioSrc: finalAudio,
-                eventText: finalAlertText,
-                areaDesc: areaDesc,
-                type: "tornado",
-                pds: pds,
-                emergency: emergencyFlag
-              });
-              break;
-            } else {
-              console.log("Tornado alert already issued for key:", alertKey, "with same state—skipping overlay.");
-              continue;
             }
+            // ---- Tornado Warnings ----
+            else if (eventTextRaw.toLowerCase().includes("tornado warning")) {
+              // Use a constant key for tornado alerts.
+              const tornadoAlertKey = generateAlertKey("Tornado Warning", areaDesc);
+              currentFeedKeys.add(tornadoAlertKey);
+              
+              const tornadoDamageParam = parameters.find(param =>
+                getText(param, "valueName") === "tornadoDamageThreat"
+              );
+              const rawTornadoDamageThreat = tornadoDamageParam ? getText(tornadoDamageParam, "value") : "DEFAULT";
+              const normalizedTornadoDamageThreat = rawTornadoDamageThreat.trim().toUpperCase();
+              
+              const tornadoDetectionParam = parameters.find(param =>
+                getText(param, "valueName") === "tornadoDetection"
+              );
+              const rawTornadoDetection = tornadoDetectionParam ? getText(tornadoDetectionParam, "value") : "";
+              const normalizedTornadoDetection = rawTornadoDetection.trim().toUpperCase();
+              
+              let currentState = "DEFAULT";
+              if (normalizedTornadoDamageThreat === "CATASTROPHIC") {
+                currentState = "EMERGENCY";
+              } else if (((normalizedTornadoDetection === "OBSERVED" ||
+                           normalizedTornadoDetection.includes("RADAR INDICATED")) &&
+                          normalizedTornadoDamageThreat === "CONSIDERABLE")) {
+                currentState = "PDS";
+              } else if (normalizedTornadoDetection === "OBSERVED") {
+                currentState = "OBSERVED";
+              }
+              
+              if (initialLoad) {
+                issuedTornadoAlerts[tornadoAlertKey] = { state: currentState, queued: true };
+              } else {
+                let record = issuedTornadoAlerts[tornadoAlertKey];
+                if (!record) {
+                  issuedTornadoAlerts[tornadoAlertKey] = { state: currentState, queued: true };
+                  let finalAlertText, finalAudio, finalImage;
+                  let pds = false, emergencyFlag = false;
+                  if (currentState === "EMERGENCY") {
+                    emergencyFlag = true;
+                    finalAlertText = "Tornado Emergency";
+                    finalAudio = "TORE.mp3";
+                    finalImage = "TORE.gif";
+                  } else if (currentState === "PDS") {
+                    pds = true;
+                    finalAlertText = "PDS Tornado Warning";
+                    finalAudio = "PDS TOR.mp3";
+                    finalImage = "PDS TOR.gif";
+                  } else if (currentState === "OBSERVED") {
+                    finalAlertText = "Observed Tornado Warning";
+                    finalAudio = "TOR.mp3";
+                    finalImage = "TOR.gif";
+                  } else {
+                    finalAlertText = "Tornado Warning";
+                    finalAudio = "TOR.mp3";
+                    finalImage = "TOR.gif";
+                  }
+                  console.log("Queuing tornado overlay with text:", finalAlertText);
+                  enqueueAlert({
+                    alertKey: tornadoAlertKey,
+                    imageSrc: finalImage,
+                    audioSrc: finalAudio,
+                    eventText: finalAlertText,
+                    areaDesc: areaDesc,
+                    type: "tornado",
+                    pds: pds,
+                    emergency: emergencyFlag
+                  });
+                } else if (record.state !== currentState && record.queued === false) {
+                  record.state = currentState;
+                  record.queued = true;
+                  let finalAlertText, finalAudio, finalImage;
+                  let pds = false, emergencyFlag = false;
+                  if (currentState === "EMERGENCY") {
+                    emergencyFlag = true;
+                    finalAlertText = "Tornado Emergency Upgraded";
+                    finalAudio = "TORE Upgraded.mp3";
+                    finalImage = "TORE.gif";
+                  } else if (currentState === "PDS") {
+                    pds = true;
+                    finalAlertText = "PDS Tornado Warning Upgraded";
+                    finalAudio = "PDS TOR - TOR Upgraded.mp3";
+                    finalImage = "PDS TOR.gif";
+                  } else if (currentState === "OBSERVED") {
+                    finalAlertText = "Observed Tornado Warning Upgraded";
+                    finalAudio = "PDS TOR - TOR Upgraded.mp3";
+                    finalImage = "TOR.gif";
+                  } else {
+                    finalAlertText = "Tornado Warning";
+                    finalAudio = "TOR.mp3";
+                    finalImage = "TOR.gif";
+                  }
+                  console.log("Queuing tornado overlay with text:", finalAlertText);
+                  enqueueAlert({
+                    alertKey: tornadoAlertKey,
+                    imageSrc: finalImage,
+                    audioSrc: finalAudio,
+                    eventText: finalAlertText,
+                    areaDesc: areaDesc,
+                    type: "tornado",
+                    pds: pds,
+                    emergency: emergencyFlag
+                  });
+                } else {
+                  console.log("Tornado alert", tornadoAlertKey, "already recorded with same state—skipping.");
+                }
+              }
+            }
+            // ---- Flash Flood Warnings ----
+            else if (eventTextRaw.toLowerCase().includes("flash flood warning")) {
+              // Use a constant key for flash flood alerts.
+              const ffwKey = generateAlertKey("Flash Flood Warning", areaDesc);
+              currentFeedKeys.add(ffwKey);
+              
+              const flashFloodParam = parameters.find(param =>
+                getText(param, "valueName") === "flashFloodDamageThreat"
+              );
+              const rawFlashFloodDamageThreat = flashFloodParam ? getText(flashFloodParam, "value") : "DEFAULT";
+              const normalizedFlashFloodDamageThreat = rawFlashFloodDamageThreat.trim().toUpperCase();
+              
+              let currentFFThreat = "DEFAULT";
+              if (normalizedFlashFloodDamageThreat === "CATASTROPHIC")
+                currentFFThreat = "CATASTROPHIC";
+              else if (normalizedFlashFloodDamageThreat === "CONSIDERABLE")
+                currentFFThreat = "CONSIDERABLE";
+              
+              if (initialLoad) {
+                issuedFlashFloodAlerts[ffwKey] = { state: currentFFThreat, queued: true };
+              } else {
+                let record = issuedFlashFloodAlerts[ffwKey];
+                if (!record) {
+                  issuedFlashFloodAlerts[ffwKey] = { state: currentFFThreat, queued: true };
+                  let finalEventText, finalImage, finalAudio;
+                  if (currentFFThreat === "CATASTROPHIC") {
+                    finalEventText = "Flash Flood Emergency";
+                    finalImage = "FFWE.gif";
+                    finalAudio = "FFWE.mp3";
+                  } else if (currentFFThreat === "CONSIDERABLE") {
+                    finalEventText = "Flash Flood Warning - Considerable";
+                    finalImage = "FFW - Considerable.gif";
+                    finalAudio = "FFW - Considerable.mp3";
+                  } else {
+                    finalEventText = "Flash Flood Warning";
+                    finalImage = "FFW.gif";
+                    finalAudio = "FFW.mp3";
+                  }
+                  console.log("Queuing flash flood overlay with text:", finalEventText);
+                  enqueueAlert({
+                    alertKey: ffwKey,
+                    imageSrc: finalImage,
+                    audioSrc: finalAudio,
+                    eventText: finalEventText,
+                    areaDesc: areaDesc,
+                    type: "flashFlood",
+                    flashFloodConsiderable: currentFFThreat === "CONSIDERABLE",
+                    flashFloodCatastrophic: currentFFThreat === "CATASTROPHIC"
+                  });
+                } else if (record.state !== currentFFThreat && record.queued === false && currentFFThreat !== "DEFAULT") {
+                  record.state = currentFFThreat;
+                  record.queued = true;
+                  let finalEventText, finalImage, finalAudio;
+                  if (currentFFThreat === "CATASTROPHIC") {
+                    finalEventText = "Flash Flood Emergency Upgraded";
+                    finalImage = "FFWE.gif";
+                    finalAudio = "FFWE Upgraded.mp3";
+                  } else if (currentFFThreat === "CONSIDERABLE") {
+                    finalEventText = "Flash Flood Warning - Considerable Upgraded";
+                    finalImage = "FFW - Considerable.gif";
+                    finalAudio = "FFW - Considerable Upgraded.mp3";
+                  }
+                  console.log("Queuing flash flood overlay with text:", finalEventText);
+                  enqueueAlert({
+                    alertKey: ffwKey,
+                    imageSrc: finalImage,
+                    audioSrc: finalAudio,
+                    eventText: finalEventText,
+                    areaDesc: areaDesc,
+                    type: "flashFlood",
+                    flashFloodConsiderable: currentFFThreat === "CONSIDERABLE",
+                    flashFloodCatastrophic: currentFFThreat === "CATASTROPHIC"
+                  });
+                } else {
+                  console.log("Flash flood alert", ffwKey, "already recorded with same state—skipping.");
+                }
+              }
+            }
+          } // End for-loop through entries.
+          
+          // Cleanup: Remove any keys no longer in the current feed.
+          for (let key in issuedTornadoAlerts) {
+            if (!currentFeedKeys.has(key)) delete issuedTornadoAlerts[key];
+          }
+          for (let key in issuedSevereAlerts) {
+            if (!currentFeedKeys.has(key)) delete issuedSevereAlerts[key];
+          }
+          for (let key in issuedFlashFloodAlerts) {
+            if (!currentFeedKeys.has(key)) delete issuedFlashFloodAlerts[key];
           }
           
-          // ----- Severe Thunderstorm Warnings -----
-          else if (eventTextRaw.toLowerCase().includes("severe thunderstorm warning")) {
-            const severeAlertKey = generateAlertKey("Severe Thunderstorm Warning", areaDesc);
-            currentFeedKeys.add(severeAlertKey);
-            const thunderstormDamageParam = parameters.find(param =>
-              getText(param, "valueName") === "thunderstormDamageThreat"
-            );
-            const thunderstormDamageThreat = thunderstormDamageParam ? getText(thunderstormDamageParam, "value") : null;
-            let currentThreat = "DEFAULT";
-            if (thunderstormDamageThreat === "DESTRUCTIVE") {
-              currentThreat = "DESTRUCTIVE";
-            } else if (thunderstormDamageThreat === "CONSIDERABLE") {
-              currentThreat = "CONSIDERABLE";
-            }
-    
-            if (initialLoad) {
-              displayedSevereAlerts[severeAlertKey] = currentThreat;
-            } else {
-              if (!displayedSevereAlerts.hasOwnProperty(severeAlertKey)) {
-                let finalEventText, severeImage, severeAudio;
-                let destructive = false;
-                if (currentThreat === "DESTRUCTIVE") {
-                  destructive = true;
-                  finalEventText = "PDS Severe Thunderstorm Warning - Destructive";
-                  severeImage = "PDS SVR.gif";
-                  severeAudio = "PDS SVR.mp3";
-                } else if (currentThreat === "CONSIDERABLE") {
-                  finalEventText = "Severe Thunderstorm Warning – Considerable";
-                  severeImage = "SVR - Considerable.gif";
-                  severeAudio = "SVR.mp3";
-                } else {
-                  finalEventText = "Severe Thunderstorm Warning";
-                  severeImage = "SVR.gif";
-                  severeAudio = "SVR.mp3";
-                }
-                displayedSevereAlerts[severeAlertKey] = currentThreat;
-                alertQueue.push({
-                  alertKey: severeAlertKey,
-                  imageSrc: severeImage,
-                  audioSrc: severeAudio,
-                  eventText: finalEventText,
-                  areaDesc: areaDesc,
-                  type: "severe",
-                  destructive: destructive
-                });
-              } else if (displayedSevereAlerts[severeAlertKey] !== currentThreat) {
-                let finalEventText, severeImage, severeAudio;
-                let destructive = false;
-                if (currentThreat === "DESTRUCTIVE") {
-                  destructive = true;
-                  finalEventText = "PDS Severe Thunderstorm Warning - Destructive Upgraded";
-                  severeImage = "PDS SVR.gif";
-                  severeAudio = "PDS SVR Upgraded.mp3";
-                } else if (currentThreat === "CONSIDERABLE") {
-                  finalEventText = "Severe Thunderstorm Warning – Considerable Upgraded";
-                  severeImage = "SVR - Considerable.gif";
-                  severeAudio = "SVR Upgraded.mp3";
-                } else {
-                  finalEventText = "Severe Thunderstorm Warning Upgraded";
-                  severeImage = "SVR.gif";
-                  severeAudio = "SVR.mp3";
-                }
-                displayedSevereAlerts[severeAlertKey] = currentThreat;
-                alertQueue.push({
-                  alertKey: severeAlertKey,
-                  imageSrc: severeImage,
-                  audioSrc: severeAudio,
-                  eventText: finalEventText,
-                  areaDesc: areaDesc,
-                  type: "severe",
-                  destructive: destructive
-                });
-              } else {
-                console.log("Severe thunderstorm alert already issued for key:", severeAlertKey, "with same state—skipping.");
-              }
-            }
+          if (!initialLoad && !isOverlayActive && alertQueue.length > 0) {
+            processNextAlert();
           }
           
-          // ----- Flash Flood Warnings -----
-          else if (eventTextRaw.toLowerCase().includes("flash flood warning")) {
-            const ffwKey = generateAlertKey(eventTextRaw, areaDesc);
-            currentFeedKeys.add(ffwKey);
-            const flashFloodParam = parameters.find(param =>
-              getText(param, "valueName") === "flashFloodDamageThreat"
-            );
-            const flashFloodDamageThreat = flashFloodParam ? getText(flashFloodParam, "value") : null;
-            let currentFFThreat = "DEFAULT";
-            if (flashFloodDamageThreat === "CATASTROPHIC")
-              currentFFThreat = "CATASTROPHIC";
-            else if (flashFloodDamageThreat === "CONSIDERABLE")
-              currentFFThreat = "CONSIDERABLE";
-    
-            if (initialLoad) {
-              activeFlashFloodAlerts[ffwKey] = currentFFThreat;
-            } else {
-              if (!activeFlashFloodAlerts.hasOwnProperty(ffwKey)) {
-                let finalEventText, finalImage, finalAudio;
-                if (currentFFThreat === "CATASTROPHIC") {
-                  finalEventText = "Flash Flood Emergency";
-                  finalImage = "FFWE.gif";
-                  finalAudio = "FFWE.mp3";
-                } else if (currentFFThreat === "CONSIDERABLE") {
-                  finalEventText = "Flash Flood Warning - Considerable";
-                  finalImage = "FFW - Considerable.gif";
-                  finalAudio = "FFW - Considerable.mp3";
-                } else {
-                  finalEventText = "Flash Flood Warning";
-                  finalImage = "FFW.gif";
-                  finalAudio = "FFW.mp3";
-                }
-                activeFlashFloodAlerts[ffwKey] = currentFFThreat;
-                alertQueue.push({
-                  alertKey: ffwKey,
-                  imageSrc: finalImage,
-                  audioSrc: finalAudio,
-                  eventText: finalEventText,
-                  areaDesc: areaDesc,
-                  type: "flashFlood",
-                  flashFloodConsiderable: currentFFThreat === "CONSIDERABLE",
-                  flashFloodCatastrophic: currentFFThreat === "CATASTROPHIC"
-                });
-              } else if (activeFlashFloodAlerts[ffwKey] !== currentFFThreat && currentFFThreat !== "DEFAULT") {
-                let finalEventText, finalImage, finalAudio;
-                if (currentFFThreat === "CATASTROPHIC") {
-                  finalEventText = "Flash Flood Emergency Upgraded";
-                  finalImage = "FFWE.gif";
-                  finalAudio = "FFWE Upgraded.mp3";
-                } else if (currentFFThreat === "CONSIDERABLE") {
-                  finalEventText = "Flash Flood Warning - Considerable Upgraded";
-                  finalImage = "FFW - Considerable.gif";
-                  finalAudio = "FFW - Considerable Upgraded.mp3";
-                }
-                activeFlashFloodAlerts[ffwKey] = currentFFThreat;
-                alertQueue.push({
-                  alertKey: ffwKey,
-                  imageSrc: finalImage,
-                  audioSrc: finalAudio,
-                  eventText: finalEventText,
-                  areaDesc: areaDesc,
-                  type: "flashFlood",
-                  flashFloodConsiderable: currentFFThreat === "CONSIDERABLE",
-                  flashFloodCatastrophic: currentFFThreat === "CATASTROPHIC"
-                });
-              } else {
-                console.log("Flash flood alert already issued for key:", ffwKey, "with same state—skipping.");
-              }
-            }
+          if (initialLoad) {
+            console.log("Initial load complete. Active alerts recorded without overlaying.");
+            initialLoad = false;
           }
-        } // End loop over entries.
-        
-        // Cleanup: remove keys that are no longer present.
-        for (let key in displayedTornadoAlerts) {
-          if (!currentFeedKeys.has(key)) delete displayedTornadoAlerts[key];
-        }
-        for (let key in displayedSevereAlerts) {
-          if (!currentFeedKeys.has(key)) delete displayedSevereAlerts[key];
-        }
-        for (let key in displayedFlashFloodAlerts) {
-          if (!currentFeedKeys.has(key)) delete displayedFlashFloodAlerts[key];
-        }
-        for (let key in activeFlashFloodAlerts) {
-          if (!currentFeedKeys.has(key)) delete activeFlashFloodAlerts[key];
-        }
-        
-        // Process queued overlays if not initial load.
-        if (!initialLoad && !isOverlayActive && alertQueue.length > 0) {
-          processNextAlert();
-        }
-        
-        // On first load, mark it as complete.
-        if (initialLoad) {
-          initialLoad = false;
-          console.log("Initial load complete. Active alerts registered without overlaying.");
-        }
-      })
-      .catch(err => console.error("Failed to fetch alerts:", err));
+        })
+        .catch(err => console.error("Failed to fetch alerts:", err));
     }
     
-    // Start polling every 1 seconds.
+    // Poll NOAA's alert feed every 1 seconds.
     setInterval(fetchAlerts, 1000);
   </script>
 </body>
