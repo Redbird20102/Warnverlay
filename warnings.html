@@ -119,7 +119,7 @@
     
     // Throttle tracking: last queued time per type.
     let lastQueuedTime = { tornado: 0, severe: 0, flashFlood: 0 };
-    const throttleDelay = 15000;
+    const throttleDelay = 1000;
     
     // Helper function to get text from the first matching tag.
     function getText(node, tagName) {
