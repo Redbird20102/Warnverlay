@@ -3,13 +3,97 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Weather Warning Overlay</title>
-  <!-- Load Bebas Neue font for warning text -->
+  <title>Weather Warning Overlay with Menu</title>
+  <!-- Load Bebas Neue font for warning text and menu titles -->
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
   <style>
-    body { font-family: Arial, sans-serif; }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
     
-    /* Overlay Container */
+    /* --------------------------- Menu Styles --------------------------- */
+    #menu-icon {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      width: 40px;
+      height: 40px;
+      cursor: pointer;
+      z-index: 10000;
+      background-color: rgba(0, 0, 0, 0.6);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #menu-icon span {
+      display: block;
+      width: 24px;
+      height: 3px;
+      background: white;
+      margin: 3px 0;
+      transition: 0.4s;
+    }
+    #alert-menu {
+      position: fixed;
+      top: 60px;
+      left: 10px;
+      width: 280px;
+      background: rgba(0,0,0,0.85);
+      padding: 10px;
+      border-radius: 5px;
+      z-index: 9000;
+      display: none;
+      max-height: 80vh;
+      overflow-y: auto;
+      color: white;
+    }
+    .menu-group {
+      margin-bottom: 20px;
+    }
+    .menu-group h3 {
+      margin: 10px 0 5px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.2rem;
+      border-bottom: 1px solid #444;
+      padding-bottom: 3px;
+    }
+    .alert-toggle {
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      border: 1px solid white;
+      padding: 5px 10px;
+      border-radius: 5px;
+      background-color: rgba(255,255,255,0.1);
+      color: white;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 0.9rem;
+      margin-bottom: 5px;
+      transition: background-color 0.3s ease;
+    }
+    .alert-toggle:hover {
+      background-color: rgba(255,255,255,0.2);
+    }
+    .alert-toggle.selected {
+      background-color: rgba(0,200,0,0.4);
+      border-color: lime;
+    }
+    .toggle-icon {
+      margin-right: 5px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background-color: green;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 0.8rem;
+    }
+    .toggle-icon.disabled {
+      background-color: red;
+    }
+    
+    /* --------------------------- Overlay Styles --------------------------- */
     #overlay {
       display: none;
       position: fixed;
@@ -23,16 +107,12 @@
       flex-direction: column;
       z-index: 9999;
     }
-    
-    /* Warning Image */
     #overlay img {
       max-width: 120%;
       max-height: 120%;
       opacity: 1;
       transition: opacity 2s ease-in-out;
     }
-    
-    /* Base Text Container */
     .text-container {
       position: absolute;
       font-size: 2.6rem;
@@ -42,53 +122,31 @@
       opacity: 0;
       transition: opacity 2s ease-in-out;
     }
-    
-    /* ------------------ Severe Thunderstorm (Default) ------------------ */
-    .severe#testWarningContainer {
-      top: 73%; left: 64.5%;
-      transform: translate(-50%,-50%);
-      color: rgb(255,255,255);
-    }
-    .severe#testCountyContainer {
-      top: 77%; left: 64.5%;
-      transform: translate(-50%,-50%);
-      color: rgb(255,255,255);
-      font-size: 1.3rem;
-    }
-    .considerableSevere#testWarningContainer { color: rgb(255,255,255) !important; }
-    .considerableSevere#testCountyContainer { color: rgb(255,255,255) !important; }
-    .destructiveSevere#testWarningContainer { color: rgb(255,255,255) !important; }
-    .destructiveSevere#testCountyContainer { color: rgb(255,255,255) !important; }
-    
-    /* ------------------ Flash Flood (Default) ------------------ */
-    .flashFlood#testWarningContainer {
-      top: 73%; left: 64.5%;
-      transform: translate(-50%,-50%);
-      color: rgb(255,255,255);
-    }
-    .flashFlood#testCountyContainer {
-      top: 77%; left: 64.5%;
-      transform: translate(-50%,-50%);
-      color: rgb(255,255,255);
-      font-size: 1.3rem;
-    }
-    .considerableFlashFlood#testWarningContainer { color: rgb(255,255,255) !important; }
-    .considerableFlashFlood#testCountyContainer { color: rgb(255,255,255) !important; }
-    .catastrophicFlashFlood#testWarningContainer { color: rgb(255,255,255) !important; }
-    .catastrophicFlashFlood#testCountyContainer { color: rgb(255,255,255) !important; }
-    
-    /* ------------------ Tornado (Default) ------------------ */
+    /* Default positions and colors for severe thunderstorm alerts */
+    .severe#testWarningContainer,
+    .flashFlood#testWarningContainer,
     .tornado#testWarningContainer {
       top: 73%; left: 64.5%;
       transform: translate(-50%,-50%);
       color: rgb(255,255,255);
     }
+    .severe#testCountyContainer,
+    .flashFlood#testCountyContainer,
     .tornado#testCountyContainer {
       top: 77%; left: 64.5%;
       transform: translate(-50%,-50%);
       color: rgb(255,255,255);
       font-size: 1.3rem;
     }
+    /* Additional classes for upgrades (PDS, Destructive, etc.) remain the same */
+    .considerableSevere#testWarningContainer { color: rgb(255,255,255) !important; }
+    .considerableSevere#testCountyContainer { color: rgb(255,255,255) !important; }
+    .destructiveSevere#testWarningContainer { color: rgb(255,255,255) !important; }
+    .destructiveSevere#testCountyContainer { color: rgb(255,255,255) !important; }
+    .considerableFlashFlood#testWarningContainer { color: rgb(255,255,255) !important; }
+    .considerableFlashFlood#testCountyContainer { color: rgb(255,255,255) !important; }
+    .catastrophicFlashFlood#testWarningContainer { color: rgb(255,255,255) !important; }
+    .catastrophicFlashFlood#testCountyContainer { color: rgb(255,255,255) !important; }
     .pdsTornado#testWarningContainer { color: rgb(255,255,255) !important; }
     .pdsTornado#testCountyContainer { color: rgb(255,255,255) !important; }
     .tornadoEmergency#testWarningContainer { color: rgb(255,255,255) !important; }
@@ -96,7 +154,34 @@
   </style>
 </head>
 <body>
-  <!-- Overlay element to display warnings -->
+  <!-- --------------------------- Menu HTML --------------------------- -->
+  <div id="menu-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+  <div id="alert-menu">
+    <!-- Alert Categories -->
+    <div class="menu-group">
+      <h3>Alert Categories</h3>
+      <div class="alert-toggle" data-type="tornado">
+        <span class="toggle-icon">ON</span><span>Tornado Alerts</span>
+      </div>
+      <div class="alert-toggle" data-type="severe">
+        <span class="toggle-icon">ON</span><span>Severe Thunderstorm Alerts</span>
+      </div>
+      <div class="alert-toggle" data-type="flashFlood">
+        <span class="toggle-icon">ON</span><span>Flash Flood Alerts</span>
+      </div>
+    </div>
+    <!-- State Filters -->
+    <div class="menu-group" id="state-group">
+      <h3>State Filters</h3>
+      <!-- Individual state toggles will be injected here -->
+    </div>
+  </div>
+  
+  <!-- --------------------------- Overlay --------------------------- -->
   <div id="overlay">
     <img id="overlayImage" src="" alt="Warning Image">
     <audio id="overlayAudio"></audio>
@@ -105,35 +190,101 @@
   </div>
   
   <script>
-    // Global alert queue and flag.
+    /************ Global Toggle Variables *************/
+    // Alert category toggles
+    let alertCategoryToggles = {
+      tornado: true,
+      severe: true,
+      flashFlood: true
+    };
+    
+    // State toggles – all enabled by default.
+    let stateToggles = {
+      "AL": true, "AK": true, "AZ": true, "AR": true, "CA": true,
+      "CO": true, "CT": true, "DE": true, "FL": true, "GA": true,
+      "HI": true, "ID": true, "IL": true, "IN": true, "IA": true,
+      "KS": true, "KY": true, "LA": true, "ME": true, "MD": true,
+      "MA": true, "MI": true, "MN": true, "MS": true, "MO": true,
+      "MT": true, "NE": true, "NV": true, "NH": true, "NJ": true,
+      "NM": true, "NY": true, "NC": true, "ND": true, "OH": true,
+      "OK": true, "OR": true, "PA": true, "RI": true, "SC": true,
+      "SD": true, "TN": true, "TX": true, "UT": true, "VT": true,
+      "VA": true, "WA": true, "WV": true, "WI": true, "WY": true
+    };
+    
+    /************ Menu Functionality *************/
+    // Populate state toggles in the alert menu:
+    function populateStateToggles() {
+      const container = document.getElementById("state-group");
+      for (let state in stateToggles) {
+        const div = document.createElement("div");
+        div.className = "alert-toggle";
+        div.setAttribute("data-type", state);
+        div.innerHTML = '<span class="toggle-icon">' + (stateToggles[state] ? "ON" : "OFF") + '</span><span>' + state + "</span>";
+        container.appendChild(div);
+        div.addEventListener("click", function () {
+          stateToggles[state] = !stateToggles[state];
+          const icon = this.querySelector(".toggle-icon");
+          icon.textContent = stateToggles[state] ? "ON" : "OFF";
+          icon.classList.toggle("disabled", !stateToggles[state]);
+        });
+      }
+    }
+    
+    // Toggle for alert categories:
+    document.querySelectorAll('#alert-menu .alert-toggle[data-type="tornado"], #alert-menu .alert-toggle[data-type="severe"], #alert-menu .alert-toggle[data-type="flashFlood"]').forEach(toggle => {
+      toggle.addEventListener("click", function() {
+        const type = this.getAttribute("data-type");
+        alertCategoryToggles[type] = !alertCategoryToggles[type];
+        const icon = this.querySelector(".toggle-icon");
+        icon.textContent = alertCategoryToggles[type] ? "ON" : "OFF";
+        icon.classList.toggle("disabled", !alertCategoryToggles[type]);
+      });
+    });
+    
+    // Menu icon to toggle menu display:
+    document.getElementById("menu-icon").addEventListener("click", () => {
+      const menu = document.getElementById("alert-menu");
+      menu.style.display = window.getComputedStyle(menu).display === "none" ? "block" : "none";
+    });
+    
+    populateStateToggles();
+    
+    /************ Overlay Alert Code *************/
     let alertQueue = [];
     let isOverlayActive = false;
-    
-    // initialLoad prevents showing overlays on startup.
     let initialLoad = true;
     
-    // These objects keep track of each issued alert per type.
     let issuedTornadoAlerts = {};
     let issuedSevereAlerts = {};
     let issuedFlashFloodAlerts = {};
-    
-    // Throttle tracking: last queued time per type.
     let lastQueuedTime = { tornado: 0, severe: 0, flashFlood: 0 };
     const throttleDelay = 1000;
     
-    // Helper function to get text from the first matching tag.
     function getText(node, tagName) {
       return node.querySelector(tagName)?.textContent || "";
     }
     
-    // Normalize area text.
+    // Normalize area text and generate a unique key for each alert.
     const normalizeArea = area => area.trim();
-    
-    // Generate a unique alert key.
     const generateAlertKey = (eventText, areaDesc) =>
       `${eventText.trim()}|${normalizeArea(areaDesc)}`;
-      
-    // Enqueue an alert if it isn’t already in the queue.
+    
+    // Helper to extract states (two-letter abbreviations) from the areaDesc.
+    function extractStates(areaDesc) {
+      const matches = areaDesc.match(/\b[A-Z]{2}\b/g);
+      return matches ? matches : [];
+    }
+    
+    // Check if the alert area passes state filters.
+    function passesStateFilter(areaDesc) {
+      const states = extractStates(areaDesc);
+      // If no state found, default to passing filter.
+      if (states.length === 0) return true;
+      return states.some(state => stateToggles[state]);
+    }
+    
+    // Enqueue the alert if it isn’t already queued and enough time has elapsed.
     function enqueueAlert(options) {
       const type = options.type;
       const now = Date.now();
@@ -150,7 +301,6 @@
       }
     }
     
-    // Process the next alert in the queue, if any.
     function processNextAlert() {
       if (alertQueue.length === 0) return;
       isOverlayActive = true;
@@ -158,7 +308,6 @@
       triggerWarning(options);
     }
     
-    // Show the overlay, play any audio, and apply proper classes.
     function triggerWarning(options) {
       const { imageSrc, audioSrc, eventText, areaDesc, type, pds, emergency, destructive, flashFloodConsiderable, flashFloodCatastrophic } = options;
       const overlay = document.getElementById("overlay");
@@ -167,7 +316,7 @@
       const testWarningContainer = document.getElementById("testWarningContainer");
       const testCountyContainer = document.getElementById("testCountyContainer");
       
-      // Set CSS classes based on alert type.
+      // Update CSS classes based on alert type.
       if (type === "tornado") {
         testWarningContainer.className = "text-container tornado";
         testCountyContainer.className = "text-container tornado";
@@ -194,8 +343,7 @@
           testWarningContainer.style.color = "rgb(255,255,255)";
           testCountyContainer.style.color  = "rgb(255,255,255)";
         }
-      } else {
-        // Severe Thunderstorm Warning.
+      } else { // severe
         testWarningContainer.className = "text-container severe";
         testCountyContainer.className = "text-container severe";
         testWarningContainer.style.color = "rgb(255,255,255)";
@@ -207,7 +355,6 @@
         }
       }
       
-      // Update the image with cache busting.
       overlayImage.src = imageSrc + "?t=" + new Date().getTime();
       overlayImage.style.transition = "none";
       overlayImage.style.opacity = "1";
@@ -215,7 +362,6 @@
         overlayImage.style.transition = "opacity 2s ease-in-out";
       }, 50);
       
-      // Play audio if provided.
       if (audioSrc) {
         overlayAudio.src = audioSrc;
         overlayAudio.play().catch(err => console.error("Audio playback error:", err));
@@ -224,11 +370,9 @@
         overlayAudio.src = "";
       }
       
-      // Set text for the overlay.
       testWarningContainer.textContent = eventText;
       testCountyContainer.textContent  = areaDesc;
       
-      // Show the overlay.
       overlay.style.display = "flex";
       
       setTimeout(() => {
@@ -245,8 +389,6 @@
         overlayImage.style.opacity = "0";
       }, 18700);
       
-      // After completion, hide overlay and reset the queued flag so that upgrades
-      // can be queued later if the threat level changes.
       setTimeout(() => {
         overlay.style.display = "none";
         overlayImage.style.opacity = "1";
@@ -272,7 +414,7 @@
       }, 19630);
     }
     
-    // Main fetch function that polls NOAA’s alert feed every 5 seconds.
+    /************ Fetch and Process Alerts *************/
     function fetchAlerts() {
       fetch("https://api.weather.gov/alerts/active.atom?urgency=Past%2CFuture%2CExpected%2CImmediate")
         .then(response => response.text())
@@ -282,7 +424,6 @@
           const entries = xml.getElementsByTagName("entry");
           if (!entries || entries.length === 0) return;
           
-          // Keep track of alert keys seen this poll.
           const currentFeedKeys = new Set();
           
           for (let i = 0; i < entries.length; i++) {
@@ -293,11 +434,14 @@
             
             const eventTextRaw = eventElem.textContent.trim();
             const areaDesc = areaDescElem.textContent.trim();
+            
+            // Only process alerts if they pass the state filter.
+            if (!passesStateFilter(areaDesc)) continue;
+            
             const parameters = Array.from(entry.getElementsByTagName("cap:parameter"));
             
-            // ---- Severe Thunderstorm Warnings ----
-            if (eventTextRaw.toLowerCase().includes("severe thunderstorm warning")) {
-              // Use a constant key so that even if the text upgrades, the county is the same.
+            // --------------------- Severe Thunderstorm Warning ---------------------
+            if (eventTextRaw.toLowerCase().includes("severe thunderstorm warning") && alertCategoryToggles.severe) {
               const severeAlertKey = generateAlertKey("Severe Thunderstorm Warning", areaDesc);
               currentFeedKeys.add(severeAlertKey);
               
@@ -379,9 +523,8 @@
                 }
               }
             }
-            // ---- Tornado Warnings ----
-            else if (eventTextRaw.toLowerCase().includes("tornado warning")) {
-              // Use a constant key for tornado alerts.
+            // -------------------------- Tornado Warning --------------------------
+            else if (eventTextRaw.toLowerCase().includes("tornado warning") && alertCategoryToggles.tornado) {
               const tornadoAlertKey = generateAlertKey("Tornado Warning", areaDesc);
               currentFeedKeys.add(tornadoAlertKey);
               
@@ -486,9 +629,8 @@
                 }
               }
             }
-            // ---- Flash Flood Warnings ----
-            else if (eventTextRaw.toLowerCase().includes("flash flood warning")) {
-              // Use a constant key for flash flood alerts.
+            // ----------------------- Flash Flood Warning -----------------------
+            else if (eventTextRaw.toLowerCase().includes("flash flood warning") && alertCategoryToggles.flashFlood) {
               const ffwKey = generateAlertKey("Flash Flood Warning", areaDesc);
               currentFeedKeys.add(ffwKey);
               
@@ -564,9 +706,9 @@
                 }
               }
             }
-          } // End for-loop through entries.
+          } // End loop thru entries.
           
-          // Cleanup: Remove any keys no longer in the current feed.
+          // Cleanup the issued alerts that are no longer in the feed.
           for (let key in issuedTornadoAlerts) {
             if (!currentFeedKeys.has(key)) delete issuedTornadoAlerts[key];
           }
@@ -589,7 +731,7 @@
         .catch(err => console.error("Failed to fetch alerts:", err));
     }
     
-    // Poll NOAA's alert feed every 1 seconds.
+    // Poll NOAA’s alert feed every second.
     setInterval(fetchAlerts, 1000);
   </script>
 </body>
