@@ -1,612 +1,614 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Weather Alert Dashboard</title>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap"
-      rel="stylesheet"/>
-    <style>
-      body {
-        margin: 0; padding: 0;
-        background: black;
-        font-family: Arial, sans-serif;
-        background-size: cover;
-        transition: background 1s ease-in-out;
-      }
-      #menu-icon {
-        position: fixed; top: 10px; left: 10px;
-        width: 40px; height: 40px;
-        background: rgba(0,0,0,0.6);
-        border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        cursor: pointer; z-index: 400;
-      }
-      #menu-icon span {
-        display: block; width: 24px; height: 3px;
-        background: white; margin: 3px 0; transition: 0.4s;
-      }
-      #alert-menu {
-        position: fixed; top: 60px; left: 10px;
-        width: 280px; background: rgba(0,0,0,0.85);
-        padding: 10px; border-radius: 5px; z-index: 300;
-        display: none; max-height: 80vh; overflow-y: auto;
-      }
-      .menu-group { margin-bottom: 20px; }
-      .menu-group h3 {
-        margin: 10px 0 5px;
-        font-family: 'Bebas Neue', sans-serif;
-        font-size: 1.2rem;
-        border-bottom: 1px solid #444;
-        padding-bottom: 3px;
-      }
-      .alert-toggle {
-        display: flex; align-items: center;
-        cursor: pointer;
-        border: 1px solid white;
-        padding: 5px 10px; margin-bottom: 5px;
-        border-radius: 5px;
-        background: rgba(255,255,255,0.1);
-        color: white;
-        font-family: 'Bebas Neue', sans-serif;
-        font-size: 0.9rem;
-        transition: background 0.3s;
-      }
-      .alert-toggle:hover { background: rgba(255,255,255,0.2); }
-      .alert-toggle.selected {
-        background: rgba(0,200,0,0.4);
-        border-color: lime;
-      }
-      .toggle-icon {
-        width: 24px; height: 24px;
-        border-radius: 50%;
-        background: green; color: white;
-        display: inline-flex; align-items: center; justify-content: center;
-        margin-right: 5px; font-size: 0.8rem;
-      }
-      .toggle-icon.disabled { background: red; }
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Weather Alert Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet"/>
+  <style>
+    body {
+      margin: 0; padding: 0;
+      background: black;
+      font-family: Arial, sans-serif;
+      background-size: cover;
+      transition: background 1s ease-in-out;
+    }
+    #menu-icon {
+      position: fixed; top: 10px; left: 10px;
+      width: 40px; height: 40px;
+      background: rgba(0,0,0,0.6);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; z-index: 400;
+    }
+    #menu-icon span {
+      display: block; width: 24px; height: 3px;
+      background: white; margin: 3px 0; transition: 0.4s;
+    }
+    #alert-menu {
+      position: fixed; top: 60px; left: 10px;
+      width: 280px; background: rgba(0,0,0,0.85);
+      padding: 10px; border-radius: 5px; z-index: 300;
+      display: none; max-height: 80vh; overflow-y: auto;
+    }
+    .menu-group { margin-bottom: 20px; }
+    .menu-group h3 {
+      margin: 10px 0 5px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.2rem;
+      border-bottom: 1px solid #444;
+      padding-bottom: 3px;
+    }
+    .alert-toggle {
+      display: flex; align-items: center;
+      cursor: pointer;
+      border: 1px solid white;
+      padding: 5px 10px; margin-bottom: 5px;
+      border-radius: 5px;
+      background: rgba(255,255,255,0.1);
+      color: white;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 0.9rem;
+      transition: background 0.3s;
+    }
+    .alert-toggle:hover { background: rgba(255,255,255,0.2); }
+    .alert-toggle.selected {
+      background: rgba(0,200,0,0.4);
+      border-color: lime;
+    }
+    .toggle-icon {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      background: green; color: white;
+      display: inline-flex; align-items: center; justify-content: center;
+      margin-right: 5px; font-size: 0.8rem;
+    }
+    .toggle-icon.disabled { background: red; }
 
-      #alert-count-bar {
-        position: fixed; top: 0; left: 50%;
-        transform: translateX(-50%);
-        width: 102%; height: 66px;
-        display: flex; justify-content: flex-end; align-items: center;
-        font-family: 'Bebas Neue', sans-serif;
-        font-size: 1.77rem; font-weight: bold; color: white;
-        text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
-        background: transparent; z-index: 100;
-      }
-      .alert-count { padding: 35px 68px; margin: 0; }
-      .tornado { background: red; }
-      .severe-thunderstorm { background: orange; }
-      .flood-alert { background: #0000ff; }
-      .winter-weather { background: #3075FF; }
+    #alert-count-bar {
+      position: fixed; top: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 102%; height: 66px;
+      display: flex; justify-content: flex-end; align-items: center;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.77rem; font-weight: bold; color: white;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+      background: transparent; z-index: 100;
+    }
+    .alert-count { padding: 35px 68px; margin: 0; }
+    .tornado { background: red; }
+    .severe-thunderstorm { background: orange; }
+    .flood-alert { background: #0000ff; }
+    .winter-weather { background: #3075FF; }
 
-      #event-text, #area-text {
-        position: fixed; top: 95%;
-        color: white; font-family: 'Bebas Neue', sans-serif;
-        font-size: 2rem; font-weight: bold;
-        text-shadow: 2px 2px 5px rgba(0,0,0,0.8);
-        opacity: 1; transition: opacity 1s ease-in-out;
-      }
-      #event-text { left: -30.8%; width: 83%; text-align: center; }
-      #area-text  { left: 22%; }
+    #event-text, #area-text {
+      position: fixed; top: 95%;
+      color: white; font-family: 'Bebas Neue', sans-serif;
+      font-size: 2rem; font-weight: bold;
+      text-shadow: 2px 2px 5px rgba(0,0,0,0.8);
+      opacity: 1; transition: opacity 1s ease-in-out;
+    }
+    #event-text { left: -30.8%; width: 83%; text-align: center; }
+    #area-text  { left: 22%; }
 
-      #expire-date-container {
-        position: fixed; bottom: 5.2%; right: 84%;
-        display: flex; align-items: center; justify-content: center;
-        padding: 10px;
-      }
-      #expire-date {
-        color: black; font-family: 'Bebas Neue', sans-serif;
-        font-size: 1.4rem; font-weight: bold;
-        white-space: nowrap;
-      }
-    </style>
-  </head>
-  <body>
-    <div id="menu-icon">
-      <span></span><span></span><span></span>
-    </div>
-    <div id="alert-menu">
-      <!-- Tornado Alerts -->
-      <div class="menu-group">
-        <h3>Tornado Alerts</h3>
-        <div class="alert-toggle" data-type="Tornado Warning">
-          <span class="toggle-icon">#</span><span>Tornado Warning</span>
-        </div>
-        <div class="alert-toggle" data-type="Observed Tornado Warning">
-          <span class="toggle-icon">#</span><span>Observed Tornado Warning</span>
-        </div>
-        <div class="alert-toggle" data-type="PDS Tornado Warning">
-          <span class="toggle-icon">#</span><span>PDS Tornado Warning</span>
-        </div>
-        <div class="alert-toggle" data-type="Tornado Emergency">
-          <span class="toggle-icon">#</span><span>Tornado Emergency</span>
-        </div>
-        <div class="alert-toggle" data-type="Tornado Watch">
-          <span class="toggle-icon">#</span><span>Tornado Watch</span>
-        </div>
+    #expire-date-container {
+      position: fixed; bottom: 5.2%; right: 84%;
+      display: flex; align-items: center; justify-content: center;
+      padding: 10px;
+    }
+    #expire-date {
+      color: black; font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.4rem; font-weight: bold;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <div id="menu-icon">
+    <span></span><span></span><span></span>
+  </div>
+  <div id="alert-menu">
+    <!-- Tornado Alerts -->
+    <div class="menu-group">
+      <h3>Tornado Alerts</h3>
+      <div class="alert-toggle" data-type="Tornado Warning">
+        <span class="toggle-icon">#</span><span>Tornado Warning</span>
       </div>
-      <!-- Flash Flood Alerts -->
-      <div class="menu-group">
-        <h3>Flash Flood Alerts</h3>
-        <div class="alert-toggle" data-type="Flash Flood Warning">
-          <span class="toggle-icon">#</span><span>Flash Flood Warning</span>
-        </div>
-        <div class="alert-toggle" data-type="Considerable Flash Flood Warning">
-          <span class="toggle-icon">#</span><span>Considerable Flash Flood Warning</span>
-        </div>
-        <div class="alert-toggle" data-type="Flash Flood Emergency">
-          <span class="toggle-icon">#</span><span>Flash Flood Emergency</span>
-        </div>
-        <div class="alert-toggle" data-type="Flash Flood Watch">
-          <span class="toggle-icon">#</span><span>Flash Flood Watch</span>
-        </div>
-        <div class="alert-toggle" data-type="Flood Watch">
-          <span class="toggle-icon">#</span><span>Flood Watch</span>
-        </div>
+      <div class="alert-toggle" data-type="Observed Tornado Warning">
+        <span class="toggle-icon">#</span><span>Observed Tornado Warning</span>
       </div>
-      <!-- Severe Thunderstorm Alerts -->
-      <div class="menu-group">
-        <h3>Severe Thunderstorm Alerts</h3>
-        <div class="alert-toggle" data-type="Severe Thunderstorm Warning">
-          <span class="toggle-icon">#</span><span>Severe Thunderstorm Warning</span>
-        </div>
-        <div class="alert-toggle" data-type="Considerable Severe Thunderstorm Warning">
-          <span class="toggle-icon">#</span><span>Considerable Severe TSW</span>
-        </div>
-        <div class="alert-toggle" data-type="Destructive Severe Thunderstorm Warning">
-          <span class="toggle-icon">#</span><span>Destructive Severe TSW</span>
-        </div>
-        <div class="alert-toggle" data-type="Severe Thunderstorm Watch">
-          <span class="toggle-icon">#</span><span>Severe Thunderstorm Watch</span>
-        </div>
+      <div class="alert-toggle" data-type="PDS Tornado Warning">
+        <span class="toggle-icon">#</span><span>PDS Tornado Warning</span>
       </div>
-      <!-- Winter Alerts -->
-      <div class="menu-group">
-        <h3>Winter Alerts</h3>
-        <div class="alert-toggle" data-type="Winter Storm Warning">
-          <span class="toggle-icon">#</span><span>Winter Storm Warning</span>
-        </div>
-        <div class="alert-toggle" data-type="Blizzard Warning">
-          <span class="toggle-icon">#</span><span>Blizzard Warning</span>
-        </div>
-        <div class="alert-toggle" data-type="Winter Storm Watch">
-          <span class="toggle-icon">#</span><span>Winter Storm Watch</span>
-        </div>
+      <div class="alert-toggle" data-type="Tornado Emergency">
+        <span class="toggle-icon">#</span><span>Tornado Emergency</span>
       </div>
-      <!-- Hurricane Alerts -->
-      <div class="menu-group">
-        <h3>Hurricane Alerts</h3>
-        <div class="alert-toggle" data-type="Hurricane Warning">
-          <span class="toggle-icon">#</span><span>Hurricane Warning</span>
-        </div>
-        <div class="alert-toggle" data-type="Hurricane Watch">
-          <span class="toggle-icon">#</span><span>Hurricane Watch</span>
-        </div>
-      </div>
-      <!-- Other Alerts -->
-      <div class="menu-group">
-        <h3>Other Alerts</h3>
-        <div class="alert-toggle" data-type="Snow Squall Warning">
-          <span class="toggle-icon">#</span><span>Snow Squall Warning</span>
-        </div>
-        <div class="alert-toggle" data-type="Tropical Storm Warning">
-          <span class="toggle-icon">#</span><span>Tropical Storm Warning</span>
-        </div>
-        <div class="alert-toggle" data-type="Tropical Storm Watch">
-          <span class="toggle-icon">#</span><span>Tropical Storm Watch</span>
-        </div>
-      </div>
-      <!-- Additional & Special Alerts -->
-      <div class="menu-group">
-        <h3>Additional & Special Alerts</h3>
-        <div class="alert-toggle" data-type="Special Weather Statement">
-          <span class="toggle-icon">#</span><span>Special Weather Statement</span>
-        </div>
-        <div class="alert-toggle" data-type="High Wind Warning">
-          <span class="toggle-icon">#</span><span>High Wind Warning</span>
-        </div>
-      </div>
-      <!-- State Filters -->
-      <div class="menu-group" id="state-group">
-        <h3>State Filters</h3>
+      <div class="alert-toggle" data-type="Tornado Watch">
+        <span class="toggle-icon">#</span><span>Tornado Watch</span>
       </div>
     </div>
-
-    <div id="alert-count-bar">
-      <div class="alert-count tornado">TORNADO WARNINGS: 0</div>
-      <div class="alert-count severe-thunderstorm">SEVERE THUNDERSTORM WARNINGS: 0</div>
-      <div class="alert-count flood-alert">FLOOD ALERTS: 0</div>
-      <div class="alert-count winter-weather">WINTER WEATHER ALERTS: 0</div>
+    <!-- Flash Flood Alerts -->
+    <div class="menu-group">
+      <h3>Flash Flood Alerts</h3>
+      <div class="alert-toggle" data-type="Flash Flood Warning">
+        <span class="toggle-icon">#</span><span>Flash Flood Warning</span>
+      </div>
+      <div class="alert-toggle" data-type="Considerable Flash Flood Warning">
+        <span class="toggle-icon">#</span><span>Considerable Flash Flood Warning</span>
+      </div>
+      <div class="alert-toggle" data-type="Flash Flood Emergency">
+        <span class="toggle-icon">#</span><span>Flash Flood Emergency</span>
+      </div>
+      <div class="alert-toggle" data-type="Flash Flood Watch">
+        <span class="toggle-icon">#</span><span>Flash Flood Watch</span>
+      </div>
+      <div class="alert-toggle" data-type="Flood Watch">
+        <span class="toggle-icon">#</span><span>Flood Watch</span>
+      </div>
     </div>
-
-    <div id="event-text"></div>
-    <div id="area-text"></div>
-    <div id="expire-date-container">
-      <div id="expire-date">Expires in: N/A</div>
+    <!-- Severe Thunderstorm Alerts -->
+    <div class="menu-group">
+      <h3>Severe Thunderstorm Alerts</h3>
+      <div class="alert-toggle" data-type="Severe Thunderstorm Warning">
+        <span class="toggle-icon">#</span><span>Severe Thunderstorm Warning</span>
+      </div>
+      <div class="alert-toggle" data-type="Considerable Severe Thunderstorm Warning">
+        <span class="toggle-icon">#</span><span>Considerable Severe TSW</span>
+      </div>
+      <div class="alert-toggle" data-type="Destructive Severe Thunderstorm Warning">
+        <span class="toggle-icon">#</span><span>Destructive Severe TSW</span>
+      </div>
+      <div class="alert-toggle" data-type="Severe Thunderstorm Watch">
+        <span class="toggle-icon">#</span><span>Severe Thunderstorm Watch</span>
+      </div>
     </div>
+    <!-- Winter Alerts -->
+    <div class="menu-group">
+      <h3>Winter Alerts</h3>
+      <div class="alert-toggle" data-type="Winter Storm Warning">
+        <span class="toggle-icon">#</span><span>Winter Storm Warning</span>
+      </div>
+      <div class="alert-toggle" data-type="Blizzard Warning">
+        <span class="toggle-icon">#</span><span>Blizzard Warning</span>
+      </div>
+      <div class="alert-toggle" data-type="Winter Storm Watch">
+        <span class="toggle-icon">#</span><span>Winter Storm Watch</span>
+      </div>
+    </div>
+    <!-- Hurricane Alerts -->
+    <div class="menu-group">
+      <h3>Hurricane Alerts</h3>
+      <div class="alert-toggle" data-type="Hurricane Warning">
+        <span class="toggle-icon">#</span><span>Hurricane Warning</span>
+      </div>
+      <div class="alert-toggle" data-type="Hurricane Watch">
+        <span class="toggle-icon">#</span><span>Hurricane Watch</span>
+      </div>
+    </div>
+    <!-- Other Alerts -->
+    <div class="menu-group">
+      <h3>Other Alerts</h3>
+      <div class="alert-toggle" data-type="Snow Squall Warning">
+        <span class="toggle-icon">#</span><span>Snow Squall Warning</span>
+      </div>
+      <div class="alert-toggle" data-type="Tropical Storm Warning">
+        <span class="toggle-icon">#</span><span>Tropical Storm Warning</span>
+      </div>
+      <div class="alert-toggle" data-type="Tropical Storm Watch">
+        <span class="toggle-icon">#</span><span>Tropical Storm Watch</span>
+      </div>
+    </div>
+    <!-- Additional & Special Alerts -->
+    <div class="menu-group">
+      <h3>Additional & Special Alerts</h3>
+      <div class="alert-toggle" data-type="Special Weather Statement">
+        <span class="toggle-icon">#</span><span>Special Weather Statement</span>
+      </div>
+      <div class="alert-toggle" data-type="High Wind Warning">
+        <span class="toggle-icon">#</span><span>High Wind Warning</span>
+      </div>
+    </div>
+    <!-- State Filters -->
+    <div class="menu-group" id="state-group">
+      <h3>State Filters</h3>
+    </div>
+  </div>
 
-    <script>
-      const CORE_KEYS = [
-        "tornado warning","observed tornado warning","pds tornado warning",
-        "tornado emergency","tornado watch","flash flood warning",
-        "considerable flash flood warning","flash flood emergency",
-        "severe thunderstorm warning","considerable severe thunderstorm warning",
-        "destructive severe thunderstorm warning","severe thunderstorm watch",
-        "winter storm warning","blizzard warning","winter storm watch",
-        "hurricane warning","hurricane watch","snow squall warning",
-        "tropical storm warning","tropical storm watch",
-      ];
+  <div id="alert-count-bar">
+    <div class="alert-count tornado">TORNADO WARNINGS: 0</div>
+    <div class="alert-count severe-thunderstorm">SEVERE THUNDERSTORM WARNINGS: 0</div>
+    <div class="alert-count flood-alert">FLOOD ALERTS: 0</div>
+    <div class="alert-count winter-weather">WINTER WEATHER ALERTS: 0</div>
+  </div>
 
-      let selectedCategories = [];
-      let currentAlertIndex = 0;
-      let currentAreaIndex = 0;
-      let selectedBackground = "";
-      const stateToggles = {
-        AL:true, AK:true, AZ:true, AR:true, CA:true,
-        CO:true, CT:true, DE:true, FL:true, GA:true,
-        HI:true, ID:true, IL:true, IN:true, IA:true,
-        KS:true, KY:true, LA:true, ME:true, MD:true,
-        MA:true, MI:true, MN:true, MS:true, MO:true,
-        MT:true, NE:true, NV:true, NH:true, NJ:true,
-        NM:true, NY:true, NC:true, ND:true, OH:true,
-        OK:true, OR:true, PA:true, RI:true, SC:true,
-        SD:true, TN:true, TX:true, UT:true, VT:true,
-        VA:true, WA:true, WV:true, WI:true, WY:true
-      };
+  <div id="event-text"></div>
+  <div id="area-text"></div>
+  <div id="expire-date-container">
+    <div id="expire-date">Expires in: N/A</div>
+  </div>
 
-      async function fetchWeatherAlerts() {
-        try {
-          const res = await fetch(
-            "https://api.weather.gov/alerts/active.atom?urgency=Past%2CFuture%2CExpected%2CImmediate"
+  <script>
+    const CORE_KEYS = [
+      "tornado warning","observed tornado warning","pds tornado warning",
+      "tornado emergency","tornado watch","flash flood warning",
+      "considerable flash flood warning","flash flood emergency",
+      "severe thunderstorm warning","considerable severe thunderstorm warning",
+      "destructive severe thunderstorm warning","severe thunderstorm watch",
+      "winter storm warning","blizzard warning","winter storm watch",
+      "hurricane warning","hurricane watch","snow squall warning",
+      "tropical storm warning","tropical storm watch"
+    ];
+
+    let selectedCategories = [];
+    let currentAlertIndex = 0;
+    let currentAreaIndex = 0;
+    let selectedBackground = "";
+
+    const stateToggles = {
+      AL:true, AK:true, AZ:true, AR:true, CA:true,
+      CO:true, CT:true, DE:true, FL:true, GA:true,
+      HI:true, ID:true, IL:true, IN:true, IA:true,
+      KS:true, KY:true, LA:true, ME:true, MD:true,
+      MA:true, MI:true, MN:true, MS:true, MO:true,
+      MT:true, NE:true, NV:true, NH:true, NJ:true,
+      NM:true, NY:true, NC:true, ND:true, OH:true,
+      OK:true, OR:true, PA:true, RI:true, SC:true,
+      SD:true, TN:true, TX:true, UT:true, VT:true,
+      VA:true, WA:true, WV:true, WI:true, WY:true
+    };
+
+    async function fetchWeatherAlerts() {
+      try {
+        const res = await fetch(
+          "https://api.weather.gov/alerts/active.atom?urgency=Past%2CFuture%2CExpected%2CImmediate"
+        );
+        const xml = await res.text();
+        const doc = new DOMParser().parseFromString(xml, "application/xml");
+        const entries = Array.from(doc.getElementsByTagNameNS("*","entry"));
+
+        function getText(node, tag) {
+          const q = doc.evaluate(
+            `.//*[local-name()='${tag}']`, node, null,
+            XPathResult.STRING_TYPE, null
           );
-          const xml = await res.text();
-          const doc = new DOMParser().parseFromString(xml, "application/xml");
-          const entries = Array.from(doc.getElementsByTagNameNS("*","entry"));
+          return q.stringValue.trim() || null;
+        }
 
-          function getText(node, tag) {
-            const q = doc.evaluate(
-              `.//*[local-name()='${tag}']`, node, null,
-              XPathResult.STRING_TYPE, null
-            );
-            return q.stringValue.trim() || null;
+        return entries.map(entry => {
+          const et = getText(entry,"event") || "Unknown Event";
+          const ad = getText(entry,"areaDesc") || "Unknown Area";
+          const ex = getText(entry,"expires")  || "N/A";
+          const params = Array.from(entry.getElementsByTagNameNS("*","parameter"));
+          function pval(n) {
+            const p = params.find(x => getText(x,"valueName") === n);
+            return p ? getText(p,"value") : null;
           }
-
-          return entries.map(entry => {
-            const et = getText(entry,"event") || "Unknown Event";
-            const ad = getText(entry,"areaDesc") || "Unknown Area";
-            const ex = getText(entry,"expires")  || "N/A";
-            const params = Array.from(entry.getElementsByTagNameNS("*","parameter"));
-            function pval(n) {
-              const p = params.find(x=>getText(x,"valueName")===n);
-              return p? getText(p,"value") : null;
-            }
-            return {
-              eventType: et,
-              areaChunks: splitAreaDesc(ad,17),
-              expireDate: ex,
-              tornadoDetection: pval("tornadoDetection"),
-              flashFloodDamageThreat: pval("flashFloodDamageThreat"),
-              tornadoDamageThreatCatastrophic: pval("tornadoDamageThreat")==="CATASTROPHIC",
-              tornadoDamageThreatConsiderable: pval("tornadoDamageThreat")==="CONSIDERABLE",
-              thunderstormDamageThreatConsiderable: pval("thunderstormDamageThreat")==="CONSIDERABLE",
-              thunderstormDamageThreatDestructive: pval("thunderstormDamageThreat")==="DESTRUCTIVE"
-            };
-          }).filter(a=> a.expireDate==="N/A" || new Date(a.expireDate).getTime()>Date.now());
-        } catch(e) {
-          console.error(e);
-          return [];
-        }
+          return {
+            eventType: et,
+            areaChunks: splitAreaDesc(ad,17),
+            expireDate: ex,
+            tornadoDetection: pval("tornadoDetection"),
+            flashFloodDamageThreat: pval("flashFloodDamageThreat"),
+            tornadoDamageThreatCatastrophic: pval("tornadoDamageThreat")==="CATASTROPHIC",
+            tornadoDamageThreatConsiderable: pval("tornadoDamageThreat")==="CONSIDERABLE",
+            thunderstormDamageThreatConsiderable: pval("thunderstormDamageThreat")==="CONSIDERABLE",
+            thunderstormDamageThreatDestructive: pval("thunderstormDamageThreat")==="DESTRUCTIVE"
+          };
+        }).filter(a => a.expireDate==="N/A" || new Date(a.expireDate).getTime()>Date.now());
+      } catch(e) {
+        console.error(e);
+        return [];
       }
+    }
 
-      function splitAreaDesc(desc, maxWords) {
-        const parts = desc.split(";");
-        const chunks = []; let cur = [];
-        for (let p of parts) {
-          const wc = (cur.join(" ")+" "+p).trim().split(/\s+/).length;
-          if (cur.length && wc>maxWords) {
-            chunks.push(cur.join("; "));
-            cur = [];
+    function splitAreaDesc(desc, maxWords) {
+      const parts = desc.split(";");
+      const chunks = []; let cur = [];
+      for (let p of parts) {
+        const wc = (cur.join(" ")+" "+p).trim().split(/\s+/).length;
+        if (cur.length && wc>maxWords) {
+          chunks.push(cur.join("; "));
+          cur = [];
+        }
+        cur.push(p.trim());
+      }
+      if(cur.length) chunks.push(cur.join("; "));
+      return chunks;
+    }
+
+    function getBaseAlerts(raw) {
+      if (selectedCategories.length) return raw;
+      const core = raw.filter(a => {
+        const et = a.eventType.toLowerCase();
+        return CORE_KEYS.some(k => et.includes(k));
+      });
+      return core.length ? core : raw;
+    }
+
+    function applyUserToggles(alerts) {
+      if (!selectedCategories.length) return alerts;
+      return alerts.filter(a => {
+        const evt = a.eventType.toLowerCase();
+        return selectedCategories.some(cat => {
+          switch (cat) {
+            case 'Destructive Severe Thunderstorm Warning':
+              return evt.includes('severe thunderstorm warning') &&
+                     a.thunderstormDamageThreatDestructive;
+            case 'Considerable Severe Thunderstorm Warning':
+              return evt.includes('severe thunderstorm warning') &&
+                     a.thunderstormDamageThreatConsiderable;
+            case 'Severe Thunderstorm Warning':
+              return evt.includes('severe thunderstorm warning') &&
+                     !a.thunderstormDamageThreatConsiderable &&
+                     !a.thunderstormDamageThreatDestructive;
+            case 'Tornado Emergency':
+              return evt.includes('tornado warning') &&
+                     a.tornadoDetection==='OBSERVED' &&
+                     a.tornadoDamageThreatCatastrophic;
+            case 'PDS Tornado Warning':
+              return evt.includes('tornado warning') &&
+                     (a.tornadoDetection==='OBSERVED'||
+                      a.tornadoDetection==='RADAR INDICATED') &&
+                     a.tornadoDamageThreatConsiderable;
+            case 'Observed Tornado Warning':
+              return evt.includes('tornado warning') &&
+                     a.tornadoDetection==='OBSERVED' &&
+                     !a.tornadoDamageThreatConsiderable &&
+                     !a.tornadoDamageThreatCatastrophic;
+            case 'Tornado Warning':
+              return evt.includes('tornado warning') &&
+                     a.tornadoDetection==='RADAR INDICATED' &&
+                     !a.tornadoDamageThreatConsiderable &&
+                     !a.tornadoDamageThreatCatastrophic;
+            case 'Flash Flood Emergency':
+              return evt.includes('flash flood warning') &&
+                     a.flashFloodDamageThreat==='CATASTROPHIC';
+            case 'Considerable Flash Flood Warning':
+              return evt.includes('flash flood warning') &&
+                     a.flashFloodDamageThreat==='CONSIDERABLE';
+            default:
+              return evt.includes(cat.toLowerCase());
           }
-          cur.push(p.trim());
-        }
-        if(cur.length) chunks.push(cur.join("; "));
-        return chunks;
-      }
-
-      function getBaseAlerts(raw) {
-        if (selectedCategories.length) return raw;
-        const core = raw.filter(a => {
-          const et = a.eventType.toLowerCase();
-          return CORE_KEYS.some(k => et.includes(k));
         });
-        return core.length ? core : raw;
-      }
+      });
+    }
 
-      function applyUserToggles(alerts) {
-        if (!selectedCategories.length) return alerts;
-        return alerts.filter(a => {
-          const evt = a.eventType.toLowerCase();
-          return selectedCategories.some(cat => {
-            switch (cat) {
-              case 'Destructive Severe Thunderstorm Warning':
-                return evt.includes('severe thunderstorm warning') &&
-                       a.thunderstormDamageThreatDestructive;
-              case 'Considerable Severe Thunderstorm Warning':
-                return evt.includes('severe thunderstorm warning') &&
-                       a.thunderstormDamageThreatConsiderable;
-              case 'Severe Thunderstorm Warning':
-                return evt.includes('severe thunderstorm warning') &&
-                       !a.thunderstormDamageThreatConsiderable &&
-                       !a.thunderstormDamageThreatDestructive;
-              case 'Tornado Emergency':
-                return evt.includes('tornado warning') &&
-                       a.tornadoDetection==='OBSERVED' &&
-                       a.tornadoDamageThreatCatastrophic;
-              case 'PDS Tornado Warning':
-                return evt.includes('tornado warning') &&
-                       (a.tornadoDetection==='OBSERVED'||
-                        a.tornadoDetection==='RADAR INDICATED') &&
-                       a.tornadoDamageThreatConsiderable;
-              case 'Observed Tornado Warning':
-                return evt.includes('tornado warning') &&
-                       a.tornadoDetection==='OBSERVED' &&
-                       !a.tornadoDamageThreatConsiderable &&
-                       !a.tornadoDamageThreatCatastrophic;
-              case 'Tornado Warning':
-                return evt.includes('tornado warning') &&
-                       a.tornadoDetection==='RADAR INDICATED' &&
-                       !a.tornadoDamageThreatConsiderable &&
-                       !a.tornadoDamageThreatCatastrophic;
-              case 'Flash Flood Emergency':
-                return evt.includes('flash flood warning') &&
-                       a.flashFloodDamageThreat==='CATASTROPHIC';
-              case 'Considerable Flash Flood Warning':
-                return evt.includes('flash flood warning') &&
-                       a.flashFloodDamageThreat==='CONSIDERABLE';
-              default:
-                return evt.includes(cat.toLowerCase());
-            }
-          });
+    function applyStateToggles(alerts) {
+      const on = Object.keys(stateToggles).filter(s => stateToggles[s]);
+      return alerts.map(a => {
+        const filtered = a.areaChunks.filter(ch => {
+          const sts = ch.match(/\b([A-Z]{2})\b/g)||[];
+          return !sts.length || sts.some(st=>on.includes(st));
         });
+        return {...a, areaChunks: filtered};
+      }).filter(a=>a.areaChunks.length);
+    }
+
+    function calculateMinutesUntilExpiration(exp) {
+      if (exp==="N/A") return "N/A";
+      const m = Math.max(Math.floor((new Date(exp).getTime()-Date.now())/60000),0);
+      return `${m} minute(s)`;
+    }
+
+    function updateAlertCounts(alerts) {
+      const cnt = { tornado:0, severeThunderstorm:0, flood:0, winterWeather:0 };
+      alerts.forEach(a => {
+        const t = a.eventType.toLowerCase();
+        if (t.includes("tornado warning")) cnt.tornado++;
+        if (t.includes("severe thunderstorm warning")) cnt.severeThunderstorm++;
+        if (t.includes("flash flood warning")||t.includes("flood advisory")||
+            t.includes("flood warning")||t.includes("flood watch")) cnt.flood++;
+        if (t.includes("winter storm warning")||t.includes("freeze watch")||
+            t.includes("cold weather advisory")||t.includes("freeze warning")||
+            t.includes("lake effect snow warning")||t.includes("extreme cold warning")||
+            t.includes("winter weather advisory")||t.includes("winter storm watch")||
+            t.includes("snow squall warning")||t.includes("ice storm warning")||
+            t.includes("blizzard warning")) cnt.winterWeather++;
+      });
+      document.querySelector(".tornado").textContent =
+        `TORNADO WARNINGS: ${cnt.tornado}`;
+      document.querySelector(".severe-thunderstorm").textContent =
+        `SEVERE THUNDERSTORM WARNINGS: ${cnt.severeThunderstorm}`;
+      document.querySelector(".flood-alert").textContent =
+        `FLOOD ALERTS: ${cnt.flood}`;
+      document.querySelector(".winter-weather").textContent =
+        `WINTER WEATHER ALERTS: ${cnt.winterWeather}`;
+    }
+
+    function determineBackground(alerts) {
+      if (!alerts.length) return "No Weather Alerts.png";
+      if (alerts.some(a=>a.tornadoDetection==="OBSERVED"&&a.tornadoDamageThreatCatastrophic))
+        return "TORE.png";
+      if (alerts.some(a=>
+          a.eventType.toLowerCase().includes("pds tornado warning")||
+          ((a.tornadoDetection==="OBSERVED"||a.tornadoDetection==="RADAR INDICATED")&&
+           a.tornadoDamageThreatConsiderable)
+      )) return "PDS TOR.png";
+      if (alerts.some(a=>a.eventType.toLowerCase().includes("tornado warning")))
+        return "TOR.png";
+      if (alerts.some(a=>
+          a.eventType.toLowerCase().includes("flash flood warning")&&
+          a.flashFloodDamageThreat==="CATASTROPHIC"
+      )) return "FFWE.png";
+      if (alerts.some(a=>
+          a.thunderstormDamageThreatDestructive&&
+          a.eventType.toLowerCase().includes("severe thunderstorm warning")
+      )) return "PDS SVR.png";
+      if (alerts.some(a=>a.eventType.toLowerCase().includes("hurricane warning")))
+        return "HUW.png";
+      if (alerts.some(a=>a.eventType.toLowerCase().includes("severe thunderstorm warning")))
+        return "SVR.png";
+      if (alerts.some(a=>
+          a.eventType.toLowerCase().includes("flash flood warning")&&
+          a.flashFloodDamageThreat==="CONSIDERABLE"
+      )) return "FFW - Considerable.png";
+      if (alerts.some(a=>a.eventType.toLowerCase().includes("flash flood warning")))
+        return "FFW.png";
+      if (alerts.some(a=>a.eventType.toLowerCase().includes("tropical storm warning")))
+        return "TSW.png";
+      if (alerts.some(a=>a.eventType.toLowerCase().includes("snow squall warning")))
+        return "SQW.png";
+      if (alerts.some(a=>a.eventType.toLowerCase().includes("tornado watch")))
+        return "TOA.png";
+      if (alerts.some(a=>a.eventType.toLowerCase().includes("blizzard warning")))
+        return "BZW.png";
+      if (alerts.some(a=>a.eventType.toLowerCase().includes("winter storm warning")))
+        return "WSW.png";
+      if (alerts.some(a=>a.eventType.toLowerCase().includes("severe thunderstorm watch")))
+        return "SVA.png";
+      if (alerts.some(a=>a.eventType.toLowerCase().includes("winter storm watch")))
+        return "WSA.png";
+      if (alerts.some(a=>a.eventType.toLowerCase().includes("special weather statement")))
+        return "SWS.png";
+      return "AlertActive.png";
+    }
+
+    function updateBackground(img) {
+      if (selectedBackground !== img) {
+        selectedBackground = img;
+        document.body.style.background =
+          `url('${img}') no-repeat center center fixed`;
+        document.body.style.backgroundSize = "cover";
+      }
+    }
+
+    // ---- Updated displayAlertsSequentially ----
+    async function displayAlertsSequentially(alerts) {
+      const eEl = document.getElementById("event-text"),
+            aEl = document.getElementById("area-text"),
+            xEl = document.getElementById("expire-date");
+
+      updateBackground(determineBackground(alerts));
+      if (!alerts.length) {
+        eEl.textContent = "No Active Weather Alerts";
+        aEl.textContent = "";
+        xEl.textContent = "";
+        return;
       }
 
-      function applyStateToggles(alerts) {
-        const on = Object.keys(stateToggles).filter(s=>stateToggles[s]);
-        return alerts.map(a=>{
-          const filtered = a.areaChunks.filter(ch=>{
-            const sts = ch.match(/\b([A-Z]{2})\b/g)||[];
-            return !sts.length||sts.some(st=>on.includes(st));
-          });
-          return {...a, areaChunks:filtered};
-        }).filter(a=>a.areaChunks.length);
+      const a     = alerts[currentAlertIndex],
+            chunk = a.areaChunks[currentAreaIndex],
+            mins  = calculateMinutesUntilExpiration(a.expireDate);
+
+      eEl.style.opacity = 0;
+      aEl.style.opacity = 0;
+      await new Promise(r => setTimeout(r, 1000));
+
+      // --- Begin: Exact Update Logic ---
+      if (a.eventType.toLowerCase().includes("flash flood warning") &&
+          a.flashFloodDamageThreat === "CATASTROPHIC") {
+        eEl.textContent = "Flash Flood Emergency";
+      } else if (a.tornadoDetection === "OBSERVED" &&
+                 a.tornadoDamageThreatCatastrophic) {
+        eEl.textContent = "Tornado Emergency";
+      } else if (
+        a.eventType.toLowerCase().includes("pds tornado warning") ||
+        ((a.tornadoDetection === "OBSERVED" || a.tornadoDetection === "RADAR INDICATED") &&
+         a.tornadoDamageThreatConsiderable)
+      ) {
+        eEl.textContent = "PDS Tornado Warning";
+      } else if (a.tornadoDetection === "OBSERVED") {
+        eEl.textContent = "Observed Tornado Warning";
+      } else {
+        eEl.textContent = a.eventType;
       }
 
-      function calculateMinutesUntilExpiration(exp) {
-        if (exp==="N/A") return "N/A";
-        const m = Math.max(Math.floor((new Date(exp).getTime()-Date.now())/60000),0);
-        return `${m} minute(s)`;
-      }
-
-      function updateAlertCounts(alerts) {
-        const cnt = { tornado:0, severeThunderstorm:0, flood:0, winterWeather:0 };
-        alerts.forEach(a=>{
-          const t = a.eventType.toLowerCase();
-          if (t.includes("tornado warning")) cnt.tornado++;
-          if (t.includes("severe thunderstorm warning")) cnt.severeThunderstorm++;
-          if (
-            t.includes("flash flood warning")||
-            t.includes("flood advisory")||
-            t.includes("flood warning")||
-            t.includes("flood watch")
-          ) cnt.flood++;
-          if (
-            t.includes("winter storm warning")||
-            t.includes("freeze watch")||
-            t.includes("cold weather advisory")||
-            t.includes("freeze warning")||
-            t.includes("lake effect snow warning")||
-            t.includes("extreme cold warning")||
-            t.includes("winter weather advisory")||
-            t.includes("winter storm watch")||
-            t.includes("snow squall warning")||
-            t.includes("ice storm warning")||
-            t.includes("blizzard warning")
-          ) cnt.winterWeather++;
-        });
-        document.querySelector(".tornado").textContent =
-          `TORNADO WARNINGS: ${cnt.tornado}`;
-        document.querySelector(".severe-thunderstorm").textContent =
-          `SEVERE THUNDERSTORM WARNINGS: ${cnt.severeThunderstorm}`;
-        document.querySelector(".flood-alert").textContent =
-          `FLOOD ALERTS: ${cnt.flood}`;
-        document.querySelector(".winter-weather").textContent =
-          `WINTER WEATHER ALERTS: ${cnt.winterWeather}`;
-      }
-
-      function determineBackground(alerts) {
-        if (!alerts.length) return "No Weather Alerts.png";
-        if (alerts.some(a=>
-            a.tornadoDetection==="OBSERVED"&&a.tornadoDamageThreatCatastrophic
-          )) return "TORE.png";
-        if (alerts.some(a=>
-            a.eventType.toLowerCase().includes("pds tornado warning")||
-            ((a.tornadoDetection==="OBSERVED"||
-              a.tornadoDetection==="RADAR INDICATED")&&
-             a.tornadoDamageThreatConsiderable)
-          )) return "PDS TOR.png";
-        if (alerts.some(a=>a.eventType.toLowerCase().includes("tornado warning")))
-          return "TOR.png";
-        if (alerts.some(a=>
-            a.eventType.toLowerCase().includes("flash flood warning")&&
-            a.flashFloodDamageThreat==="CATASTROPHIC"
-          )) return "FFWE.png";
-        if (alerts.some(a=>
-            a.thunderstormDamageThreatDestructive&&
-            a.eventType.toLowerCase().includes("severe thunderstorm warning")
-          )) return "PDS SVR.png";
-        if (alerts.some(a=>a.eventType.toLowerCase().includes("hurricane warning")))
-          return "HUW.png";
-        if (alerts.some(a=>a.eventType.toLowerCase().includes("severe thunderstorm warning")))
-          return "SVR.png";
-        if (alerts.some(a=>
-            a.eventType.toLowerCase().includes("flash flood warning")&&
-            a.flashFloodDamageThreat==="CONSIDERABLE"
-          )) return "FFW - Considerable.png";
-        if (alerts.some(a=>a.eventType.toLowerCase().includes("flash flood warning")))
-          return "FFW.png";
-        if (alerts.some(a=>a.eventType.toLowerCase().includes("tropical storm warning")))
-          return "TSW.png";
-        if (alerts.some(a=>a.eventType.toLowerCase().includes("snow squall warning")))
-          return "SQW.png";
-        if (alerts.some(a=>a.eventType.toLowerCase().includes("tornado watch")))
-          return "TOA.png";
-        if (alerts.some(a=>a.eventType.toLowerCase().includes("blizzard warning")))
-          return "BZW.png";
-        if (alerts.some(a=>a.eventType.toLowerCase().includes("winter storm warning")))
-          return "WSW.png";
-        if (alerts.some(a=>a.eventType.toLowerCase().includes("severe thunderstorm watch")))
-          return "SVA.png";
-        if (alerts.some(a=>a.eventType.toLowerCase().includes("winter storm watch")))
-          return "WSA.png";
-        if (alerts.some(a=>a.eventType.toLowerCase().includes("special weather statement")))
-          return "SWS.png";
-        return "AlertActive.png";
-      }
-
-      function updateBackground(img) {
-        if (selectedBackground!==img) {
-          selectedBackground = img;
-          document.body.style.background =
-            `url('${img}') no-repeat center center fixed`;
-          document.body.style.backgroundSize = "cover";
-        }
-      }
-
-      async function displayAlertsSequentially(alerts) {
-        const eEl = document.getElementById("event-text"),
-              aEl = document.getElementById("area-text"),
-              xEl = document.getElementById("expire-date");
-
-        updateBackground(determineBackground(alerts));
-        if (!alerts.length) {
-          eEl.textContent = "No Active Weather Alerts";
-          aEl.textContent = "";
-          xEl.textContent = "";
-          return;
-        }
-
-        const a = alerts[currentAlertIndex],
-              chunk = a.areaChunks[currentAreaIndex],
-              mins  = calculateMinutesUntilExpiration(a.expireDate);
-
-        eEl.style.opacity = 0;
-        aEl.style.opacity = 0;
-        await new Promise(r=>setTimeout(r,1000));
-
-        const text = a.eventType.toLowerCase();
-        if (text.includes("tornado warning")) {
-          if (a.tornadoDamageThreatCatastrophic)      eEl.textContent = "Tornado Emergency";
-          else if (a.tornadoDamageThreatConsiderable) eEl.textContent = "PDS Tornado Warning";
-          else if (a.tornadoDetection==="OBSERVED")   eEl.textContent = "Observed Tornado Warning";
-          else if (a.tornadoDetection==="RADAR INDICATED") eEl.textContent = "Tornado Warning";
-          else eEl.textContent = a.eventType;
-        }
-        else if (text.includes("flash flood warning")&&a.flashFloodDamageThreat==="CATASTROPHIC") {
-          eEl.textContent = "Flash Flood Emergency";
-        }
-        else eEl.textContent = a.eventType;
-
+      if (a.eventType.toLowerCase().includes("tornado warning") &&
+          a.tornadoDetection === "RADAR INDICATED") {
+        aEl.textContent = `Radar Indicated: ${chunk}`;
+      } else if (a.eventType.toLowerCase().includes("severe thunderstorm warning") &&
+                 a.thunderstormDamageThreatConsiderable) {
+        aEl.textContent = `Considerable: ${chunk}`;
+      } else if (a.eventType.toLowerCase().includes("severe thunderstorm warning") &&
+                 a.thunderstormDamageThreatDestructive) {
+        aEl.textContent = `Destructive: ${chunk}`;
+      } else if (a.eventType.toLowerCase().includes("flash flood warning") &&
+                 a.flashFloodDamageThreat === "CONSIDERABLE") {
+        aEl.textContent = `Considerable: ${chunk}`;
+      } else {
         aEl.textContent = chunk;
-        xEl.textContent = `Expires in: ${mins}`;
-        eEl.style.opacity = 1;
-        aEl.style.opacity = 1;
+      }
+      // --- End: Exact Update Logic ---
 
-        await new Promise(r=>setTimeout(r,5000));
-        currentAreaIndex++;
-        if (currentAreaIndex>=a.areaChunks.length) {
-          currentAreaIndex=0;
-          currentAlertIndex++;
-          if (currentAlertIndex>=alerts.length) currentAlertIndex=0;
-        }
+      xEl.textContent = `Expires in: ${mins}`;
+      eEl.style.opacity = 1;
+      aEl.style.opacity = 1;
+
+      await new Promise(r => setTimeout(r, 5000));
+      currentAreaIndex++;
+      if (currentAreaIndex >= a.areaChunks.length) {
+        currentAreaIndex = 0;
+        currentAlertIndex++;
+        if (currentAlertIndex >= alerts.length) currentAlertIndex = 0;
+      }
+    }
+    // ------------------------------------
+
+    async function updateBackgroundCycle() {
+      const raw             = await fetchWeatherAlerts();
+      const stateAlerts     = applyStateToggles(raw);
+      const typeAlerts      = applyUserToggles(raw);
+      const stateTypeAlerts = applyStateToggles(typeAlerts);
+      const countAlerts     = selectedCategories.length
+                             ? stateTypeAlerts
+                             : stateAlerts;
+
+      const base   = getBaseAlerts(raw);
+      const byType = applyUserToggles(base);
+      const final  = applyStateToggles(byType);
+
+      if (!final.length) {
+        currentAlertIndex = 0;
+        currentAreaIndex  = 0;
       }
 
-      // ---- Updated updateBackgroundCycle ----
-      async function updateBackgroundCycle() {
-        const raw = await fetchWeatherAlerts();
+      updateAlertCounts(countAlerts);
+      await displayAlertsSequentially(final);
+    }
 
-        // all state-approved alerts for counting
-        const stateAlerts     = applyStateToggles(raw);
-        // user-allowed alerts
-        const typeAlerts      = applyUserToggles(raw);
-        const stateTypeAlerts = applyStateToggles(typeAlerts);
-
-        // choose your count source:
-        const countAlerts = selectedCategories.length
-          ? stateTypeAlerts    // only selected categories
-          : stateAlerts;       // everything state-approved
-
-        // display list as before
-        const base   = getBaseAlerts(raw);
-        const byType = applyUserToggles(base);
-        const final  = applyStateToggles(byType);
-
-        if (!final.length) {
-          currentAlertIndex = 0;
-          currentAreaIndex  = 0;
+    document.querySelectorAll('.alert-toggle[data-type]').forEach(el => {
+      el.addEventListener('click', () => {
+        const t = el.dataset.type;
+        el.classList.toggle('selected');
+        if (el.classList.contains('selected')) {
+          selectedCategories.push(t);
+        } else {
+          selectedCategories = selectedCategories.filter(c => c !== t);
         }
+        currentAlertIndex = 0;
+        currentAreaIndex  = 0;
+        updateBackgroundCycle();
+      });
+    });
 
-        updateAlertCounts(countAlerts);
-        await displayAlertsSequentially(final);
-      }
-      // ------------------------------------
+    document.getElementById("menu-icon").addEventListener("click", () => {
+      const m = document.getElementById("alert-menu");
+      m.style.display = m.style.display === "block" ? "none" : "block";
+    });
 
-      document.querySelectorAll('.alert-toggle[data-type]').forEach(el=>{
-        el.addEventListener('click',()=>{
-          const t = el.dataset.type;
-          el.classList.toggle('selected');
-          if (el.classList.contains('selected')) {
-            selectedCategories.push(t);
-          } else {
-            selectedCategories = selectedCategories.filter(c=>c!==t);
-          }
-          currentAlertIndex=0;
-          currentAreaIndex=0;
+    function populateStateToggles() {
+      const ctr = document.getElementById("state-group");
+      Object.keys(stateToggles).forEach(s => {
+        const d = document.createElement("div");
+        d.className = "alert-toggle";
+        d.dataset.type = s;
+        d.innerHTML = `<span class="toggle-icon">${
+          stateToggles[s] ? "ON" : "OFF"
+        }</span><span>${s}</span>`;
+        d.addEventListener("click", () => {
+          stateToggles[s] = !stateToggles[s];
+          const ic = d.querySelector(".toggle-icon");
+          ic.textContent = stateToggles[s] ? "ON" : "OFF";
+          ic.classList.toggle("disabled", !stateToggles[s]);
           updateBackgroundCycle();
         });
+        ctr.appendChild(d);
       });
+    }
 
-      document.getElementById("menu-icon").addEventListener("click",()=>{
-        const m = document.getElementById("alert-menu");
-        m.style.display = m.style.display==="block"?"none":"block";
-      });
-
-      function populateStateToggles() {
-        const ctr = document.getElementById("state-group");
-        for (let s in stateToggles) {
-          const d = document.createElement("div");
-          d.className = "alert-toggle";
-          d.dataset.type = s;
-          d.innerHTML = `<span class="toggle-icon">${
-            stateToggles[s]?"ON":"OFF"
-          }</span><span>${s}</span>`;
-          ctr.appendChild(d);
-          d.addEventListener("click",()=>{
-            stateToggles[s]=!stateToggles[s];
-            const ic = d.querySelector(".toggle-icon");
-            ic.textContent = stateToggles[s]?"ON":"OFF";
-            ic.classList.toggle("disabled",!stateToggles[s]);
-            updateBackgroundCycle();
-          });
-        }
-      }
-
-      populateStateToggles();
-      setInterval(updateBackgroundCycle,5000);
-      updateBackgroundCycle();
-    </script>
-  </body>
+    populateStateToggles();
+    setInterval(updateBackgroundCycle, 5000);
+    updateBackgroundCycle();
+  </script>
+</body>
 </html>
