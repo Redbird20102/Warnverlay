@@ -131,6 +131,7 @@
           <span class="toggle-icon">#</span><span>Tornado Watch</span>
         </div>
       </div>
+
       <!-- Flash Flood Alerts -->
       <div class="menu-group">
         <h3>Flash Flood Alerts</h3>
@@ -150,6 +151,7 @@
           <span class="toggle-icon">#</span><span>Flood Watch</span>
         </div>
       </div>
+
       <!-- Severe Thunderstorm Alerts -->
       <div class="menu-group">
         <h3>Severe Thunderstorm Alerts</h3>
@@ -166,6 +168,7 @@
           <span class="toggle-icon">#</span><span>Severe Thunderstorm Watch</span>
         </div>
       </div>
+
       <!-- Winter Alerts -->
       <div class="menu-group">
         <h3>Winter Alerts</h3>
@@ -179,6 +182,7 @@
           <span class="toggle-icon">#</span><span>Winter Storm Watch</span>
         </div>
       </div>
+
       <!-- Hurricane Alerts -->
       <div class="menu-group">
         <h3>Hurricane Alerts</h3>
@@ -189,6 +193,7 @@
           <span class="toggle-icon">#</span><span>Hurricane Watch</span>
         </div>
       </div>
+
       <!-- Other Alerts -->
       <div class="menu-group">
         <h3>Other Alerts</h3>
@@ -202,6 +207,7 @@
           <span class="toggle-icon">#</span><span>Tropical Storm Watch</span>
         </div>
       </div>
+
       <!-- Additional & Special Alerts -->
       <div class="menu-group">
         <h3>Additional & Special Alerts</h3>
@@ -212,6 +218,7 @@
           <span class="toggle-icon">#</span><span>High Wind Warning</span>
         </div>
       </div>
+
       <!-- State Filters -->
       <div class="menu-group" id="state-group">
         <h3>State Filters</h3>
@@ -240,7 +247,7 @@
         "destructive severe thunderstorm warning","severe thunderstorm watch",
         "winter storm warning","blizzard warning","winter storm watch",
         "hurricane warning","hurricane watch","snow squall warning",
-        "tropical storm warning","tropical storm watch",
+        "tropical storm warning","tropical storm watch"
       ];
 
       let selectedCategories = [];
@@ -297,7 +304,8 @@
               thunderstormDamageThreatConsiderable: pval("thunderstormDamageThreat")==="CONSIDERABLE",
               thunderstormDamageThreatDestructive: pval("thunderstormDamageThreat")==="DESTRUCTIVE"
             };
-          }).filter(a=> a.expireDate==="N/A" || new Date(a.expireDate).getTime()>Date.now());
+          })
+          .filter(a=> a.expireDate==="N/A" || new Date(a.expireDate).getTime()>Date.now());
         } catch(e) {
           console.error(e);
           return [];
@@ -399,25 +407,14 @@
           const t = a.eventType.toLowerCase();
           if (t.includes("tornado warning")) cnt.tornado++;
           if (t.includes("severe thunderstorm warning")) cnt.severeThunderstorm++;
-          if (
-            t.includes("flash flood warning")||
-            t.includes("flood advisory")||
-            t.includes("flood warning")||
-            t.includes("flood watch")
-          ) cnt.flood++;
-          if (
-            t.includes("winter storm warning")||
-            t.includes("freeze watch")||
-            t.includes("cold weather advisory")||
-            t.includes("freeze warning")||
-            t.includes("lake effect snow warning")||
-            t.includes("extreme cold warning")||
-            t.includes("winter weather advisory")||
-            t.includes("winter storm watch")||
-            t.includes("snow squall warning")||
-            t.includes("ice storm warning")||
-            t.includes("blizzard warning")
-          ) cnt.winterWeather++;
+          if (t.includes("flash flood warning")||t.includes("flood advisory")||
+              t.includes("flood warning")||t.includes("flood watch")) cnt.flood++;
+          if (t.includes("winter storm warning")||t.includes("freeze watch")||
+              t.includes("cold weather advisory")||t.includes("freeze warning")||
+              t.includes("lake effect snow warning")||t.includes("extreme cold warning")||
+              t.includes("winter weather advisory")||t.includes("winter storm watch")||
+              t.includes("snow squall warning")||t.includes("ice storm warning")||
+              t.includes("blizzard warning")) cnt.winterWeather++;
         });
         document.querySelector(".tornado").textContent =
           `TORNADO WARNINGS: ${cnt.tornado}`;
@@ -431,13 +428,11 @@
 
       function determineBackground(alerts) {
         if (!alerts.length) return "No Weather Alerts.png";
-        if (alerts.some(a=>
-            a.tornadoDetection==="OBSERVED"&&a.tornadoDamageThreatCatastrophic
-          )) return "TORE.png";
+        if (alerts.some(a=>a.tornadoDetection==="OBSERVED"&&a.tornadoDamageThreatCatastrophic))
+          return "TORE.png";
         if (alerts.some(a=>
             a.eventType.toLowerCase().includes("pds tornado warning")||
-            ((a.tornadoDetection==="OBSERVED"||
-              a.tornadoDetection==="RADAR INDICATED")&&
+            ((a.tornadoDetection==="OBSERVED"||a.tornadoDetection==="RADAR INDICATED")&&
              a.tornadoDamageThreatConsiderable)
           )) return "PDS TOR.png";
         if (alerts.some(a=>a.eventType.toLowerCase().includes("tornado warning")))
@@ -446,8 +441,7 @@
             a.eventType.toLowerCase().includes("flash flood warning")&&
             a.flashFloodDamageThreat==="CATASTROPHIC"
           )) return "FFWE.png";
-        if (alerts.some(a=>
-            a.thunderstormDamageThreatDestructive&&
+        if (alerts.some(a=>a.thunderstormDamageThreatDestructive&&
             a.eventType.toLowerCase().includes("severe thunderstorm warning")
           )) return "PDS SVR.png";
         if (alerts.some(a=>a.eventType.toLowerCase().includes("hurricane warning")))
@@ -488,6 +482,7 @@
         }
       }
 
+      // ---- Updated displayAlertsSequentially ----
       async function displayAlertsSequentially(alerts) {
         const eEl = document.getElementById("event-text"),
               aEl = document.getElementById("area-text"),
@@ -501,57 +496,74 @@
           return;
         }
 
-        const a = alerts[currentAlertIndex],
-              chunk = a.areaChunks[currentAreaIndex],
-              mins  = calculateMinutesUntilExpiration(a.expireDate);
+        const alert = alerts[currentAlertIndex],
+              chunk = alert.areaChunks[currentAreaIndex],
+              mins  = calculateMinutesUntilExpiration(alert.expireDate);
 
         eEl.style.opacity = 0;
         aEl.style.opacity = 0;
         await new Promise(r=>setTimeout(r,1000));
 
-        const text = a.eventType.toLowerCase();
-        if (text.includes("tornado warning")) {
-          if (a.tornadoDamageThreatCatastrophic)      eEl.textContent = "Tornado Emergency";
-          else if (a.tornadoDamageThreatConsiderable) eEl.textContent = "PDS Tornado Warning";
-          else if (a.tornadoDetection==="OBSERVED")   eEl.textContent = "Observed Tornado Warning";
-          else if (a.tornadoDetection==="RADAR INDICATED") eEl.textContent = "Tornado Warning";
-          else eEl.textContent = a.eventType;
-        }
-        else if (text.includes("flash flood warning")&&a.flashFloodDamageThreat==="CATASTROPHIC") {
+        // Update text based on alert type.
+        if (alert.eventType.toLowerCase().includes("flash flood warning") &&
+            alert.flashFloodDamageThreat === "CATASTROPHIC") {
           eEl.textContent = "Flash Flood Emergency";
+        } else if (alert.tornadoDetection === "OBSERVED" &&
+                   alert.tornadoDamageThreatCatastrophic) {
+          eEl.textContent = "Tornado Emergency";
+        } else if (
+          alert.eventType.toLowerCase().includes("pds tornado warning") ||
+          ((alert.tornadoDetection === "OBSERVED" ||
+            alert.tornadoDetection === "RADAR INDICATED") &&
+           alert.tornadoDamageThreatConsiderable)
+        ) {
+          eEl.textContent = "PDS Tornado Warning";
+        } else if (alert.tornadoDetection === "OBSERVED") {
+          eEl.textContent = "Observed Tornado Warning";
+        } else {
+          eEl.textContent = alert.eventType;
         }
-        else eEl.textContent = a.eventType;
 
-        aEl.textContent = chunk;
+        // Update area text based on classification.
+        if (alert.eventType.toLowerCase().includes("tornado warning") &&
+            alert.tornadoDetection === "RADAR INDICATED") {
+          aEl.textContent = `Radar Indicated: ${chunk}`;
+        } else if (alert.eventType.toLowerCase().includes("severe thunderstorm warning") &&
+                   alert.thunderstormDamageThreatConsiderable) {
+          aEl.textContent = `Considerable: ${chunk}`;
+        } else if (alert.eventType.toLowerCase().includes("severe thunderstorm warning") &&
+                   alert.thunderstormDamageThreatDestructive) {
+          aEl.textContent = `Destructive: ${chunk}`;
+        } else if (alert.eventType.toLowerCase().includes("flash flood warning") &&
+                   alert.flashFloodDamageThreat === "CONSIDERABLE") {
+          aEl.textContent = `Considerable: ${chunk}`;
+        } else {
+          aEl.textContent = chunk;
+        }
+
         xEl.textContent = `Expires in: ${mins}`;
         eEl.style.opacity = 1;
         aEl.style.opacity = 1;
 
         await new Promise(r=>setTimeout(r,5000));
         currentAreaIndex++;
-        if (currentAreaIndex>=a.areaChunks.length) {
-          currentAreaIndex=0;
+        if (currentAreaIndex >= alert.areaChunks.length) {
+          currentAreaIndex = 0;
           currentAlertIndex++;
-          if (currentAlertIndex>=alerts.length) currentAlertIndex=0;
+          if (currentAlertIndex >= alerts.length) currentAlertIndex = 0;
         }
       }
+      // ------------------------------------
 
-      // ---- Updated updateBackgroundCycle ----
       async function updateBackgroundCycle() {
-        const raw = await fetchWeatherAlerts();
-
-        // all state-approved alerts for counting
+        const raw             = await fetchWeatherAlerts();
         const stateAlerts     = applyStateToggles(raw);
-        // user-allowed alerts
         const typeAlerts      = applyUserToggles(raw);
         const stateTypeAlerts = applyStateToggles(typeAlerts);
+        const countAlerts     = selectedCategories.length
+                                ? stateTypeAlerts
+                                : stateAlerts;
 
-        // choose your count source:
-        const countAlerts = selectedCategories.length
-          ? stateTypeAlerts    // only selected categories
-          : stateAlerts;       // everything state-approved
-
-        // display list as before
         const base   = getBaseAlerts(raw);
         const byType = applyUserToggles(base);
         const final  = applyStateToggles(byType);
@@ -564,7 +576,6 @@
         updateAlertCounts(countAlerts);
         await displayAlertsSequentially(final);
       }
-      // ------------------------------------
 
       document.querySelectorAll('.alert-toggle[data-type]').forEach(el=>{
         el.addEventListener('click',()=>{
@@ -575,39 +586,40 @@
           } else {
             selectedCategories = selectedCategories.filter(c=>c!==t);
           }
-          currentAlertIndex=0;
-          currentAreaIndex=0;
+          currentAlertIndex = 0;
+          currentAreaIndex  = 0;
           updateBackgroundCycle();
         });
       });
 
-      document.getElementById("menu-icon").addEventListener("click",()=>{
-        const m = document.getElementById("alert-menu");
-        m.style.display = m.style.display==="block"?"none":"block";
-      });
+      document.getElementById("menu-icon")
+        .addEventListener("click",()=>{
+          const m = document.getElementById("alert-menu");
+          m.style.display = m.style.display==="block"?"none":"block";
+        });
 
       function populateStateToggles() {
         const ctr = document.getElementById("state-group");
-        for (let s in stateToggles) {
+        Object.keys(stateToggles).forEach(s => {
           const d = document.createElement("div");
           d.className = "alert-toggle";
           d.dataset.type = s;
           d.innerHTML = `<span class="toggle-icon">${
-            stateToggles[s]?"ON":"OFF"
+            stateToggles[s] ? "ON" : "OFF"
           }</span><span>${s}</span>`;
-          ctr.appendChild(d);
-          d.addEventListener("click",()=>{
-            stateToggles[s]=!stateToggles[s];
+          d.addEventListener("click", ()=> {
+            stateToggles[s] = !stateToggles[s];
             const ic = d.querySelector(".toggle-icon");
-            ic.textContent = stateToggles[s]?"ON":"OFF";
-            ic.classList.toggle("disabled",!stateToggles[s]);
+            ic.textContent = stateToggles[s] ? "ON" : "OFF";
+            ic.classList.toggle("disabled", !stateToggles[s]);
             updateBackgroundCycle();
           });
-        }
+          ctr.appendChild(d);
+        });
       }
 
       populateStateToggles();
-      setInterval(updateBackgroundCycle,5000);
+      setInterval(updateBackgroundCycle, 5000);
       updateBackgroundCycle();
     </script>
   </body>
