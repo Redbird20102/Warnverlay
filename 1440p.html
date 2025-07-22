@@ -445,8 +445,7 @@
             a.eventType.toLowerCase().includes("flash flood warning")&&
             a.flashFloodDamageThreat==="CATASTROPHIC"
           )) return "FFWE.png";
-        if (alerts.some(a=>
-            a.thunderstormDamageThreatDestructive&&
+        if (alerts.some(a=>a.thunderstormDamageThreatDestructive&&
             a.eventType.toLowerCase().includes("severe thunderstorm warning")
           )) return "PDS SVR.png";
         if (alerts.some(a=>a.eventType.toLowerCase().includes("hurricane warning")))
@@ -487,6 +486,7 @@
         }
       }
 
+      // ---- Updated displayAlertsSequentially ----
       async function displayAlertsSequentially(alerts) {
         const eEl = document.getElementById("event-text"),
               aEl = document.getElementById("area-text"),
@@ -508,49 +508,61 @@
         aEl.style.opacity = 0;
         await new Promise(r=>setTimeout(r,1000));
 
-        const text = a.eventType.toLowerCase();
-        if (text.includes("tornado warning")) {
-          if (a.tornadoDamageThreatCatastrophic)      eEl.textContent = "Tornado Emergency";
-          else if (a.tornadoDamageThreatConsiderable) eEl.textContent = "PDS Tornado Warning";
-          else if (a.tornadoDetection==="OBSERVED")   eEl.textContent = "Observed Tornado Warning";
-          else if (a.tornadoDetection==="RADAR INDICATED") eEl.textContent = "Tornado Warning";
-          else eEl.textContent = a.eventType;
-        }
-        else if (text.includes("flash flood warning")&&a.flashFloodDamageThreat==="CATASTROPHIC") {
+        // --- Begin: Exact Update Logic ---
+        if (a.eventType.toLowerCase().includes("flash flood warning") && a.flashFloodDamageThreat === "CATASTROPHIC") {
           eEl.textContent = "Flash Flood Emergency";
+        } else if (a.tornadoDetection === "OBSERVED" && a.tornadoDamageThreatCatastrophic) {
+          eEl.textContent = "Tornado Emergency";
+        } else if (
+          a.eventType.toLowerCase().includes("pds tornado warning") ||
+          ((a.tornadoDetection === "OBSERVED" || a.tornadoDetection === "RADAR INDICATED") &&
+           a.tornadoDamageThreatConsiderable)
+        ) {
+          eEl.textContent = "PDS Tornado Warning";
+        } else if (a.tornadoDetection === "OBSERVED") {
+          eEl.textContent = "Observed Tornado Warning";
+        } else {
+          eEl.textContent = a.eventType;
         }
-        else eEl.textContent = a.eventType;
 
-        aEl.textContent = chunk;
+        if (a.eventType.toLowerCase().includes("tornado warning") && a.tornadoDetection === "RADAR INDICATED") {
+          aEl.textContent = `Radar Indicated: ${chunk}`;
+        } else if (a.eventType.toLowerCase().includes("severe thunderstorm warning") && a.thunderstormDamageThreatConsiderable) {
+          aEl.textContent = `Considerable: ${chunk}`;
+        } else if (a.eventType.toLowerCase().includes("severe thunderstorm warning") && a.thunderstormDamageThreatDestructive) {
+          aEl.textContent = `Destructive: ${chunk}`;
+        } else if (a.eventType.toLowerCase().includes("flash flood warning") && a.flashFloodDamageThreat === "CONSIDERABLE") {
+          aEl.textContent = `Considerable: ${chunk}`;
+        } else {
+          aEl.textContent = chunk;
+        }
+        // --- End: Exact Update Logic ---
+
         xEl.textContent = `Expires in: ${mins}`;
         eEl.style.opacity = 1;
         aEl.style.opacity = 1;
 
         await new Promise(r=>setTimeout(r,5000));
         currentAreaIndex++;
-        if (currentAreaIndex>=a.areaChunks.length) {
-          currentAreaIndex=0;
+        if (currentAreaIndex >= a.areaChunks.length) {
+          currentAreaIndex = 0;
           currentAlertIndex++;
-          if (currentAlertIndex>=alerts.length) currentAlertIndex=0;
+          if (currentAlertIndex >= alerts.length) currentAlertIndex = 0;
         }
       }
+      // ------------------------------------
 
-      // ---- Updated updateBackgroundCycle ----
       async function updateBackgroundCycle() {
         const raw = await fetchWeatherAlerts();
 
-        // all state-approved alerts for counting
         const stateAlerts     = applyStateToggles(raw);
-        // user-allowed alerts
         const typeAlerts      = applyUserToggles(raw);
         const stateTypeAlerts = applyStateToggles(typeAlerts);
 
-        // choose your count source:
         const countAlerts = selectedCategories.length
-          ? stateTypeAlerts    // only selected categories
-          : stateAlerts;       // everything state-approved
+          ? stateTypeAlerts
+          : stateAlerts;
 
-        // display list as before
         const base   = getBaseAlerts(raw);
         const byType = applyUserToggles(base);
         const final  = applyStateToggles(byType);
@@ -563,7 +575,6 @@
         updateAlertCounts(countAlerts);
         await displayAlertsSequentially(final);
       }
-      // ------------------------------------
 
       document.querySelectorAll('.alert-toggle[data-type]').forEach(el=>{
         el.addEventListener('click',()=>{
