@@ -1,0 +1,2001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Grey – MapTiler Cloud</title>
+  <!-- MapTiler SDK CSS -->
+  <link href="https://cdn.maptiler.com/maptiler-sdk-js/v3.8.0/maptiler-sdk.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css?family=Bebas+Neue:400,700&display=swap" rel="stylesheet">
+  <style>
+    html, body,
+    #map,
+    #nws-alerts-list,
+    #nws-alerts-list h2,
+    .nws-alert-item,
+    .nws-alert-event,
+    .nws-alert-expires,
+    .nws-alert-color-box {
+      font-family: 'Bebas Neue', Arial, sans-serif !important;
+      font-weight: bold !important;
+      letter-spacing: 1px;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #333; /* or use background: none; */
+      border: none;
+      box-shadow: none;
+      border-radius: 0;
+    }
+    #map {
+      position:absolute;
+      top:0;
+      bottom:0;
+      width:100vw;
+      height:100vh;
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
+      background: none;
+    }
+    #nws-alerts-list {
+      position: absolute;
+      top: 20px;
+      right: 5px;
+      width: 260px;
+      max-height: 70vh;
+      overflow-y: auto;
+      background: linear-gradient(135deg, rgba(55,0,0,0.95) 0%, rgba(30,0,0,0.95) 100%);
+      color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(120,0,0,0.3);
+      border: 1px solid rgba(255,0,0,0.2);
+      padding: 10px;
+      z-index: 10;
+      font-family: sans-serif;
+      font-size: 13px;
+      display: none; /* Hide by default */
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    #nws-alerts-list.visible {
+      display: block;
+      opacity: 1;
+    }
+
+    #nws-alerts-list h2 {
+      margin: 0 0 8px 0;
+      font-size: 15px;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+    .nws-alert-item {
+      margin-bottom: 8px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid rgba(0,150,255,0.2);
+    }
+    .nws-alert-item:last-child {
+      border-bottom: none;
+    }
+    .nws-alert-event {
+      font-size: 13px;
+      font-weight: bold;
+      color: #ff3c3c;
+    }
+    .nws-alert-expires {
+      font-size: 11px;
+      color: #ffb3b3;
+    }
+    .nws-alert-color-box {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border-radius: 6px;
+      margin-right: 6px;
+      vertical-align: middle;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+      border: 2px solid #400;
+    }
+
+    /* Eye Watch Panel Styles -- REMOVED */
+
+    /* Warning Icon Circle */
+    .warning-icon {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      width: 40px;
+      height: 40px;
+      background: red;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 24px;
+      font-weight: bold;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      cursor: pointer;
+      z-index: 1000;
+      border: 2px solid #fff;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+
+    .warning-icon:hover {
+      animation: none;
+      transform: scale(1.1);
+    }
+
+    /* Alert filter buttons (All / Warnings) */
+    #alerts-filter-bar {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .alert-filter-btn {
+      padding: 6px 10px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,0,0,0.15);
+      color: #ffd6d6;
+      cursor: pointer;
+      border-radius: 6px;
+      font-size: 13px;
+      text-align: center;
+    }
+    .alert-filter-btn.active {
+      background: linear-gradient(135deg, #ff3c3c 0%, #d60000 100%);
+      color: #fff;
+      font-weight: bold;
+      border-color: #ff3c3c;
+    }
+
+    /* Color Customization Menu */
+    .menu-button {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 2000;
+      background: rgba(55,0,0,0.95);
+      color: #ff3c3c;
+      border: 1px solid rgba(255,0,0,0.2);
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: 'Bebas Neue', Arial, sans-serif;
+      font-size: 14px;
+    }
+
+    .color-menu {
+      position: fixed;
+      top: 60px;
+      left: 20px;
+      z-index: 2000;
+      background: rgba(55,0,0,0.95);
+      border: 1px solid rgba(255,0,0,0.2);
+      border-radius: 8px;
+      padding: 15px;
+      display: none;
+      max-height: 80vh;
+      overflow-y: auto;
+      width: 300px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    .color-menu.visible {
+      display: block !important;
+    }
+
+    .color-menu h3 {
+      color: #ff3c3c;
+      margin: 0 0 10px 0;
+      font-family: 'Bebas Neue', Arial, sans-serif;
+      font-size: 16px;
+    }
+
+    .color-menu-section h4 {
+      color: #ff3c3c;
+      margin: 10px 0;
+      font-size: 14px;
+      font-family: 'Bebas Neue', Arial, sans-serif;
+    }
+
+    .color-picker-row {
+      display: flex;
+      align-items: center;
+      margin: 6px 0;
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(0,150,255,0.1);
+    }
+
+    .color-picker-label {
+      flex: 1;
+      color: #fff;
+      font-family: 'Bebas Neue', Arial, sans-serif;
+      font-size: 13px;
+    }
+
+    .color-picker-input {
+      width: 60px;
+      height: 25px;
+      padding: 0;
+      border: 2px solid rgba(255,0,0,0.3);
+      border-radius: 4px;
+      background: none;
+      cursor: pointer;
+    }
+
+    /* Custom color picker styling */
+    .color-picker-input::-webkit-color-swatch-wrapper {
+      padding: 0;
+    }
+    .color-picker-input::-webkit-color-swatch {
+      border: 2px solid rgba(255,0,0,0.3);
+      border-radius: 4px;
+    }
+
+    .reset-colors-btn {
+      margin-top: 15px;
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,0,0,0.3);
+      color: #ff3c3c;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: 'Bebas Neue', Arial, sans-serif;
+      font-size: 14px;
+      width: 100%;
+    }
+
+    .color-menu-section {
+      margin-bottom: 15px;
+    }
+
+    .maplibregl-popup.alert-map-popup {
+      font-family: 'Bebas Neue', Arial, sans-serif !important;
+      font-size: 16px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      background: none;
+    }
+    .maplibregl-popup.alert-map-popup .maplibregl-popup-content {
+      background: linear-gradient(135deg, #001833 0%, #222 100%);
+      color: #00ffff;
+      border-radius: 10px;
+      border: 2px solid #00ffff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+      padding: 12px 18px;
+      min-width: 120px;
+      text-align: center;
+    }
+    .maplibregl-popup.alert-map-popup .maplibregl-popup-tip {
+      border-top-color: #00ffff !important;
+    }
+
+    /* --- Top Alert Banner Styles --- */
+    #topAlertBanner {
+      position: fixed;
+      left: 24px;
+      right: auto;
+      bottom: 24px;
+      top: auto;
+      width: auto;
+      max-width: 700px;
+      /* Replace previous background with a wavy gradient using the polygon color */
+      background: var(--alert-banner-bg, rgba(30,30,30,0.35));
+      border-radius: 18px;
+      padding: 18px 28px;
+      box-shadow: 0 8px 30px 0 rgba(0,0,0,0.55), 0 0 0 6px var(--alert-color, #00ffff33);
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      z-index: 100000;
+      opacity: 0;
+      transform: translateX(-400px) translateY(0); /* Start off-screen to the left */
+      transition: transform 260ms cubic-bezier(.4,2,.3,1), opacity 260ms cubic-bezier(.4,2,.3,1);
+      font-family: 'Bebas Neue', Arial, sans-serif;
+      font-weight: bold;
+      letter-spacing: 1px;
+      pointer-events: auto;
+      backdrop-filter: blur(12px) saturate(1.2);
+      /* Remove previous background and border, now set via JS */
+      border: 3px solid var(--alert-color, #00ffff);
+    }
+    #topAlertBanner.show {
+      transform: translateX(0) translateY(0); /* Slide in to position */
+      opacity: 1;
+    }
+    #topAlertBanner .banner-icon {
+      flex: 0 0 auto;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--alert-color, #00ffff);
+      display: flex;
+    }
+    #topAlertBanner .subtitle {
+      flex: 1;
+      font-size: 15px;
+      color: #fff;
+      text-align: center;
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-weight: normal;
+      opacity: 0.85;
+      max-width: 600px;
+      position: relative;
+      display: block;
+      box-sizing: border-box;
+    }
+    .subtitle-scroll-inner {
+      display: inline-block;
+      white-space: nowrap;
+      min-width: 100%;
+      /* Animation will be applied dynamically */
+    }
+    @keyframes subtitle-scroll-left {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    /* Fancy Close Button Styles */
+    .fancy-close-btn {
+      background: linear-gradient(90deg, #00ffff 0%, #00a8c6 100%);
+      color: #222;
+      font-family: 'Bebas Neue', Arial, sans-serif;
+      font-size: 16px;
+      font-weight: bold;
+      border: 2px solid #00ffff;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,255,255,0.18);
+      padding: 8px 24px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s, box-shadow 0.2s, transform 0.2s;
+      letter-spacing: 1px;
+      margin-top: 8px;
+      outline: none;
+    }
+    .fancy-close-btn:hover, .fancy-close-btn:focus {
+      background: linear-gradient(90deg, #00a8c6 0%, #00ffff 100%);
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(0,255,255,0.28);
+      transform: scale(1.07);
+      border-color: #00ffff;
+    }
+  </style>
+</head>
+<body>
+  <div class="warning-icon">⚠</div>
+  <div id="nws-alerts-list">
+    <h2>Active Alerts</h2>
+
+    <!-- NEW: Filter buttons -->
+    <div id="alerts-filter-bar">
+      <div id="alerts-filter-all" class="alert-filter-btn active">All</div>
+      <div id="alerts-filter-warnings" class="alert-filter-btn">Warnings</div>
+      <div id="alerts-filter-watches" class="alert-filter-btn">Watches</div>
+      <div id="alerts-filter-advisories" class="alert-filter-btn">Advisories</div>
+      <div id="alerts-filter-other" class="alert-filter-btn">Other</div>
+    </div>
+
+    <div id="nws-alerts-list-content"></div>
+  </div>
+  <div id="map"></div>
+
+  <!-- Add menu button and color menu -->
+  <button class="menu-button">Customize Colors</button>
+  <div class="color-menu">
+    <h3>Alert Colors</h3>
+    <!-- Color pickers will be added here by JavaScript -->
+  </div>
+
+  <!-- Ensure the top alert banner is always present in the DOM -->
+  <div id="topAlertBanner">
+    <div class="color-swatch" style="width:20px;height:20px;border-radius:4px;border:2px solid rgba(0,0,0,0.2);flex:0 0 auto"></div>
+    <div class="top-alert-content" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+      <div class="title"></div>
+      <div class="subtitle"></div>
+    </div>
+    <button class="close-btn fancy-close-btn" title="Close">Close</button>
+  </div>
+
+  <!-- Add MapTiler SDK JS -->
+  <script src="https://cdn.maptiler.com/maptiler-sdk-js/v3.8.0/maptiler-sdk.umd.min.js"></script>
+  <script>
+    // MapTiler SDK initialization
+    maptilersdk.config.apiKey = 'CmQHmGrZ2Xo39Iqx78BO';
+    var map = new maptilersdk.Map({
+      container: 'map',
+      style: '01977485-3327-711a-8309-09c8d9dcc02b',
+      hash: true,
+      maptilerLogo: true,
+      maxPitch: 85,
+      language: maptilersdk.Language.STYLE_LOCK,
+      center: [-98.5795, 39.8283], // Centered on USA
+      zoom: 4
+    });
+
+    // --- Patch: Replace maplibregl usage with maptilersdk where needed ---
+    // For all maplibregl usages (e.g., new maplibregl.Popup, map.on, map.getLayer, etc.),
+    // replace with maptilersdk equivalents if available.
+    // If not available, keep the logic but use the new 'map' object.
+
+    // --- Add: Global popup instance for alert polygons ---
+    let alertPopup = new maptilersdk.Popup({
+      closeButton: true,
+      closeOnClick: false,
+      anchor: 'bottom',
+      className: 'alert-map-popup'
+    });
+
+    // --- Add: Popup CSS for arrow and style ---
+    const popupStyle = document.createElement('style');
+    popupStyle.innerHTML = `
+      .maplibregl-popup.alert-map-popup {
+        font-family: 'Bebas Neue', Arial, sans-serif !important;
+        font-size: 16px;
+        font-weight: bold;
+        letter-spacing: 1px;
+        background: none;
+      }
+      .maplibregl-popup.alert-map-popup .maplibregl-popup-content {
+        background: linear-gradient(135deg, #001833 0%, #222 100%);
+        color: #00ffff;
+        border-radius: 10px;
+        border: 2px solid #00ffff;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+        padding: 12px 18px;
+        min-width: 120px;
+        text-align: center;
+      }
+      .maplibregl-popup.alert-map-popup .maplibregl-popup-tip {
+        border-top-color: #00ffff !important;
+      }
+    `;
+    document.head.appendChild(popupStyle);
+
+    // --- Add: Top alert banner helper (create once, expose window.showTopAlertBanner) ---
+    (function() {
+      let hideTimer = null;
+      function hideBanner() {
+        const b = document.getElementById('topAlertBanner');
+        if (!b) return;
+        b.classList.remove('show');
+        // Ensure it slides out fully
+        b.style.transform = 'translateX(-400px) translateY(0)';
+        b.style.opacity = '0';
+        if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
+      }
+      document.querySelector('#topAlertBanner .close-btn').addEventListener('click', hideBanner);
+
+      window.showTopAlertBanner = function(color = '#00FFFF', title = 'Alert', subtitle = '', timeout = 0) {
+        const b = document.getElementById('topAlertBanner');
+        if (!b) return;
+        const sw = b.querySelector('.color-swatch');
+        const titleEl = b.querySelector('.title');
+        const subtitleEl = b.querySelector('.subtitle');
+
+        sw.style.background = color;
+        sw.style.borderColor = color;
+        titleEl.textContent = title;
+
+        // --- Scroll subtitle if more than 10 areas or if text is too long ---
+        let areaCount = 0;
+        if (subtitle && subtitle.includes(';')) {
+          areaCount = subtitle.split(';').length;
+        }
+        subtitleEl.innerHTML = ''; // Clear previous content
+
+        // Helper: check if subtitle is too long for the box
+        function needsScroll(text, maxLen = 60) {
+          return text && (areaCount > 10 || text.length > maxLen);
+        }
+
+        if (needsScroll(subtitle)) {
+          // Create inner scrolling div
+          const inner = document.createElement('span');
+          inner.className = 'subtitle-scroll-inner';
+          inner.textContent = subtitle;
+          inner.style.animation = 'subtitle-scroll-left 20s linear infinite';
+          inner.style.paddingLeft = '100%';
+          inner.style.boxSizing = 'border-box';
+          subtitleEl.appendChild(inner);
+          subtitleEl.style.overflow = 'hidden';
+          subtitleEl.style.cursor = 'pointer';
+          subtitleEl.title = subtitle;
+        } else {
+          subtitleEl.textContent = subtitle || '';
+          subtitleEl.style.overflow = 'hidden';
+          subtitleEl.style.cursor = '';
+          subtitleEl.title = '';
+        }
+
+        // Set CSS variable for alert color
+        b.style.setProperty('--alert-color', color);
+        b.style.setProperty('--alert-banner-bg',
+          `repeating-linear-gradient(
+            135deg,
+            ${color}44 0px,
+            ${color}88 24px,
+            ${color}44 48px,
+            rgba(0,0,0,0.4) 72px,
+            ${color}44 96px
+          )`
+        );
+        b.style.border = `2px solid ${color}`;
+        // --- FIX: Always reset opacity and transform when showing ---
+        b.style.opacity = '1';
+        b.style.transform = 'translateX(0) translateY(0)';
+        b.classList.add('show');
+        if (hideTimer) clearTimeout(hideTimer);
+        // REMOVE timeout logic so banner stays until closed
+        // if (timeout > 0) {
+        //   hideTimer = setTimeout(() => hideBanner(), timeout);
+        // }
+      };
+    })();
+
+    // --- Helper: Compute centroid of polygon or multipolygon ---
+    function getPolygonCentroid(geometry) {
+      // Only supports Polygon and MultiPolygon
+      let coords = [];
+      if (geometry.type === "Polygon") {
+        coords = geometry.coordinates[0];
+      } else if (geometry.type === "MultiPolygon") {
+        coords = geometry.coordinates[0][0];
+      }
+      if (!coords || coords.length === 0) return null;
+      let x = 0, y = 0, n = coords.length;
+      for (const c of coords) { x += c[0]; y += c[1]; }
+      return [x / n, y / n];
+    }
+
+    // --- Add: Show popup on polygon click ---
+    function showAlertPopupOnPolygon(feature, fallbackAreaDesc = '', fallbackExpires = '') {
+      if (!feature || !feature.geometry) return;
+      const centroid = getPolygonCentroid(feature.geometry);
+      if (!centroid) return;
+      const props = feature.properties || {};
+      const alertName = props.displayEvent || props.event || 'Alert';
+
+      // --- AreaDesc truncation logic ---
+      let areaDesc = props.areaDesc || fallbackAreaDesc || '';
+      let areaDisplay = areaDesc;
+      if (areaDesc && areaDesc.includes(';')) {
+        const areas = areaDesc.split(';').map(a => a.trim()).filter(a => a.length);
+        if (areas.length > 5) {
+          areaDisplay = areas.slice(0, 5).join('; ') + `; And ${areas.length - 5} More Areas`;
+        } else {
+          areaDisplay = areas.join('; ');
+        }
+      }
+
+      // --- Expire minutes logic ---
+      let expireMinutes = '';
+      let expires = props.expires || fallbackExpires || '';
+      if (expires) {
+        const now = Date.now();
+        const exp = new Date(expires).getTime();
+        if (!isNaN(exp)) {
+          const mins = Math.max(0, Math.round((exp - now) / 60000));
+          expireMinutes = `${mins} min`;
+        }
+      }
+
+      // --- Get polygon color for gradient ---
+      let polyColor = props.fillColor || "#00ffff";
+      // Ensure zone alerts use their color from defaultColors if not set
+      if (!props.fillColor && defaultColors[props.event]) {
+        polyColor = defaultColors[props.event];
+      }
+
+      // --- Unique id for arrow ---
+      const arrowId = 'popup-desc-arrow-' + Math.floor(Math.random() * 1000000);
+
+      // --- Popup HTML with polygon color and white text ---
+      alertPopup.setLngLat(centroid)
+        .setHTML(
+          `<div>
+            <div style="color:#fff;font-size:20px;font-weight:bold;">${alertName}</div>
+            <div style="color:#fff;font-size:15px;margin-top:6px;">${areaDisplay}</div>
+            <div style="color:#ffb300;font-size:15px;margin-top:6px;display:flex;align-items:center;justify-content:center;gap:8px;">
+              Expires in: ${expireMinutes}
+              <span id="${arrowId}" style="
+                display:inline-flex;
+                align-items:center;
+                justify-content:center;
+                width:28px;
+                height:28px;
+                border-radius:50%;
+                background:${polyColor};
+                box-shadow:0 0 4px #fff;
+                margin-left:6px;
+                cursor:pointer;
+                border:2px solid ${polyColor};
+              ">
+                <svg width="16" height="16" viewBox="0 0 16 16" style="display:block;">
+                  <polygon points="4,3 12,8 4,13" fill="#fff"/>
+                </svg>
+              </span>
+            </div>
+          </div>`
+        )
+        .addTo(map);
+
+      // --- Add click handler for arrow to show description ---
+      setTimeout(() => {
+        const arrowEl = document.getElementById(arrowId);
+        if (arrowEl) {
+          arrowEl.onclick = function() {
+            // Find the alert feature by id (for polygons and zones)
+            let alertId = props.id;
+            let title = alertName;
+            let color = polyColor;
+            let description = '';
+
+            // --- PATCH: Eye Watch (sheet polygon) description formatting ---
+            // If this is an Eye Watch (cyan polygon from sheet), show all requested fields
+            let meta = props._sheetMeta;
+            if ((!meta || typeof meta !== 'object') && props.id && polygonsById[props.id] && polygonsById[props.id].properties._sheetMeta) {
+              meta = polygonsById[props.id].properties._sheetMeta;
+            }
+            if (
+              (props.event === 'Eye Watch' || props.displayEvent === 'Eye Watch')
+            ) {
+              // Pass the correct meta object for this polygon
+              let metaObj = props._sheetMeta || null;
+              showEyeWatchDescription(metaObj, color, title);
+              return;
+            }
+            // ...existing code for NWS alerts...
+            // Try to find the feature in window.nwsAlertFeatures by id
+            let originalFeature = null;
+            if (alertId && window.nwsAlertFeatures && Array.isArray(window.nwsAlertFeatures)) {
+              originalFeature = window.nwsAlertFeatures.find(f => f.id === alertId);
+            }
+            if (originalFeature && originalFeature.properties) {
+              description = originalFeature.properties.description || '';
+            } else if (window.nwsAlertFeatures && Array.isArray(window.nwsAlertFeatures)) {
+              for (const f of window.nwsAlertFeatures) {
+                if (
+                  f.properties &&
+                  (f.properties.event === alertName || f.properties.displayEvent === alertName) &&
+                  (
+                    (!areaDesc && !f.properties.areaDesc) ||
+                    (f.properties.areaDesc === areaDesc || f.properties.areaDesc === areaDisplay)
+                  )
+                ) {
+                  description = f.properties.description || '';
+                  break;
+                }
+              }
+            }
+            if (!description) description = "No description available.";
+
+            // --- Show the description overlay (polygon color gradient, white text, colored outline/close) ---
+            let overlay = document.getElementById("alertDescriptionOverlay");
+            let descText = document.getElementById("alertDescriptionText");
+            let header = document.getElementById("alertDescriptionHeader");
+            if (!overlay) {
+              overlay = document.createElement("div");
+              overlay.id = "alertDescriptionOverlay";
+              overlay.style.position = "fixed";
+              overlay.style.top = "50%";
+              overlay.style.left = "50%";
+              overlay.style.transform = "translate(-50%, -50%)";
+              overlay.style.background = "rgba(0,24,55,0.98)";
+              overlay.style.border = `3px solid ${color}`;
+              overlay.style.borderRadius = "12px";
+              overlay.style.boxShadow = "0 2px 16px #000";
+              overlay.style.zIndex = "99999";
+              overlay.style.display = "flex";
+              overlay.style.flexDirection = "column";
+              overlay.style.alignItems = "center";
+              overlay.style.minWidth = "340px";
+              overlay.style.maxWidth = "480px";
+              overlay.style.padding = "24px 24px 18px 24px";
+              overlay.style.opacity = "0";
+              overlay.innerHTML = `
+                <div id="alertDescriptionHeader" style="width:100%;text-align:center;font-size:24px;font-weight:bold;color:#fff;margin-bottom:12px;"></div>
+                <div id="alertDescriptionText" style="width:100%;color:#fff;font-size:18px;max-height:300px;overflow-y:auto;margin-bottom:18px;"></div>
+                <button id="alertDescriptionCloseBtn" class="fancy-close-btn" style="background:${color};border:2px solid ${color};color:#fff;">Close</button>
+              `;
+              document.body.appendChild(overlay);
+              descText = document.getElementById("alertDescriptionText");
+              header = document.getElementById("alertDescriptionHeader");
+              document.getElementById("alertDescriptionCloseBtn").onclick = function() {
+                overlay.style.opacity = "0";
+                setTimeout(() => { overlay.style.display = "none"; }, 300);
+              };
+            } else {
+              // FIX: Always reset display and get refs before updating content
+              overlay.style.display = "flex";
+              descText = document.getElementById("alertDescriptionText");
+              header = document.getElementById("alertDescriptionHeader");
+            }
+            header.textContent = title;
+            header.style.background = `linear-gradient(135deg, ${color} 0%, black 100%)`;
+            header.style.color = "#fff";
+            descText.textContent = '';
+            descText.innerHTML = description;
+            overlay.style.border = `3px solid ${color}`;
+            document.getElementById("alertDescriptionCloseBtn").style.background = color;
+            document.getElementById("alertDescriptionCloseBtn").style.border = `2px solid ${color}`;
+            document.getElementById("alertDescriptionCloseBtn").style.color = "#fff";
+            overlay.style.opacity = "0";
+            setTimeout(() => { overlay.style.opacity = "1"; }, 10);
+          };
+        }
+      }, 100);
+    }
+
+    // --- Patch: Add click handler to NWS alert polygons
+    map.on('load', () => {
+      map.on('click', 'nws-alert-polygons-fill', function(e) {
+        if (!e.features || !e.features.length) return;
+        showAlertPopupOnPolygon(e.features[0]);
+      });
+      map.on('mouseenter', 'nws-alert-polygons-fill', function() {
+        map.getCanvas().style.cursor = 'pointer';
+      });
+      map.on('mouseleave', 'nws-alert-polygons-fill', function() {
+        map.getCanvas().style.cursor = '';
+      });
+    });
+
+    // --- Patch: Add popup for zone polygons ---
+    // After each zone polygon is clicked (in displayPolygons), show popup at centroid
+    // Find this code in displayPolygons:
+    //   alertDiv.addEventListener('click', async () => {
+    //     ...existing code...
+    //     map.fitBounds(bounds, ...);
+    //   });
+    // Add after map.fitBounds:
+    //     // Show popup at centroid of first polygon
+    //     if (zoneCoords.length) {
+    //       let centroid = null;
+    //       if (Array.isArray(zoneCoords[0][0][0])) {
+    //         // MultiPolygon
+    //         centroid = getPolygonCentroid({type: "MultiPolygon", coordinates: zoneCoords});
+    //       } else {
+    //         centroid = getPolygonCentroid({type: "Polygon", coordinates: zoneCoords});
+    //       }
+    //       if (centroid) {
+    //         alertPopup.setLngLat(centroid)
+    //           .setHTML(`<div>${group.event}</div>`)
+    //           .addTo(map);
+    //       }
+    //     }
+
+    // --- Patch: Also add popup for zone polygons on map click ---
+    // After each zone polygon is rendered as a layer, add a click handler:
+    // In displayPolygons, after map.addLayer({ id: layerId, ... }), add:
+    //   map.on('click', layerId, function(e) {
+    //     if (!e.features || !e.features.length) return;
+    //     showAlertPopupOnPolygon(e.features[0]);
+    //   });
+    //   map.on('mouseenter', layerId, function() { map.getCanvas().style.cursor = 'pointer'; });
+    //   map.on('mouseleave', layerId, function() { map.getCanvas().style.cursor = ''; });
+
+    // --- Ensure only one popup is visible at a time (handled by .addTo(map)) ---
+
+    // Default colors for all alert types
+const defaultColors = {
+    // Regular NWS Alert Colors
+    'Tornado Emergency': '#4B0082',
+    'PDS Tornado Warning': '#DE17C9',
+    'Observed Tornado Warning': '#8B0000',
+    'Radar Indicated Tornado Warning': '#FF0000',
+    'Flash Flood Emergency': '#008000',
+    'Considerable Flash Flood Warning': '#01b70e',
+    'Flash Flood Warning': '#00FF00',
+    'Destructive Severe Thunderstorm Warning': '#FF8100',
+    'Considerable Severe Thunderstorm Warning': '#B8860B',
+    'Severe Thunderstorm Warning': '#FFAA00',
+    'Special Weather Statement': '#A06AD9',
+
+    // Zone Alert Colors
+    'Tornado Watch': '#FF8080',
+    'Severe Thunderstorm Watch': '#FFFF80',
+    'Hurricane Warning': '#2B0001',
+    'Tropical Storm Warning': '#7E0001',
+    'Storm Surge Warning': '#7F494A',
+    'Hurricane Watch': '#D50305',
+    'Tropical Storm Watch': '#D46060',
+    'Winter Storm Warning': '#328FFE',
+    'Storm Surge Watch': '#883031',
+    'Tsunami Watch': '#FF8847',
+    'Tsunami Warning': '#FD6347',
+    'Fire Warning': '#8B0000',
+    'Extreme Heat Warning': '#FF1493',
+    'Red Flag Warning': '#FF69B4',
+    'Avalanche Warning': '#C20084',
+    'Lake Effect Snow Warning': '#0008B8',
+    'Avalanche Watch': '#F4A460',
+    'Blizzard Warning': '#003BFA',
+    'Ice Storm Warning': '#7000D1',
+    'Extreme Cold Warning': '#36367D',
+    'Winter Storm Watch': '#6FDBFF',
+    'Winter Weather Advisory': '#4249FF',
+    'Extreme Heat Watch': '#8B0000',
+    'Winter Storm Watch': '#6FDBFF',
+    'Winter Weather Advisory': '#4249FF',
+    'Extreme Heat Watch': '#8B0000',
+    'Fire Weather Watch': '#FFB6C1',
+    'Freeze Warning': '#0701B2',
+    'Cold Weather Advisory': '#FFBDEA',
+    'Heat Advisory': '#FF69B4',
+    'Extreme Cold Watch': '#FF8ADA',
+    'Freeze Watch': '#6461B8',
+    'Flood Watch': '#B4F8FF',
+    'Flash Flood Watch': '#B4F8FF',
+    'Small Craft Advisory': '#EECCFF'
+};
+
+// Load saved colors or use defaults
+let alertColors = JSON.parse(localStorage.getItem('alertColors')) || {...defaultColors};
+
+// Create color picker menu HTML
+document.querySelector('.color-menu').innerHTML = `
+    <h3>Alert Colors</h3>
+    <div class="color-menu-section">
+        <h4>NWS Alert Colors</h4>
+        ${Object.entries(defaultColors)
+            // FIX: Only include types ending with 'Warning' or containing 'Statement'
+            // AND explicitly include Tornado Emergency and Flash Flood Emergency
+            .filter(([key]) =>
+                key.toLowerCase().includes('warning') ||
+                key.toLowerCase().includes('statement') ||
+                key === 'Tornado Emergency' ||
+                key === 'Flash Flood Emergency'
+            )
+            .map(([alertType, defaultColor]) => `
+                <div class="color-picker-row">
+                    <div class="color-picker-label">${alertType}</div>
+                    <input type="color" 
+                           class="color-picker-input" 
+                           data-alert-type="${alertType}"
+                           value="${alertColors[alertType] || defaultColor}">
+                </div>
+            `).join('')}
+    </div>
+    <div class="color-menu-section">
+        <h4>Zone Alert Colors</h4>
+        ${Object.entries(defaultColors)
+            // FIX: Only include types ending with 'Watch' or 'Advisory'
+            .filter(([key]) => key.toLowerCase().includes('watch') || key.toLowerCase().includes('advisory'))
+            .map(([alertType, defaultColor]) => `
+                <div class="color-picker-row">
+                    <div class="color-picker-label">${alertType}</div>
+                    <input type="color" 
+                           class="color-picker-input" 
+                           data-alert-type="${alertType}"
+                           value="${alertColors[alertType] || defaultColor}">
+                </div>
+            `).join('')}
+
+    </div>
+    <button class="reset-colors-btn">Reset to Default Colors</button>
+`;
+
+// Add color picker change handlers
+document.querySelectorAll('.color-picker-input').forEach(input => {
+    input.addEventListener('change', (e) => {
+        const alertType = e.target.dataset.alertType;
+        const newColor = e.target.value;
+        alertColors[alertType] = newColor;
+        localStorage.setItem('alertColors', JSON.stringify(alertColors));
+        
+        // Force refresh of alert polygons
+        if (map.getSource('nws-alert-polygons')) {
+            pollNwsAlerts();
+        }
+        // Force refresh of zone polygons
+        displayPolygons();
+    });
+});
+
+// Add reset button handler
+document.querySelector('.reset-colors-btn').addEventListener('click', () => {
+    alertColors = {...defaultColors};
+    localStorage.setItem('alertColors', JSON.stringify(alertColors));
+    
+    // Update color picker inputs
+    document.querySelectorAll('.color-picker-input').forEach(input => {
+        const alertType = input.dataset.alertType;
+        input.value = defaultColors[alertType];
+    });
+    
+    // Force refresh both polygon types
+    pollNwsAlerts();
+    displayPolygons();
+});
+
+    // Store polygons for lookup
+    let polygonsById = {};
+
+    // track created zone alert DOM elements (store { el, event }) to avoid removing/re-adding them each poll
+    window.zoneAlertElements = window.zoneAlertElements || new Map();
+    
+    // current alerts filter (ensure defined before polling starts)
+    let currentAlertFilter = 'all';
+    
+    // --- RainViewer Radar Layer ---
+    let rainviewerLayerId = 'rainviewer-radar';
+    let rainviewerFrames = [];
+    let rainviewerTimes = [];
+    window.rainviewerTime = null;
+
+    // --- Update Radar Layer for selected time ---
+    function updateRadarLayer(time) {
+      // Remove previous radar layer and source if present
+      if (map.getLayer(rainviewerLayerId)) {
+        try { map.removeLayer(rainviewerLayerId); } catch(e){}
+      }
+      if (map.getSource(rainviewerLayerId)) {
+        try { map.removeSource(rainviewerLayerId); } catch(e){}
+      }
+      if (!time) return;
+      // Add raster source for RainViewer tiles
+      map.addSource(rainviewerLayerId, {
+        type: 'raster',
+        tiles: [
+          `https://tilecache.rainviewer.com/v2/radar/${time}/256/{z}/{x}/{y}/6/1_1.png`
+        ],
+        tileSize: 256
+      });
+
+      // Insert radar layer so it renders UNDER road/admin/boundary line layers (so roads/counties stay on top).
+      // Prefer road/admin/boundary layers first so radar is beneath them; fallback to polygon outlines or symbol labels.
+      let insertBefore = null;
+      const layerList = map.getStyle().layers || [];
+      const lineMatchRE = /(road|highway|street|rail|bridge|transport|motorway|trunk|secondary|primary|admin|boundary|county)/i;
+      // prefer a road/admin-like line layer
+      const roadOrAdminLayer = layerList.find(l => l && l.id && lineMatchRE.test(l.id));
+      if (roadOrAdminLayer) {
+        insertBefore = roadOrAdminLayer.id;
+      } else {
+        // fallback: try to insert before polygon outlines so outlines remain on top of radar
+        const outlineCandidates = [
+          'nws-alert-polygons-outline-black',
+          'nws-alert-polygons-outline-colored'
+        ];
+        const outlineLayer = outlineCandidates.map(id => map.getLayer(id)).find(l => !!l) ||
+                             layerList.find(l => l && l.id && l.id.endsWith('-outline'));
+        if (outlineLayer) {
+          insertBefore = outlineLayer.id;
+        } else {
+          // final fallback: before first symbol (labels)
+          for (const layer of layerList) {
+            if (layer.type === 'symbol') {
+              insertBefore = layer.id;
+              break;
+            }
+          }
+        }
+      }
+
+      map.addLayer({
+        id: rainviewerLayerId,
+        type: 'raster',
+        source: rainviewerLayerId,
+        paint: {
+          'raster-opacity': 1
+        }
+      }, insertBefore);
+    }
+
+    // Fetch NWS alerts and add polygons to the map
+    fetch('https://api.weather.gov/alerts/active')
+      .then(response => response.json())
+      .then(data => {
+        // Store original features globally for SOURCE extraction
+        window.nwsAlertFeatures = data.features || [];
+
+        // Clear only the NWS alerts container.
+        // document.getElementById("nws-alerts").innerHTML = "";
+        // globalAlerts.length = 0;
+        const now = new Date();
+        let polygonsToAdd = [];
+        let alertListHtml = '';
+        polygonsById = {}; // Reset
+
+        for (const feature of data.features) {
+          const props = feature.properties;
+          const event = props.event;
+          const expiresText = props.expires;
+          const expires = expiresText ? new Date(expiresText) : null;
+          if (!event || !feature.geometry || !expiresText) continue;
+          if (now > expires) continue;
+          let fillColor = 'grey'; // default
+          let flashThreat = null, tornadoDetection = null, tornadoDamageThreat = null, thunderstormDamageThreat = null;
+          let priority = 0;
+          // Parse additional parameter values
+          const parameters = props.parameters || {};
+          let maxHailSize = '', maxWindGust = '';
+          if (parameters.maxHailSize) maxHailSize = parameters.maxHailSize[0];
+          if (parameters.maxWindGust) maxWindGust = parameters.maxWindGust[0];
+          if (parameters.flashFloodDamageThreat) flashThreat = parameters.flashFloodDamageThreat[0];
+          if (parameters.tornadoDetection) tornadoDetection = parameters.tornadoDetection[0];
+          if (parameters.tornadoDamageThreat) tornadoDamageThreat = parameters.tornadoDamageThreat[0];
+          if (parameters.thunderstormDamageThreat) thunderstormDamageThreat = parameters.thunderstormDamageThreat[0];
+
+          // Enhanced display event logic
+          let displayEvent = event;
+          if (event.includes('Flash Flood Warning')) {
+            if (flashThreat === 'CATASTROPHIC') {
+              displayEvent = '⚠ Flash Flood Emergency';
+            } else if (flashThreat === 'CONSIDERABLE') {
+              displayEvent = 'Considerable Flash Flood Warning';
+            }
+          } else if (event.includes('Tornado Warning')) {
+            if (tornadoDetection === 'OBSERVED' && tornadoDamageThreat === 'CATASTROPHIC') {
+              displayEvent = '⚠ Tornado Emergency';
+            } else if ((tornadoDetection === 'OBSERVED' || tornadoDetection === 'RADAR INDICATED') &&
+                       tornadoDamageThreat === 'CONSIDERABLE') {
+              displayEvent = '⚠ PDS Tornado Warning';
+            } else if (tornadoDetection === 'OBSERVED') {
+              displayEvent = 'Observed Tornado Warning';
+            } else if (tornadoDetection === 'RADAR INDICATED') {
+              displayEvent = 'Radar Indicated Tornado Warning';
+            }
+          } else if (event.includes('Severe Thunderstorm Warning')) {
+            if (thunderstormDamageThreat === 'DESTRUCTIVE') {
+              displayEvent = '⚠ Destructive Severe Thunderstorm Warning';
+            } else if (thunderstormDamageThreat === 'CONSIDERABLE') {
+              displayEvent = 'Considerable Severe Thunderstorm Warning';
+            }
+          }
+
+          // After parsing event, flashThreat, tornadoDetection, tornadoDamageThreat, thunderstormDamageThreat:
+          let colorKey = null;
+          if (event.includes('Tornado Warning')) {
+            if (tornadoDetection === 'OBSERVED' && tornadoDamageThreat === 'CATASTROPHIC') {
+              colorKey = 'Tornado Emergency';
+              priority = 110;
+              displayEvent = '⚠ Tornado Emergency';
+            } else if ((tornadoDetection === 'OBSERVED' || tornadoDetection === 'RADAR INDICATED') &&
+                       tornadoDamageThreat === 'CONSIDERABLE') {
+              colorKey = 'PDS Tornado Warning';
+              priority = 100;
+              displayEvent = '⚠ PDS Tornado Warning';
+            } else if (tornadoDetection === 'OBSERVED') {
+              colorKey = 'Observed Tornado Warning';
+              priority = 80;
+              displayEvent = 'Observed Tornado Warning';
+            } else {
+              colorKey = 'Radar Indicated Tornado Warning';
+              priority = 70;
+              displayEvent = 'Radar Indicated Tornado Warning';
+            }
+          } else if (event.includes('Flash Flood Warning')) {
+            if (flashThreat === 'CATASTROPHIC') {
+              colorKey = 'Flash Flood Emergency';
+              priority = 90;
+              displayEvent = '⚠ Flash Flood Emergency';
+            } else if (flashThreat === 'CONSIDERABLE') {
+              colorKey = 'Considerable Flash Flood Warning';
+              priority = 60;
+              displayEvent = 'Considerable Flash Flood Warning';
+            } else {
+              colorKey = 'Flash Flood Warning';
+              priority = 50;
+              displayEvent = 'Flash Flood Warning';
+            }
+          } else if (event.includes('Severe Thunderstorm Warning')) {
+            if (thunderstormDamageThreat === 'DESTRUCTIVE') {
+              colorKey = 'Destructive Severe Thunderstorm Warning';
+              priority = 40;
+              displayEvent = '⚠ Destructive Severe Thunderstorm Warning';
+            } else if (thunderstormDamageThreat === 'CONSIDERABLE') {
+              colorKey = 'Considerable Severe Thunderstorm Warning';
+              priority = 30;
+              displayEvent = 'Considerable Severe Thunderstorm Warning';
+            } else {
+              colorKey = 'Severe Thunderstorm Warning';
+              priority = 20;
+            }
+          } else if (event.includes('Special Weather Statement')) {
+            colorKey = 'Special Weather Statement';
+            priority = 10;
+          }
+
+          if (colorKey) {
+            fillColor = alertColors[colorKey] || defaultColors[colorKey];
+          } else {
+            fillColor = '#888888'; // fallback
+          }
+
+          // GeoJSON polygons: coordinates[0] is [ [lng, lat], ... ]
+          let geometry = null;
+          if (feature.geometry.type === "Polygon") {
+            geometry = {
+              type: "Polygon",
+              coordinates: feature.geometry.coordinates
+            };
+          } else if (feature.geometry.type === "MultiPolygon") {
+            geometry = {
+              type: "MultiPolygon",
+              coordinates: feature.geometry.coordinates
+            };
+          } else {
+            continue;
+          }
+          const polygonFeature = {
+            type: "Feature",
+            geometry: geometry,
+            properties: {
+              id: feature.id,
+              event: event,
+             // Add the computed display event so UI can use the enhanced label
+             displayEvent: displayEvent,
+              fillColor: fillColor,
+              priority: priority,
+              expires: expiresText,
+              areaDesc: props.areaDesc || '',
+              maxHailSize: maxHailSize,
+              maxWindGust: maxWindGust
+            }
+          };
+          polygonsToAdd.push(polygonFeature);
+          polygonsById[feature.id] = polygonFeature;
+
+          // Add to alert list with clickable div (use displayEvent for all warnings)
+          alertListHtml += `
+            <div class="nws-alert-item" data-alert-id="${feature.id}" style="cursor:pointer;">
+              <span class="nws-alert-color-box" style="background:${fillColor};"></span>
+              <span class="nws-alert-event">${displayEvent}</span>
+              <div class="nws-alert-expires">Expires: ${expiresText.replace('T',' ').replace('Z',' UTC')}</div>
+            </div>
+          `;
+        }
+
+        // Update the alert list in the sidebar
+        document.getElementById('nws-alerts-list-content').innerHTML = alertListHtml || '<div>No active alerts.</div>';
+
+        // CHANGE TO: Sort alerts by priority before adding them
+        if (alertListHtml) {
+          const alertContainer = document.getElementById('nws-alerts-list-content');
+          // Convert existing items to array and add new ones
+          const allPolygons = Object.values(polygonsById);
+          
+          // Sort by priority (highest first)
+          allPolygons.sort((a, b) => b.properties.priority - a.properties.priority);
+          
+          // Generate HTML in priority order
+          const sortedHtml = allPolygons.map(feature => `
+            <div class="nws-alert-item" data-alert-id="${feature.properties.id}" style="cursor:pointer;">
+              <span class="nws-alert-color-box" style="background:${feature.properties.fillColor};"></span>
+              <span class="nws-alert-event">${feature.properties.displayEvent}</span>
+              <div class="nws-alert-expires">Expires: ${feature.properties.expires.replace('T',' ').replace('Z',' UTC')}</div>
+            </div>
+          `).join('');
+
+          alertContainer.innerHTML = sortedHtml || '<div>No active alerts.</div>';
+        }
+
+        // Add click event to each alert item
+        document.querySelectorAll('.nws-alert-item').forEach(item => {
+          item.addEventListener('click', function() {
+            const alertId = this.getAttribute('data-alert-id');
+            const feature = polygonsById[alertId];
+            if (feature && feature.geometry) {
+              // show top banner using polygon color and displayEvent
+              const color = feature.properties.fillColor || '#00FFFF';
+              const title = feature.properties.displayEvent || feature.properties.event || 'Alert';
+              const areaDesc = feature.properties.areaDesc || '';
+              if (typeof window.showTopAlertBanner === 'function') {
+                window.showTopAlertBanner(color, title, areaDesc, 0);
+              }
+
+              let coordinates = [];
+              if (feature.geometry.type === "Polygon") {
+                coordinates = feature.geometry.coordinates[0];
+              } else if (feature.geometry.type === "MultiPolygon") {
+                coordinates = feature.geometry.coordinates[0][0];
+              }
+              // Calculate bounds
+              let bounds = coordinates.reduce(function(bounds, coord) {
+                return bounds.extend(coord);
+              }, new maptilersdk.LngLatBounds(coordinates[0], coordinates[0]));
+              map.fitBounds(bounds, { padding: 60, maxZoom: 10, duration: 4000 });
+            }
+          });
+        });
+
+        if (polygonsToAdd.length === 0) return;
+
+        // Sort polygons so higher priority (larger number) are drawn last (on top)
+        polygonsToAdd.sort((a, b) => a.properties.priority - b.properties.priority);
+
+        const geojson = {
+          type: "FeatureCollection",
+          features: polygonsToAdd
+        };
+
+        map.on('load', () => {
+          // Find the first symbol layer (usually roads/cities)
+          const layers = map.getStyle().layers;
+          let firstSymbolId = null;
+          for (const layer of layers) {
+            if (layer.type === 'symbol') {
+              firstSymbolId = layer.id;
+              break;
+            }
+          }
+
+          // Add the GeoJSON source
+          map.addSource('nws-alert-polygons', {
+            type: 'geojson',
+            data: geojson
+          });
+
+          // Add polygon fill layer above radar and zone fills
+          let insertAboveRadar = null;
+          if (map.getLayer('rainviewer-radar')) {
+              insertAboveRadar = 'rainviewer-radar';
+          } else {
+              // fallback: above all zone fills, or above first symbol
+              const layers = map.getStyle().layers;
+              for (const layer of layers) {
+                  if (layer.type === 'symbol') {
+                      insertAboveRadar = layer.id;
+                      break;
+                  }
+              }
+          }
+          map.addLayer({
+            id: 'nws-alert-polygons-fill',
+            type: 'fill',
+            source: 'nws-alert-polygons',
+            paint: {
+              'fill-color': ['get', 'fillColor'],
+              'fill-opacity': 0.15,
+              'fill-outline-color': 'rgba(255,0,0,1)'
+            }
+          }, insertAboveRadar);
+
+          // Add black outline (radar will be inserted between fill and outline)
+          map.addLayer({
+            id: 'nws-alert-polygons-outline-black',
+            type: 'line',
+            source: 'nws-alert-polygons',
+            paint: {
+              'line-color': '#000000',
+              'line-width': 5
+            }
+          }, firstSymbolId);
+
+          // Add colored outline above black outline
+          map.addLayer({
+            id: 'nws-alert-polygons-outline-colored',
+            type: 'line',
+            source: 'nws-alert-polygons',
+            paint: {
+              'line-color': ['get', 'fillColor'],
+              'line-width': 3
+            }
+          }, firstSymbolId);
+        });
+      })
+      .catch(console.error);
+
+    // --- Show/Hide Alert Description Overlay ---
+    function showAlertDescription({ color, title, summary, alertId }) {
+      document.getElementById("alertDescriptionHeader").style.background = `linear-gradient(135deg, ${color} 0%, black 100%)`;
+      document.getElementById("alertDescriptionHeader").textContent = title;
+
+      const descText = document.getElementById("alertDescriptionText");
+      descText.textContent = "Loading description...";
+      descText.style.background = "black";
+      descText.style.fontFamily = "'Bebas Neue',sans-serif";
+      descText.style.fontWeight = "bold";
+      descText.style.fontSize = "18px";
+      descText.style.maxHeight = "300px";
+      descText.style.overflowY = "auto";
+
+      const overlay = document.getElementById("alertDescriptionOverlay");
+      overlay.style.display = "flex";
+      overlay.style.opacity = "0";
+      setTimeout(() => { overlay.style.opacity = "1"; }, 10);
+
+      // Fetch the description from the NWS API
+      const originalFeature = (window.nwsAlertFeatures || []).find(f => f.id === alertId);
+      const description = originalFeature?.properties?.description || "No description available.";
+      descText.textContent = description;
+    }
+    function closeAlertDescription() {
+      const overlay = document.getElementById("alertDescriptionOverlay");
+      overlay.style.opacity = "0";
+      setTimeout(() => { overlay.style.display = "none"; }, 1000);
+    }
+
+    // Keep the existing warning-icon toggle behavior
+    document.querySelector('.warning-icon').addEventListener('click', function() {
+      const alertsList = document.getElementById('nws-alerts-list');
+      if (alertsList.classList.contains('visible')) {
+        alertsList.style.opacity = '0';
+        setTimeout(() => alertsList.classList.remove('visible'), 300);
+      } else {
+        alertsList.classList.add('visible');
+        setTimeout(() => alertsList.style.opacity = '1', 10);
+      }
+    });
+
+    // Toggle menu handler
+document.querySelector('.menu-button').addEventListener('click', function(e) {
+    e.stopPropagation();
+    const menu = document.querySelector('.color-menu');
+    menu.classList.toggle('visible');
+});
+
+// Close menu when clicking outside
+document.addEventListener('click', function(e) {
+    const menu = document.querySelector('.color-menu');
+    const menuButton = document.querySelector('.menu-button');
+    if (!menu.contains(e.target) && e.target !== menuButton) {
+        menu.classList.remove('visible');
+    }
+});
+
+// Update color menu styles
+const styleSheet = document.styleSheets[0];
+styleSheet.insertRule(`
+    .color-menu {
+        position: fixed;
+        top: 60px;
+        left: 20px;
+        z-index: 2000;
+        background: rgba(55,0,0,0.95);
+        border: 1px solid rgba(255,0,0,0.2);
+        border-radius: 8px;
+        padding: 15px;
+        display: none;
+        max-height: 80vh;
+        overflow-y: auto;
+       
+              
+        width: 300px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+`, styleSheet.cssRules.length);
+
+styleSheet.insertRule(`
+    .color-menu.visible {
+        display: block !important;
+    }
+`, styleSheet.cssRules.length);
+
+// Make color picker inputs more visible
+styleSheet.insertRule(`
+    .color-picker-input {
+        width: 60px;
+        height: 25px;
+        padding: 0;
+        border: 2px solid rgba(255,0,0,0.3);
+        border-radius: 4px;
+        background: none;
+        cursor: pointer;
+    }
+`, styleSheet.cssRules.length);
+    </script>
+    <!-- BEGIN: Zone Watches Polygons Script -->
+    <script>
+        async function fetchZones() {
+            const zonesResponse = await fetch('https://api.weather.gov/zones/forecast/');
+            const zonesData = await zonesResponse.json();
+            return zonesData.features.map(zone => ({
+                ugc: zone.properties.id,
+                link: `https://api.weather.gov/zones/forecast/${zone.properties.id}`
+            }));
+        }
+
+        // --- NEW: Zone polygon cache (each entry: { coords, expiresAt }) ---
+        const zonePolygonCache = new Map();
+        const ZONE_POLYGON_CACHE_TTL = 10 * 60 * 1000; // 10 minutes TTL
+
+        // Avoid flooding with parallel fetches for same zone link
+        const zoneFetchInflight = new Map();
+
+        async function fetchPolygon(zoneLink) {
+            // Use cache to avoid repeated fetching/parsing and reduce CPU work
+            const cached = zonePolygonCache.get(zoneLink);
+            if (cached && (Date.now() < cached.expiresAt)) {
+                return cached.coords;
+            }
+
+            // If an inflight fetch exists, reuse the same promise
+            if (zoneFetchInflight.has(zoneLink)) {
+                try {
+                    const coords = await zoneFetchInflight.get(zoneLink);
+                    return coords;
+                } catch (e) {
+                    // If the previous fetch failed, fall through to a new fetch attempt
+                }
+            }
+
+            // Store a promise during fetch to throttle repeated simultaneous requests
+            const fetchPromise = (async () => {
+                try {
+                    const zoneResponse = await fetch(zoneLink);
+                    const zoneData = await zoneResponse.json();
+                    if (!zoneData || !zoneData.geometry) return null;
+                    if (zoneData.geometry.type === "Polygon" || zoneData.geometry.type === "MultiPolygon") {
+                        const coords = zoneData.geometry.coordinates;
+                        // store in cache
+                        zonePolygonCache.set(zoneLink, {
+                            coords,
+                            expiresAt: Date.now() + ZONE_POLYGON_CACHE_TTL
+                        });
+                        return coords;
+                    }
+                    console.warn(`Unsupported geometry type: ${zoneData.geometry.type}`);
+                    return null;
+                } finally {
+                    // cleanup inflight map on completion
+                    zoneFetchInflight.delete(zoneLink);
+                }
+            })();
+            zoneFetchInflight.set(zoneLink, fetchPromise);
+            return fetchPromise;
+        }
+
+        async function fetchActiveAlerts() {
+            const alertsResponse = await fetch('https://api.weather.gov/alerts/active');
+            const alertsData = await alertsResponse.json();
+            return alertsData.features.map(alert => ({
+                ugcs: alert.properties.ugc,
+                affectedZones: alert.properties.affectedZones,
+                polygon: alert.geometry?.type === "Polygon" ? alert.geometry.coordinates : null,
+                event: alert.properties.event // Add event type
+            }));
+        }
+
+        let activeSources = new Set();
+        let isUpdating = false;
+        let currentController = null;
+
+        async function displayPolygons() {
+            if (isUpdating) return;
+
+            try {
+                isUpdating = true;
+                if (currentController) currentController.abort();
+                currentController = new AbortController();
+                const signal = currentController.signal;
+
+                const alerts = await fetchActiveAlerts();
+                if (signal.aborted) return;
+
+                // --- GROUP alerts by event and affectedZones ---
+                const groupedAlerts = {};
+                alerts
+                    .filter(alert => !alert.polygon)
+                    .forEach(alert => {
+                        // Priority mapping remains unchanged
+                        const priority = 
+                            alert.event === "Tornado Watch" ? 100 :
+                            alert.event === "Severe Thunderstorm Watch" ? 90 :
+                            alert.event === "Hurricane Warning" ? 91 :
+                            alert.event === "Tropical Storm Warning" ? 88 :
+                            alert.event === "Storm Surge Warning" ? 85 :
+                            alert.event === "Hurricane Watch" ? 82 :
+                            alert.event === "Tropical Storm Watch" ? 81 :
+                            alert.event === "Winter Storm Warning" ? 80 :
+                            alert.event === "Storm Surge Watch" ? 79 :
+                            alert.event === "Tsunami Watch" ? 47 :
+                            alert.event === "Tsunami Warning" ? 56 :
+                            alert.event === "Fire Warning" ? 39 :
+                            alert.event === "Extreme Heat Warning" ? 42 :
+                            alert.event === "Red Flag Warning" ? 38 :
+                            alert.event === "Avalanche Warning" ? 57 :
+                            alert.event === "Lake Effect Snow Warning" ? 54 :
+                            alert.event === "Avalanche Watch" ? 49 :
+                            alert.event === "Blizzard Warning" ? 70 :
+                            alert.event === "Ice Storm Warning" ? 65 :
+                            alert.event === "Extreme Cold Warning" ? 67 :
+                            alert.event === "Winter Storm Watch" ? 60 :
+                            alert.event === "Winter Weather Advisory" ? 55 :
+                            alert.event === "Extreme Heat Watch" ? 52 :
+                            alert.event === "Fire Weather Watch" ? 51 :
+                            alert.event === "Freeze Warning" ? 50 :
+                            alert.event === "Cold Weather Advisory" ? 45 :
+                            alert.event === "Heat Advisory" ? 46 :
+                            alert.event === "Extreme Cold Watch" ? 47 :
+                            alert.event === "Freeze Watch" ? 40 :
+                            alert.event === "Flood Watch" || alert.event === "Flash Flood Watch" ? 30 :
+                            alert.event === "Special Weather Statement" ? 20 :
+                            alert.event === "Small Craft Advisory" ? 10 : 0;
+                        if (priority <= 0) return;
+
+                        // Normalize affectedZones and use event + sorted affectedZones as key
+                        const zonesSorted = (alert.affectedZones || []).slice().sort();
+                        const key = `${alert.event}:${zonesSorted.join(',')}`;
+                        if (!groupedAlerts[key]) {
+                            // create a safe id from the full key (don't truncate — truncation caused collisions)
+                            const safeId = 'zone-' + encodeURIComponent(key).replace(/[^a-z0-9_-]/gi, '');
+                            groupedAlerts[key] = {
+                                event: alert.event,
+                                affectedZones: alert.affectedZones,
+                                priority: priority,
+                                id: safeId
+                            };
+                        }
+                    });
+
+                // Add zone alerts to the alerts list
+                const alertContainer = document.getElementById('nws-alerts-list-content');
+                if (alertContainer) {
+                    // Ensure base NWS alert rows are rendered first and respect the current filter.
+                    // This leaves any existing zone DOM alone so we can diff and append only necessary changes.
+                    try { renderAlerts(currentAlertFilter); } catch(e) { /* ignore */ }
+
+                    // Build list of zone groups to show (honor 'warnings' filter: only show zones containing 'warning')
+                    const groupsToShow = Object.values(groupedAlerts)
+                      .sort((a,b) => b.priority - a.priority)
+                      .filter(g => {
+                        const ev = String(g.event || '').toLowerCase();
+                        if (currentAlertFilter === 'warnings') return ev.includes('warning');
+                        if (currentAlertFilter === 'watches') return ev.includes('watch');
+                        if (currentAlertFilter === 'advisories') return ev.includes('advisory');
+                        if (currentAlertFilter === 'other') return !ev.includes('warning') && !ev.includes('watch') && !ev.includes('advisory');
+                        return true;
+                      });
+
+                    // Desired ids set
+                    const desiredIds = new Set(groupsToShow.map(g => g.id));
+
+                    // Remove zone DOM elements that are no longer desired
+                    for (const existingId of Array.from(window.zoneAlertElements.keys())) {
+                      if (!desiredIds.has(existingId)) {
+                        const entry = window.zoneAlertElements.get(existingId);
+                        const el = entry?.el || null;
+                        if (el && el.parentNode) el.parentNode.removeChild(el);
+                        window.zoneAlertElements.delete(existingId);
+                      }
+                    }
+
+                    // Find insertion point after last non-zone alert
+                    let lastNwsAlert = null;
+                    const alertItems = alertContainer.querySelectorAll('.nws-alert-item:not([data-alert-id^="zone-"])');
+                    if (alertItems.length > 0) lastNwsAlert = alertItems[alertItems.length - 1];
+
+                    // Add new zone alert DOM elements only for groups not already present
+                    for (const group of groupsToShow) {
+                      if (window.zoneAlertElements.has(group.id)) continue; // already present
+
+                      // Use alertColors for the color box (so user customizations apply)
+                      const fillColor =
+                        alertColors[group.event] ||
+                        {
+                          "Tornado Watch": "#FF8080",
+                          "Severe Thunderstorm Watch": "#FFFF80",
+                          "Hurricane Warning": "#2B0001",
+                          "Tropical Storm Warning": "#7E0001",
+                          "Storm Surge Warning": "#7F494A",
+                          "Hurricane Watch": "#D50305",
+                          "Tropical Storm Watch": "#D46060",
+                          "Winter Storm Warning": "#328FFE",
+                          "Storm Surge Watch": "#883031",
+                          "Tsunami Watch": "#FF8847",
+                          "Tsunami Warning": "#FD6347",
+                          "Fire Warning": "#8B0000",
+                          "Extreme Heat Warning": "#FF1493",
+                          "Red Flag Warning": "#FF69B4",
+                          "Avalanche Warning": "#C20084",
+                          "Lake Effect Snow Warning": "#0008B8",
+                          "Avalanche Watch": "#F4A460",
+                          "Blizzard Warning": "#003BFA",
+                          "Ice Storm Warning": "#7000D1",
+                          "Extreme Cold Warning": "#36367D",
+                          "Winter Storm Watch": "#6FDBFF",
+                          "Winter Weather Advisory": "#4249FF",
+                          "Extreme Heat Watch": "#8B0000",
+                          "Winter Storm Watch": "#6FDBFF",
+                          "Winter Weather Advisory": "#4249FF",
+                          "Extreme Heat Watch": "#8B0000",
+                          "Fire Weather Watch": "#FFB6C1",
+                          "Freeze Warning": "#0701B2",
+                          "Cold Weather Advisory": "#FFBDEA",
+                          "Heat Advisory": "#FF69B4",
+                          "Extreme Cold Watch": "#FF8ADA",
+                          "Freeze Watch": "#6461B8",
+                          "Flood Watch": "#B4F8FF",
+                          "Flash Flood Watch": "#B4F8FF",
+                          "Small Craft Advisory": "#EECCFF",
+                          "Special Weather Statement": "#A06AD9"
+                        }[group.event] || '#A06AD9';
+
+                      const alertDiv = document.createElement('div');
+                      alertDiv.className = 'nws-alert-item';
+                      alertDiv.setAttribute('data-alert-id', group.id);
+                      alertDiv.style.cursor = 'pointer';
+                      alertDiv.innerHTML = `
+                        <span class="nws-alert-color-box" style="background:${fillColor};"></span>
+                        <span class="nws-alert-event">${group.event}</span>
+                        <div class="nws-alert-expires">Zone Alert</div>
+                      `;
+
+                      // Click handler now uses cached zone polygons instead of re-fetching each zone
+                      alertDiv.addEventListener('click', async () => {
+  const zoneCoords = [];
+  for (const zoneLink of group.affectedZones) {
+    const coords = await fetchPolygon(zoneLink);
+    if (coords) zoneCoords.push(coords);
+  }
+  if (!zoneCoords.length) return;
+
+  // --- FIX: Aggregate areaDesc from all matching NWS alerts ---
+  let areaDesc = '';
+  if (window.nwsAlertFeatures && Array.isArray(window.nwsAlertFeatures)) {
+    // Find all alerts with same event and at least one matching zone
+    const matchingAlerts = window.nwsAlertFeatures.filter(f =>
+      f.properties &&
+      f.properties.event === group.event &&
+      Array.isArray(f.properties.affectedZones) &&
+      f.properties.affectedZones.some(z => group.affectedZones.includes(z))
+    );
+    // Aggregate all areaDesc values (deduped, joined by '; ')
+    const allAreas = [];
+    for (const f of matchingAlerts) {
+      if (f.properties.areaDesc) {
+        f.properties.areaDesc.split(';').forEach(a => {
+          const trimmed = a.trim();
+          if (trimmed && !allAreas.includes(trimmed)) allAreas.push(trimmed);
+        });
+      }
+    }
+    if (allAreas.length) areaDesc = allAreas.join('; ');
+  }
+  // If no areaDesc, fallback to zone IDs (ugcs)
+  const subtitle = areaDesc
+    ? areaDesc
+    : (Array.isArray(group.affectedZones) && group.affectedZones.length
+        ? group.affectedZones.map(z => z.split('/').pop()).join(', ')
+        : 'Zone Alert');
+
+  if (typeof window.showTopAlertBanner === 'function') {
+    window.showTopAlertBanner(fillColor || '#00FFFF', group.event || 'Zone Alert', subtitle, 7000);
+  }
+
+  let bounds = new maptilersdk.LngLatBounds();
+  zoneCoords.forEach(coords => {
+    if (Array.isArray(coords[0][0][0])) {
+      coords.forEach(poly => poly[0].forEach(coord => bounds.extend(coord)));
+    } else {
+      coords[0].forEach(coord => bounds.extend(coord));
+    }
+  });
+  map.fitBounds(bounds, { padding:  50, maxZoom: 10, duration: 2000 });
+
+  // Show popup at centroid (compute from combined group polygons using existing helper)
+  let centroid = null;
+   if (zoneCoords.length) {
+    if (Array.isArray(zoneCoords[0][0][0])) {
+      centroid = getPolygonCentroid({ type: "MultiPolygon", coordinates: zoneCoords });
+    } else {
+      centroid = getPolygonCentroid({ type: "Polygon", coordinates: zoneCoords });
+    }
+  }
+  if (centroid) {
+    alertPopup.setLngLat(centroid)
+      .setHTML(`<div>${group.event}</div>`)
+      .addTo(map);
+  }
+});
+
+                      // Insert in UI
+                      if (lastNwsAlert && lastNwsAlert.nextSibling) {
+                        alertContainer.insertBefore(alertDiv, lastNwsAlert.nextSibling);
+                      } else if (lastNwsAlert) {
+                       
+                        alertContainer.appendChild(alertDiv);
+                      } else {
+                        alertContainer.appendChild(alertDiv);
+                      }
+                      window.zoneAlertElements.set(group.id, { el: alertDiv, event: group.event });
+                    }
+                }
+
+                // --- NEW: Build aggregated MultiPolygon features for all groups ---
+                const groups = Object.entries(groupedAlerts)
+                    .sort((a, b) => b[1].priority - a[1].priority)
+                    .map(([key, group]) => group); // simplified list
+
+                // Build features array in parallel
+                const featurePromises = groups.map(async group => {
+                    // for each group, gather coords for all affectedZones
+                    const zoneSources = group.affectedZones || [];
+                    const fetchedCoords = await Promise.all(zoneSources.map(z => fetchPolygon(z).catch(() => null)));
+                    const validCoords = fetchedCoords.filter(v => v && v.length);
+                    if (!validCoords.length) return null;
+
+                    // Flatten polygons into MultiPolygon coordinate array
+                    const multiCoords = [];
+                    for (const coords of validCoords) {
+                        if (Array.isArray(coords[0][0][0])) {
+                            // MultiPolygon
+                            coords.forEach(poly => multiCoords.push(poly));
+                        } else {
+                            // Polygon
+                            multiCoords.push(coords);
+                        }
+                    }
+
+                    // Determine fillColor via alertColors or fallback mapping
+
+                    const fillColor = alertColors[group.event] ||
+                      {
+                        "Tornado Watch": "#FF8080",
+                        "Severe Thunderstorm Watch": "#FFFF80",
+                        "Hurricane Warning": "#2B0001",
+                        "Tropical Storm Warning": "#7E0001",
+                        "Storm Surge Warning": "#7F494A",
+                        "Hurricane Watch": "#D50305",
+                        "Tropical Storm Watch": "#D46060",
+                        "Winter Storm Warning": "#328FFE",
+                        "Storm Surge Watch": "#883031",
+                        "Tsunami Watch": "#FF8847",
+                        "Tsunami Warning": "#FD6347",
+                        "Fire Warning": "#8B0000",
+                        "Extreme Heat Warning": "#FF1493",
+                        "Red Flag Warning": "#FF69B4",
+                        "Avalanche Warning": "#C20084",
+                        "Lake Effect Snow Warning": "#0008B8",
+                        "Avalanche Watch": "#F4A460",
+                        "Blizzard Warning": "#003BFA",
+                        "Ice Storm Warning": "#7000D1",
+                        "Extreme Cold Warning": "#36367D",
+                        "Winter Storm Watch": "#6FDBFF",
+                        "Winter Weather Advisory": "#4249FF",
+                        "Extreme Heat Watch": "#8B0000",
+                        "Winter Storm Watch": "#6FDBFF",
+                        "Winter Weather Advisory": "#4249FF",
+                        "Extreme Heat Watch": "#8B0000",
+                        "Fire Weather Watch": "#FFB6C1",
+                        "Freeze Warning": "#0701B2",
+                        "Cold Weather Advisory": "#FFBDEA",
+                        "Heat Advisory": "#FF69B4",
+                        "Extreme Cold Watch": "#FF8ADA",
+                        "Freeze Watch": "#6461B8",
+                        "Flood Watch": "#B4F8FF",
+                        "Flash Flood Watch": "#B4F8FF",
+                        "Small Craft Advisory": "#EECCFF",
+                        "Special Weather Statement": "#A06AD9"
+                      }[group.event] || '#A06AD9';
+
+                    return {
+                        type: 'Feature',
+                        id: group.id,
+                        geometry: {
+                            type: 'MultiPolygon',
+                            coordinates: multiCoords
+                        },
+                        properties: {
+                            id: group.id,
+                            event: group.event,
+                            priority: group.priority,
+                            fillColor: fillColor
+                        }
+                    };
+                });
+
+                // Wait for all features to resolve (some groups may be null if they had no polygons)
+                const builtFeatures = (await Promise.all(featurePromises)).filter(f => f !== null);
+
+                // Build GeoJSON feature collection
+                const zoneGeojson = {
+                    type: 'FeatureCollection',
+                    features: builtFeatures
+                };
+
+                // Add/update a single source & two layers for all zone polygons — much cheaper than one per group
+                if (map.getSource('zone-alerts')) {
+                    try {
+                        map.getSource('zone-alerts').setData(zoneGeojson);
+                    } catch (e) {
+                        // Source may not accept update until map style is fully ready, handle safely
+                        console.warn('zone-alerts source setData failed, re-adding source', e);
+                        if (map.getLayer('zone-alerts-fill')) { try { map.removeLayer('zone-alerts-fill'); } catch(_){} }
+                        if (map.getLayer('zone-alerts-outline')) { try { map.removeLayer('zone-alerts-outline'); } catch(_){} }
+                        if (map.getSource('zone-alerts')) { try { map.removeSource('zone-alerts'); } catch(_){} }
+                        map.addSource('zone-alerts', { type: 'geojson', data: zoneGeojson });
+                    }
+                } else {
+                    // add new source
+                    map.addSource('zone-alerts', { type: 'geojson', data: zoneGeojson });
+
+                    // Find layer insertion points once (avoid doing this repeatedly)
+                    const layers = map.getStyle()?.layers || [];
+                    let insertBefore = null;
+                    if (map.getLayer('rainviewer-radar')) {
+                      insertBefore = 'rainviewer-radar';
+                    } else {
+                      const lineMatchRE = /(road|highway|street|rail|bridge|transport|motorway|trunk|secondary|primary|admin|boundary|county)/i;
+                      const lineLayer = layers.find(l => l && l.id && lineMatchRE.test(l.id));
+                      if (lineLayer) insertBefore = lineLayer.id;
+                      else insertBefore = layers.find(l => l.type === 'symbol')?.id;
+                    }
+
+                    // Combined fill layer (uses feature property fillColor)
+                    map.addLayer({
+                        id: 'zone-alerts-fill',
+                        type: 'fill',
+                        source: 'zone-alerts',
+                        layout: {},
+                        paint: {
+                            'fill-color': ['get', 'fillColor'],
+                            'fill-opacity': 0.45,
+                            'fill-outline-color': ['get', 'fillColor']
+                        }
+                    }, insertBefore);
+
+                    // Outline layer
+                    // Insert outline above fill so the outline is visible
+                    map.addLayer({
+                        id: 'zone-alerts-outline',
+                        type: 'line',
+                        source: 'zone-alerts',
+                        paint: {
+                            'line-color': ['get', 'fillColor'],
+                            'line-width': 2
+                        }
+                    }, /* insertBefore */ insertBefore ? insertBefore : undefined);
+
+                    // Register click/cursor handlers once for this single combined layer
+                    map.on('click', 'zone-alerts-fill', function (e) {
+                        if (!e || !e.features || !e.features.length) return;
+                        const feature = e.features[0];
+                        const props = feature.properties || {};
+                        // Use geometry and show popup via existing popup helper
+                        showAlertPopupOnPolygon(feature, props.areaDesc || '', props.expires || '');
+                    });
+                    map.on('mouseenter', 'zone-alerts-fill', function() { map.getCanvas().style.cursor = 'pointer'; });
+                    map.on('mouseleave', 'zone-alerts-fill', function() { map.getCanvas().style.cursor = ''; });
+                }
+
+                // avoid expensive removal of per-group layers/sources — we've moved to a single combined source+layer
+                // existing removal logic that cleaned up activeSources is not needed here.
+
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    console.log('Update was cancelled');
+                } else {
+                    console.error('Error updating map:', error);
+                }
+            } finally {
+                isUpdating = false;
+                currentController = null;
+            }
+        }
+
+        map.on('load', () => {
+            displayPolygons().catch(console.error);
+            // Poll every 10 seconds (was 1 second before) — reduces polling costs and avoids re-rendering too often
+            setInterval(() => {
+                displayPolygons().catch(console.error);
+            }, 10000);
+        });
+    </script>
+    <!-- END: Zone Watches Polygons Script -->
+</body>
+<!-- Add this script just before </html> -->
+<script>
+/**
+ * Show Eye Watch description overlay with selected fields.
+ * Always uses the correct Eye Watch metadata for the clicked polygon.
+ * @param {object} meta - The Eye Watch metadata object (should be passed from the polygon's _sheetMeta).
+ * @param {string} color - The color to use for the overlay border/background.
+ * @param {string} title - The title to display in the header.
+ */
+function showEyeWatchDescription(meta, color = "#00FFFF", title = "Eye Watch") {
+  // Helper to build description HTML from meta object (always show these fields if present)
+  function buildDescription(meta) {
+    // Defensive: parse if string, and check for nested _sheetMeta
+    if (!meta) return '<div>No Eye Watch data found.</div>';
+    if (typeof meta === "string") {
+      try { meta = JSON.parse(meta); } catch (e) { return '<div>No Eye Watch data found.</div>'; }
+    }
+    // If meta is an object but empty, check for nested _sheetMeta (sometimes double-wrapped)
+    if (typeof meta === "object" && Object.keys(meta).length === 0 && meta._sheetMeta) {
+      meta = meta._sheetMeta;
+    }
+    // If meta is still empty, fail
+    if (typeof meta !== "object" || Object.keys(meta).length === 0) {
+      return '<div>No Eye Watch data found.</div>';
+    }
+    // Sometimes meta is { _sheetMeta: {...} }
+    if (meta._sheetMeta && typeof meta._sheetMeta === "object" && Object.keys(meta._sheetMeta).length > 0) {
+      meta = meta._sheetMeta;
+    }
+    return `
+      <div style="text-align:left;">
+        <b>EXPIRES:</b> ${meta.expires || ''}<br>
+        <b>TYPE:</b> ${meta.type || ''}<br>
+        <b>NAME:</b> ${meta.name || ''}<br>
+        <b>HAIL:</b> ${
+          meta.hail
+            ? (typeof meta.hail === 'object' && meta.hail.maxSize !== undefined
+                ? meta.hail.maxSize
+                : (typeof meta.hail === 'string' || typeof meta.hail === 'number'
+                    ? meta.hail
+                    : ''))
+            : ''
+        }<br>
+        <b>WIND:</b> ${
+          meta.wind
+            ? (typeof meta.wind === 'object' && meta.wind.maxWindGust !== undefined
+                ? meta.wind.maxWindGust
+                : (typeof meta.wind === 'string' || typeof meta.wind === 'number'
+                    ? meta.wind
+                    : ''))
+            : ''
+        }<br>
+        <b>BASIS:</b> ${Array.isArray(meta.basis) ? meta.basis.join(', ') : (meta.basis || '')}<br>
+        <b>TORNADO:</b> ${Array.isArray(meta.tornado) ? meta.tornado.join(', ') : (meta.tornado || '')}<br>
+        <b>CONFIDENCE:</b> ${meta.confidence || ''}<br>
+      </div>
+    `;
+  }
+
+  // --- Show the description overlay (polygon color gradient, white text, colored outline/close) ---
+  let overlay = document.getElementById("eyeWatchDescriptionOverlay");
+  let descText, header;
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.id = "eyeWatchDescriptionOverlay";
+    overlay.style.position = "fixed";
+    overlay.style.top = "50%";
+    overlay.style.left = "50%";
+    overlay.style.transform = "translate(-50%, -50%)";
+    overlay.style.background = "rgba(0,24,55,0.98)";
+    overlay.style.border = `3px solid ${color}`;
+    overlay.style.borderRadius = "12px";
+    overlay.style.boxShadow = "0 2px 16px #000";
+    overlay.style.zIndex = "99999";
+    overlay.style.display = "flex";
+    overlay.style.flexDirection = "column";
+    overlay.style.alignItems = "center";
+    overlay.style.minWidth = "340px";
+    overlay.style.maxWidth = "480px";
+    overlay.style.padding = "24px 24px 18px 24px";
+    overlay.style.opacity = "0";
+    overlay.innerHTML = `
+      <div id="eyeWatchDescriptionHeader" style="width:100%;text-align:center;font-size:24px;font-weight:bold;color:#fff;margin-bottom:12px;"></div>
+      <div id="eyeWatchDescriptionText" style="width:100%;color:#fff;font-size:18px;max-height:300px;overflow-y:auto;margin-bottom:18px;"></div>
+      <button id="eyeWatchDescriptionCloseBtn" class="fancy-close-btn" style="background:${color};border:2px solid ${color};color:#fff;">Close</button>
+    `;
+    document.body.appendChild(overlay);
+    descText = document.getElementById("eyeWatchDescriptionText");
+    header = document.getElementById("eyeWatchDescriptionHeader");
+    document.getElementById("eyeWatchDescriptionCloseBtn").onclick = function() {
+      overlay.style.opacity = "0";
+      setTimeout(() => { overlay.style.display = "none"; }, 300);
+    };
+  } else {
+    // FIX: Always reset display and get refs before updating content
+    overlay.style.display = "flex";
+    descText = document.getElementById("eyeWatchDescriptionText");
+    header = document.getElementById("eyeWatchDescriptionHeader");
+  }
+  header.textContent = title;
+  header.style.background = `linear-gradient(135deg, ${color} 0%, black 100%)`;
+  header.style.color = "#fff";
+  overlay.style.border = `3px solid ${color}`;
+  document.getElementById("eyeWatchDescriptionCloseBtn").style.background = color;
+  document.getElementById("eyeWatchDescriptionCloseBtn").style.border = `2px solid ${color}`;
+  document.getElementById("eyeWatchDescriptionCloseBtn").style.color = "#fff";
+  descText.innerHTML = buildDescription(meta);
+  overlay.style.opacity = "0";
+  setTimeout(() => { overlay.style.opacity = "1"; }, 10);
+}
+</script>
