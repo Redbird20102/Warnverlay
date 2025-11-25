@@ -296,7 +296,6 @@
     <!-- Canadian Alerts Only -->
     <div class="menu-group">
       <h3>Canadian Alerts</h3>
-      <!-- Example Canadian alert toggles, add more if needed -->
       <div class="alert-toggle" data-type="Rainfall Warning">
         <span class="toggle-icon">#</span><span>Rainfall Warning</span>
       </div>
@@ -318,7 +317,6 @@
       <div class="alert-toggle" data-type="Special Weather Statement">
         <span class="toggle-icon">#</span><span>Special Weather Statement</span>
       </div>
-      <!-- Add/remove Canadian alert types as needed -->
     </div>
   </div>
 
@@ -727,26 +725,6 @@
       m.style.display = m.style.display === "block" ? "none" : "block";
     });
 
-    function populateStateToggles() {
-      const ctr = document.getElementById("state-group");
-      Object.keys(stateToggles).forEach(s => {
-        const d = document.createElement("div");
-        d.className = "alert-toggle";
-        d.dataset.type = s;
-        d.innerHTML = `<span class="toggle-icon">${
-          stateToggles[s] ? "ON" : "OFF"
-        }</span><span>${s}</span>`;
-        d.addEventListener("click", () => {
-          stateToggles[s] = !stateToggles[s];
-          const ic = d.querySelector(".toggle-icon");
-          ic.textContent = stateToggles[s] ? "ON" : "OFF";
-          ic.classList.toggle("disabled", !stateToggles[s]);
-          updateBackgroundCycle();
-        });
-        ctr.appendChild(d);
-      });
-    }
-
     // ---------- Replace: fetchCanada API & normalizer (now excludes expired alerts) ----------
     async function fetchWeatherAlerts() {
       try {
@@ -873,7 +851,6 @@
     }
     // ---------- end fetchWeatherAlerts ----------
 
-    populateStateToggles();
     setInterval(updateBackgroundCycle, 5000);
     updateBackgroundCycle();
   </script>
