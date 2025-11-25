@@ -11,8 +11,8 @@
     #overlay {
       display: none;
       position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
+      top: 0; left: -10;
+      width: 120%; height: 120%;
       background-color: rgba(0,0,0,0);
       justify-content: center;
       align-items: center;
@@ -21,14 +21,14 @@
     }
 
     #overlay img {
-      max-width: 90%; max-height: 90%;
+      max-width: 120%; max-height: 120%;
       opacity: 1;
-      transition: opacity 1.5s ease-in-out;
+      transition: opacity 2s ease-in-out;
     }
 
     .text-container {
       position: absolute;
-      font-size: 2.3rem;
+      font-size: 2.6rem;
       font-weight: bold;
       font-family: 'Bebas Neue', sans-serif;
       text-align: center;
@@ -39,54 +39,54 @@
 
     /* Severe Thunderstorm Warning */
     .severe#testWarningContainer {
-      top: 78.1%; left: 59.2%;
+      top: 73%; left: 64.5%;
       transform: translate(-50%, -50%);
-      color: rgb(252, 145, 27);
+      color: rgb(255, 255, 255);
     }
     .severe#testCountyContainer {
-      top: 81.6%; left: 58.9%;
+      top: 77%; left: 64.5%;
       transform: translate(-50%, -50%);
-      color: rgb(255, 254, 44);
-      font-size: 1.3rem;
+      color: rgb(255, 255, 255);
+      font-size: 1.7rem;
     }
-    .considerableSevere#testWarningContainer { color: rgb(212, 112, 2) !important; }
-    .considerableSevere#testCountyContainer { color: rgb(226, 222, 52) !important; }
-    .destructiveSevere#testWarningContainer { color: rgb(0, 0, 0) !important; }
-    .destructiveSevere#testCountyContainer { color: rgb(255, 94, 20) !important; }
+    .considerableSevere#testWarningContainer { color: rgb(255, 255, 255) !important; }
+    .considerableSevere#testCountyContainer { color: rgb(255, 255, 255) !important; }
+    .destructiveSevere#testWarningContainer { color: rgb(255, 255, 255) !important; }
+    .destructiveSevere#testCountyContainer { color: rgb(255, 255, 255) !important; }
 
     /* Flash Flood Warning */
     .flashFlood#testWarningContainer {
-      top: 78.1%; left: 59.2%;
+      top: 73%; left: 64.5%;
       transform: translate(-50%, -50%);
-      color: rgb(38, 0, 255);
+      color: rgb(255, 255, 255);
     }
     .flashFlood#testCountyContainer {
-      top: 81.6%; left: 58.9%;
+      top: 77%; left: 64.5%;
       transform: translate(-50%, -50%);
-      color: rgb(9, 255, 0);
-      font-size: 1.3rem;
+      color: rgb(255, 255, 255);
+      font-size: 1.7rem;
     }
-    .considerableFlashFlood#testWarningContainer { color: rgb(13, 0, 189) !important; }
-    .considerableFlashFlood#testCountyContainer { color: rgb(18, 109, 0) !important; }
-    .catastrophicFlashFlood#testWarningContainer { color: rgb(0, 255, 13) !important; }
-    .catastrophicFlashFlood#testCountyContainer { color: rgb(0, 0, 0) !important; }
+    .considerableFlashFlood#testWarningContainer { color: rgba(255, 255, 255, 1) !important; }
+    .considerableFlashFlood#testCountyContainer { color: rgb(255, 255, 255) !important; }
+    .catastrophicFlashFlood#testWarningContainer { color: rgb(255, 255, 255) !important; }
+    .catastrophicFlashFlood#testCountyContainer { color: rgb(255, 255, 255) !important; }
 
     /* Tornado Warning */
     .tornado#testWarningContainer {
-      top: 78.1%; left: 59.2%;
+      top: 73%; left: 64.5%;
       transform: translate(-50%, -50%);
-      color: rgb(0, 0, 0);
+      color: rgb(255, 255, 255);
     }
     .tornado#testCountyContainer {
-      top: 81.6%; left: 58.9%;
+      top: 77%; left: 64.5%;
       transform: translate(-50%, -50%);
-      color: rgb(255, 0, 0);
-      font-size: 1.3rem;
+      color: rgb(255, 255, 255);
+      font-size: 1.7rem;
     }
-    .pdsTornado#testWarningContainer { color: rgb(254, 94, 254) !important; }
-    .pdsTornado#testCountyContainer { color: rgb(255, 0, 0) !important; }
-    .tornadoEmergency#testWarningContainer { color: rgb(102, 1, 204) !important; }
-    .tornadoEmergency#testCountyContainer { color: rgb(0, 0, 0) !important; }
+    .pdsTornado#testWarningContainer { color: rgb(255, 255, 255) !important; }
+    .pdsTornado#testCountyContainer { color: rgb(255, 255, 255) !important; }
+    .tornadoEmergency#testWarningContainer { color: rgb(255, 255, 255) !important; }
+    .tornadoEmergency#testCountyContainer { color: rgb(255, 255, 255) !important; }
     .button-group {
       position: absolute;
       top: 10px; left: 50%;
@@ -866,4 +866,5 @@
     }
   </script>
 </body>
+
 </html>
