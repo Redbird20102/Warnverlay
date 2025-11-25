@@ -13,69 +13,254 @@
       background-size: cover;
       transition: background 1s ease-in-out;
     }
+
+    /* Fancy glowing menu animations */
+    @keyframes glow-pulse {
+      0% { box-shadow: 0 0 10px rgba(255, 50, 50, 0.5), inset 0 0 10px rgba(255, 50, 50, 0.2); }
+      50% { box-shadow: 0 0 20px rgba(255, 50, 50, 0.8), inset 0 0 15px rgba(255, 50, 50, 0.3); }
+      100% { box-shadow: 0 0 10px rgba(255, 50, 50, 0.5), inset 0 0 10px rgba(255, 50, 50, 0.2); }
+    }
+
+    @keyframes light-sweep {
+      0% { left: -100%; }
+      100% { left: 100%; }
+    }
+
+    @keyframes menu-glow {
+      0%, 100% { box-shadow: 0 0 15px rgba(255, 50, 50, 0.6), 0 0 30px rgba(255, 50, 50, 0.3), inset 0 0 20px rgba(255, 50, 50, 0.1); }
+      50% { box-shadow: 0 0 25px rgba(255, 50, 50, 0.9), 0 0 40px rgba(255, 50, 50, 0.5), inset 0 0 30px rgba(255, 50, 50, 0.2); }
+    }
+
+    @keyframes alert-light-sweep {
+      0%   { left: -80%; opacity: 0.2; }
+      40%  { opacity: 0.5; }
+      50%  { left: 100%; opacity: 0.7; }
+      100% { left: 100%; opacity: 0; }
+    }
+
     #menu-icon {
       position: fixed; top: 10px; left: 10px;
       width: 40px; height: 40px;
-      background: rgba(0,0,0,0.6);
+      background: linear-gradient(135deg, rgba(100, 20, 20, 0.8), rgba(150, 50, 50, 0.8));
       border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       cursor: pointer; z-index: 400;
+      animation: glow-pulse 2s ease-in-out infinite;
+      border: 2px solid rgba(255, 50, 50, 0.6);
+      transition: all 0.3s ease;
     }
+
+    #menu-icon:hover {
+      box-shadow: 0 0 30px rgba(255, 50, 50, 1), 0 0 60px rgba(255, 50, 50, 0.5);
+      border-color: rgba(255, 100, 100, 1);
+    }
+
     #menu-icon span {
       display: block; width: 24px; height: 3px;
       background: white; margin: 3px 0; transition: 0.4s;
+      box-shadow: 0 0 5px rgba(255, 50, 50, 0.8);
     }
+
     #alert-menu {
       position: fixed; top: 60px; left: 10px;
-      width: 280px; background: rgba(0,0,0,0.85);
-      padding: 10px; border-radius: 5px; z-index: 300;
-      display: none; max-height: 80vh; overflow-y: auto;
+      width: 280px; 
+      background: linear-gradient(135deg, rgba(80, 10, 10, 0.95), rgba(120, 20, 20, 0.95));
+      padding: 15px; border-radius: 8px; z-index: 300;
+      display: none; max-height: 80vh; overflow-y: scroll;
+      border: 1.5px solid rgba(255, 50, 50, 0.5);
+      animation: menu-glow 3s ease-in-out infinite;
+      box-shadow: 0 0 20px rgba(255, 50, 50, 0.4), inset 0 0 20px rgba(255, 50, 50, 0.1);
+      overflow-x: hidden;
+      position: relative;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 50, 50, 0.8) rgba(80, 10, 10, 0.5);
     }
-    .menu-group { margin-bottom: 20px; }
+
+    #alert-menu::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      animation: light-sweep 3s infinite;
+      pointer-events: none;
+    }
+
+    #alert-menu::-webkit-scrollbar {
+      width: 12px;
+    }
+
+    #alert-menu::-webkit-scrollbar-track {
+      background: rgba(80, 10, 10, 0.5);
+      border-radius: 6px;
+    }
+
+    #alert-menu::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, rgba(255, 100, 100, 0.8), rgba(255, 50, 50, 0.8));
+      border-radius: 6px;
+      box-shadow: 0 0 10px rgba(255, 50, 50, 0.6), inset 0 0 5px rgba(255, 100, 100, 0.4);
+      border: 1px solid rgba(255, 50, 50, 0.6);
+    }
+
+    #alert-menu::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(180deg, rgba(255, 150, 150, 1), rgba(255, 80, 80, 1));
+      box-shadow: 0 0 20px rgba(255, 50, 50, 0.9), inset 0 0 8px rgba(255, 150, 150, 0.6);
+    }
+
+    .menu-group { margin-bottom: 20px; position: relative; z-index: 1; }
+    
     .menu-group h3 {
-      margin: 10px 0 5px;
+      margin: 10px 0 8px;
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 1.2rem;
-      border-bottom: 1px solid #444;
-      padding-bottom: 3px;
+      font-size: 1.1rem;
+      border-bottom: 2px solid rgba(255, 50, 50, 0.6);
+      padding-bottom: 5px;
+      color: rgba(255, 100, 100, 1);
+      text-shadow: 0 0 10px rgba(255, 50, 50, 0.6);
     }
+
     .alert-toggle {
       display: flex; align-items: center;
       cursor: pointer;
-      border: 1px solid white;
-      padding: 5px 10px; margin-bottom: 5px;
-      border-radius: 5px;
-      background: rgba(255,255,255,0.1);
+      border: 1.5px solid rgba(255, 50, 50, 0.5);
+      padding: 8px 12px; margin-bottom: 6px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, rgba(150, 50, 50, 0.3), rgba(130, 30, 30, 0.3));
       color: white;
       font-family: 'Bebas Neue', sans-serif;
       font-size: 0.9rem;
-      transition: background 0.3s;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
     }
-    .alert-toggle:hover { background: rgba(255,255,255,0.2); }
+
+    .alert-toggle::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+      transition: left 0.5s ease;
+    }
+
+    .alert-toggle:hover {
+      background: linear-gradient(135deg, rgba(200, 80, 80, 0.5), rgba(170, 50, 50, 0.5));
+      border-color: rgba(255, 100, 100, 0.8);
+      box-shadow: 0 0 15px rgba(255, 50, 50, 0.6), inset 0 0 10px rgba(255, 50, 50, 0.2);
+    }
+
+    .alert-toggle:hover::before {
+      left: 100%;
+    }
+
     .alert-toggle.selected {
-      background: rgba(0,200,0,0.4);
+      background: linear-gradient(135deg, rgba(100, 200, 100, 0.4), rgba(80, 180, 80, 0.4));
       border-color: lime;
     }
+
     .toggle-icon {
-      width: 24px; height: 24px;
-      border-radius: 50%;
-      background: green; color: white;
+      width: 34px; height: 24px;
+      border-radius: 4px;
+      background: linear-gradient(135deg, #00ff00, #00cc00);
+      color: white;
       display: inline-flex; align-items: center; justify-content: center;
-      margin-right: 5px; font-size: 0.8rem;
+      margin-right: 8px; font-size: 0.75rem;
+      font-weight: bold;
+      box-shadow: 0 0 8px rgba(0, 255, 0, 0.6);
+      transition: all 0.3s ease;
     }
-    .toggle-icon.disabled { background: red; }
+
+    .toggle-icon.disabled {
+      background: linear-gradient(135deg, #ff3333, #cc0000);
+      box-shadow: 0 0 8px rgba(255, 0, 0, 0.6);
+    }
 
     #alert-count-bar {
-      position: fixed; top: 0; left: 50%;
+      position: fixed; top: 5px; left: 50%;
       transform: translateX(-50%);
-      width: 102%; height: 66px;
+      width: 100%; height: 66px;
       display: flex; justify-content: flex-end; align-items: center;
       font-family: 'Bebas Neue', sans-serif;
       font-size: 1.77rem; font-weight: bold; color: white;
       text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
       background: transparent; z-index: 100;
     }
-    .alert-count { padding: 35px 68px; margin: 0; }
+    .alert-count {
+      padding: 35px 68px; margin: 0;
+      position: relative;
+      z-index: 0;
+      background: transparent;
+      overflow: hidden;
+    }
+    .alert-count.tornado::before {
+      content: "";
+      position: absolute;
+      left: 12px;
+      top: 25px;
+      width: calc(100% - 24px);
+      height: calc(90% - 36px);
+      background: rgb(179, 0, 0);
+      border-radius: 22px;
+      z-index: -1;
+      pointer-events: none;
+      border: 3px solid #ff4d4d;
+    }
+    .alert-count.severe-thunderstorm::before {
+      content: "";
+      position: absolute;
+      left: 12px;
+      top: 25px;
+      width: calc(100% - 24px);
+      height: calc(90% - 36px);
+      background: rgb(173, 87, 0);
+      border-radius: 22px;
+      z-index: -1;
+      pointer-events: none;
+      border: 3px solid #ffb84d;
+    }
+    .alert-count.flood-alert::before {
+      content: "";
+      position: absolute;
+      left: 12px;
+      top: 25px;
+      width: calc(100% - 24px);
+      height: calc(90% - 36px);
+      background: rgb(0, 0, 161);
+      border-radius: 22px;
+      z-index: -1;
+      pointer-events: none;
+      border: 3px solid #4d8cff;
+    }
+    .alert-count.winter-weather::before {
+      content: "";
+      position: absolute;
+      left: 12px;
+      top: 25px;
+      width: calc(100% - 24px);
+      height: calc(90% - 36px);
+      background: rgb(31, 78, 172);
+      border-radius: 22px;
+      z-index: -1;
+      pointer-events: none;
+      border: 3px solid #7fbfff;
+    }
+    .alert-count::after {
+      content: "";
+      position: absolute;
+      top: 25px;
+      left: -80%;
+      width: 60%;
+      height: calc(90% - 36px);
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.76), transparent);
+      border-radius: 22px;
+      z-index: 0;
+      pointer-events: none;
+      animation: alert-light-sweep 2.5s linear infinite;
+    }
     .tornado { background: red; }
     .severe-thunderstorm { background: orange; }
     .flood-alert { background: #0000ff; }
@@ -257,7 +442,46 @@
       VA:true, WA:true, WV:true, WI:true, WY:true
     };
 
-    async function fetchWeatherAlerts() {
+    // Normalize warnverlay API alert to internal format
+    function normalizeWarnverlayAlert(alert) {
+      const props = alert.properties || {};
+      const tags = props.tags || {};
+      const eventType = props.event || "Unknown Event";
+      const areaDesc = props.areaDesc || "Unknown Area";
+      const expireDate = props.expires || "N/A";
+      const tornadoDetection = tags.TORNADO || null;
+      const tornadoDamageThreat = tags.TORNADO_DAMAGE_THREAT || null;
+      const flashFloodDamageThreat = tags.FLASH_FLOOD_DAMAGE_THREAT || null;
+      const thunderstormDamageThreat = tags.THUNDERSTORM_DAMAGE_THREAT || null;
+      const areaChunks = splitAreaDesc(areaDesc, 17);
+      return {
+        eventType,
+        areaChunks,
+        expireDate,
+        tornadoDetection,
+        tornadoDamageThreatCatastrophic: tornadoDamageThreat === "CATASTROPHIC",
+        tornadoDamageThreatConsiderable: tornadoDamageThreat === "CONSIDERABLE",
+        thunderstormDamageThreatConsiderable: thunderstormDamageThreat === "CONSIDERABLE",
+        thunderstormDamageThreatDestructive: thunderstormDamageThreat === "DESTRUCTIVE",
+        flashFloodDamageThreat
+      };
+    }
+
+    // Fetch alerts from warnverlay API
+    async function fetchWarnverlayAlerts() {
+      try {
+        const resp = await fetch("https://nws-api.Vercel.app/");
+        const data = await resp.json();
+        if (!Array.isArray(data) || !data.length) return [];
+        return data.map(normalizeWarnverlayAlert);
+      } catch (e) {
+        console.warn("Warnverlay API failed:", e);
+        return [];
+      }
+    }
+
+    // Fetch alerts from NWS API (weather.gov)
+    async function fetchNWSAlerts() {
       try {
         const res = await fetch(
           "https://api.weather.gov/alerts/active.atom?urgency=Past%2CFuture%2CExpected%2CImmediate"
@@ -296,9 +520,70 @@
           };
         }).filter(a => a.expireDate==="N/A" || new Date(a.expireDate).getTime()>Date.now());
       } catch(e) {
-        console.error(e);
+        console.error("NWS API error:", e);
         return [];
       }
+    }
+
+    // Fetch alerts from Canada API
+    async function fetchCanadaAlerts() {
+      try {
+        const resp = await fetch("https://www.stormsalert.com/zonemapping/canada.php?");
+        const text = await resp.text();
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(text, "application/xml");
+        const entries = Array.from(xmlDoc.getElementsByTagNameNS("*", "entry"));
+
+        return entries.map(entry => {
+          const eventEl = entry.querySelector("[local-name='event']") || 
+                         entry.getElementsByTagName("event")[0];
+          const eventType = eventEl ? eventEl.textContent.trim() : "Unknown Event";
+          
+          // Only include specified event types
+          const allowedTypes = ["freezing rain", "rainfall", "severe thunderstorm", "tornado"];
+          const isAllowed = allowedTypes.some(type => 
+            eventType.toLowerCase().includes(type)
+          );
+          
+          if (!isAllowed) return null;
+
+          const areaEl = entry.querySelector("[local-name='areaDesc']") || 
+                        entry.getElementsByTagName("areaDesc")[0];
+          const expireEl = entry.querySelector("[local-name='expires']") || 
+                          entry.getElementsByTagName("expires")[0];
+          
+          const areaDesc = areaEl ? areaEl.textContent.trim() : "Unknown Area";
+          const expireDate = expireEl ? expireEl.textContent.trim() : "N/A";
+          const areaChunks = splitAreaDesc(areaDesc, 17);
+
+          return {
+            eventType,
+            areaChunks,
+            expireDate,
+            tornadoDetection: null,
+            tornadoDamageThreatCatastrophic: false,
+            tornadoDamageThreatConsiderable: false,
+            thunderstormDamageThreatConsiderable: false,
+            thunderstormDamageThreatDestructive: false,
+            flashFloodDamageThreat: null
+          };
+        }).filter(alert => alert && (alert.expireDate === "N/A" || new Date(alert.expireDate).getTime() > Date.now()));
+      } catch (error) {
+        console.warn("Canada API failed:", error);
+        return [];
+      }
+    }
+
+    // Unified fetch: try warnverlay, fallback to NWS, then Canada
+    async function fetchWeatherAlerts() {
+      let alerts = await fetchWarnverlayAlerts();
+      if (!alerts || alerts.length === 0) {
+        alerts = await fetchNWSAlerts();
+      }
+      if (!alerts || alerts.length === 0) {
+        alerts = await fetchCanadaAlerts();
+      }
+      return alerts;
     }
 
     function splitAreaDesc(desc, maxWords) {
@@ -385,9 +670,20 @@
     }
 
     function calculateMinutesUntilExpiration(exp) {
-      if (exp==="N/A") return "N/A";
-      const m = Math.max(Math.floor((new Date(exp).getTime()-Date.now())/60000),0);
-      return `${m} minute(s)`;
+      if (exp === "N/A") return "N/A";
+      const ms = new Date(exp).getTime() - Date.now();
+      if (ms <= 0) return "Expired";
+      const totalMinutes = Math.floor(ms / 60000);
+      const days = Math.floor(totalMinutes / (60 * 24));
+      const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+      const minutes = totalMinutes % 60;
+      if (days > 0) {
+        return `Expires in: ${days} day${days > 1 ? "s" : ""}, ${hours} hr${hours !== 1 ? "s" : ""}, ${minutes} min${minutes !== 1 ? "s" : ""}`;
+      } else if (hours > 0) {
+        return `Expires in: ${hours} hr${hours !== 1 ? "s" : ""}, ${minutes} min${minutes !== 1 ? "s" : ""}`;
+      } else {
+        return `Expires in: ${minutes} min${minutes !== 1 ? "s" : ""}`;
+      }
     }
 
     function updateAlertCounts(alerts) {
@@ -530,7 +826,7 @@
       }
       // --- End: Exact Update Logic ---
 
-      xEl.textContent = `Expires in: ${mins}`;
+      xEl.textContent = mins;
       eEl.style.opacity = 1;
       aEl.style.opacity = 1;
 
