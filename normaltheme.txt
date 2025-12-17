@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Warnverlay Access</title>
+  <!-- Load Bebas Neue font from Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Bebas Neue', sans-serif;
+      text-align: center;
+      background: linear-gradient(135deg, #2c0000 0%, #660000 100%);
+      margin: 0;
+      padding: 2em;
+    }
+    h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 3em;
+      color: #ff4d4d;
+      margin-bottom: 0.5em;
+      text-shadow: 0 0 10px #ff4d4d, 0 0 20px #660000;
+    }
+    p {
+      font-size: 1.2em;
+      color: #fff;
+      text-shadow: 0 0 5px #660000;
+    }
+    .resolution-container {
+      margin-top: 1em;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .resolution {
+      display: block;
+      width: 220px;
+      padding: 12px;
+      margin: 10px 0;
+      background: linear-gradient(135deg, #800000 60%, #ff4d4d 100%);
+      border: 2px solid #ff4d4d;
+      text-decoration: none;
+      color: #fff;
+      font-size: 1.3em;
+      font-family: 'Bebas Neue', sans-serif;
+      font-weight: bold;
+      letter-spacing: 1px;
+      box-shadow: 0 0 10px #660000, 0 0 20px #ff4d4d33;
+      transition: background 0.3s, color 0.3s, box-shadow 0.3s;
+      cursor: pointer;
+      border-radius: 8px;
+    }
+    .resolution:hover {
+      background: linear-gradient(135deg, #ff4d4d 60%, #800000 100%);
+      color: #fff;
+      box-shadow: 0 0 20px #ff4d4d, 0 0 40px #66000099;
+      border-color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <h1>Welcome to Warnverlay Access 2.1</h1>
+  <p>select the Resolution below</p>
+  <div class="resolution-container">
+    <a href="720p.html" class="resolution">720p</a>
+    <a href="1080p.html" class="resolution">1080p</a>
+    <a href="1440p.html" class="resolution">1440p</a>
+    <a href="2160p.html" class="resolution">2160p (4K)</a>
+    <a href="warnings.html" class="resolution">Pop Up Alerts</a>
+    <a href="usalertmap.html" class="resolution">US Alert Map</a>
+    <a href="canadaalerts1080p.html" class="resolution">Canada Alerts 1080p</a>
+    <a href="test.html" class="resolution">Test Pop up Alerts</a>
+  </div>
+</body>
+</html>
+
