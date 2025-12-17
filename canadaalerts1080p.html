@@ -510,25 +510,39 @@
 
     function determineBackground(alerts) {
       if (!alerts.length) return "No Weather Alerts.png";
-      // build combined lowercased text for each alert
-      const combinedTexts = alerts.map(a => ((a.rawTitle||'') + ' ' + (a.eventType||'') + ' ' + (a.description||'') + ' ' + (a.rawArea||'')).toLowerCase());
+      const combinedTexts = alerts.map(a =>
+        ((a.rawTitle||'') + ' ' + (a.eventType||'') + ' ' + (a.description||'') + ' ' + (a.rawArea||'')).toLowerCase()
+      );
 
-      // Highest-priority explicit "in effect" mappings
-      if (combinedTexts.some(t => t.includes('in effect') && t.includes('tornado warning'))) return "TOR.png";
-      if (combinedTexts.some(t => t.includes('in effect') && t.includes('severe thunderstorm warning'))) return "SVR.png";
-      if (combinedTexts.some(t => t.includes('in effect') && t.includes('flash flood warning'))) return "FFW.png";
-
-      // Winter-specific "in effect" mappings (exceptions)
-      if (combinedTexts.some(t => t.includes('in effect') && t.includes('snow squall warning'))) return "SQW.png";
-      if (combinedTexts.some(t => t.includes('in effect') && t.includes('blizzard warning'))) return "BZW.png";
-      if (combinedTexts.some(t => t.includes('in effect') && t.includes('winter storm warning'))) return "WSW.png";
-      if (combinedTexts.some(t => t.includes('in effect') && t.includes('winter storm watch'))) return "WSA.png";
+      // More flexible "in effect" mappings: look for "warning" and hazard keyword
+      const inEffectMappings = [
+        { hazard: "tornado", image: "TOR.png" },
+        { hazard: "severe thunderstorm", image: "SVR.png" },
+        { hazard: "flash flood", image: "FFW.png" },
+        { hazard: "rainfall", image: "FFW.png" },
+        { hazard: "tornado thunderstorm", image: "TOA.png", matchWatch: true },
+        { hazard: "severe thunderstorm", image: "SVA.png", matchWatch: true },
+        { hazard: "hurricane", image: "HUW.png" },
+        { hazard: "tropical storm", image: "TSW.png" },
+        { hazard: "severe thunderstorm", image: "SVA.png", matchWatch: true },
+        { hazard: "snow squall", image: "SQW.png" },
+        { hazard: "blizzard", image: "BZW.png" },
+        { hazard: "winter storm", image: "WSW.png" }, // Use WSW.png for any winter storm warning
+        { hazard: "winter storm", image: "WSA.png", matchWatch: true },
+        { hazard: "special weather statement", image: "SWS.png", matchWatch: true }, // Use WSA.png for any winter storm watch
+      ];
+      for (const {hazard, image, matchWatch} of inEffectMappings) {
+        if (combinedTexts.some(t =>
+          t.includes('in effect') &&
+          (
+            (t.includes('warning') && t.includes(hazard)) ||
+            (matchWatch && t.includes('watch') && t.includes(hazard))
+          )
+        )) return image;
+      }
 
       // If any alert explicitly mentions "special weather statement", use SWS.png
       if (combinedTexts.some(t => t.includes('special weather statement'))) return "SWS.png";
-
-      // If any alert explicitly mentions "rainfall warning", use FFW.png
-      if (combinedTexts.some(t => t.includes('rainfall warning'))) return "FFW.png";
 
       // If any alert text contains "in effect" but didn't match a specific icon above, use AlertActive.png
       if (combinedTexts.some(t => t.includes('in effect'))) return "AlertActive.png";
