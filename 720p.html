@@ -358,7 +358,7 @@
           <span class="toggle-icon">#</span><span>Tropical Storm Watch</span>
         </div>
       </div>
-      <!-- Additional & Special Alerts -->
+      <!-- Special Alerts -->
       <div class="menu-group">
         <h3>Additional & Special Alerts</h3>
         <div class="alert-toggle" data-type="Special Weather Statement">
@@ -384,10 +384,7 @@
           <span class="toggle-icon">ON</span><span>Winter Weather Alerts</span>
         </div>
       </div>
-      <!-- State Filters -->
-      <div class="menu-group" id="state-group">
-        <h3>State Filters</h3>
-      </div>
+      <div class="menu-group" id="state-group"><h3>State Filters</h3></div>
     </div>
 
     <div id="alert-count-bar">
@@ -645,6 +642,35 @@
           return `Expires in: ${minutes} min${minutes !== 1 ? "s" : ""}`;
         }
       }
+      // Alert count bar toggle state
+      const alertCountBarToggles = {
+        "tornado": true,
+        "severe-thunderstorm": true,
+        "flood-alert": true,
+        "winter-weather": true
+      };
+
+      // Setup alert count bar toggles
+      document.querySelectorAll('.alert-toggle[data-countbar]').forEach(el => {
+        const key = el.getAttribute('data-countbar');
+        el.addEventListener('click', () => {
+          alertCountBarToggles[key] = !alertCountBarToggles[key];
+          const icon = el.querySelector('.toggle-icon');
+          icon.textContent = alertCountBarToggles[key] ? "ON" : "OFF";
+          icon.classList.toggle("disabled", !alertCountBarToggles[key]);
+          updateAlertCountBarVisibility();
+        });
+      });
+
+      function updateAlertCountBarVisibility() {
+        Object.keys(alertCountBarToggles).forEach(key => {
+          const bar = document.querySelector(`.alert-count.${key}`);
+          if (bar) {
+            bar.style.display = alertCountBarToggles[key] ? "" : "none";
+          }
+        });
+      }
+
       function updateAlertCounts(alerts) {
         const cnt = { tornado:0, severeThunderstorm:0, flood:0, winterWeather:0 };
         alerts.forEach(a=>{
