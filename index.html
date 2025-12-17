@@ -10,56 +10,247 @@
     body {
       font-family: 'Bebas Neue', sans-serif;
       text-align: center;
-      background: linear-gradient(135deg, #2c0000 0%, #660000 100%);
+      background: radial-gradient(circle at 70% 20%, #fff 0%, #ffcccc 10%, #ff0000 60%, #b30000 100%), 
+                  repeating-linear-gradient(135deg, #ff3333 0 10px, #ff0000 10px 20px);
       margin: 0;
       padding: 2em;
+      min-height: 100vh;
+      box-shadow: 0 0 80px 10px #ff0000 inset;
+      position: relative;
     }
     h1 {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 3em;
-      color: #ff4d4d;
+      font-size: 3.5em;
+      color: #fff;
       margin-bottom: 0.5em;
-      text-shadow: 0 0 10px #ff4d4d, 0 0 20px #660000;
+      text-shadow: 0 0 24px #ff0000, 0 0 32px #00ff00, 2px 2px 0 #222, 0 0 8px #fff;
+      letter-spacing: 3px;
+      background: linear-gradient(90deg, #fff 10%, #ff0000 40%, #00ff00 60%, #fff 90%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 2px 8px #b30000);
+      animation: h1glow 2.5s infinite alternate;
+    }
+    @keyframes h1glow {
+      0% { filter: drop-shadow(0 2px 8px #b30000); }
+      100% { filter: drop-shadow(0 2px 24px #00ff00); }
     }
     p {
-      font-size: 1.2em;
+      font-size: 1.3em;
       color: #fff;
-      text-shadow: 0 0 5px #660000;
+      text-shadow: 0 0 8px #00ff00, 0 0 2px #fff;
+      margin-bottom: 1.5em;
+      letter-spacing: 1px;
     }
     .resolution-container {
       margin-top: 1em;
       display: flex;
       flex-direction: column;
       align-items: center;
+      gap: 0.7em;
     }
     .resolution {
       display: block;
-      width: 220px;
-      padding: 12px;
-      margin: 10px 0;
-      background: linear-gradient(135deg, #800000 60%, #ff4d4d 100%);
-      border: 2px solid #ff4d4d;
+      width: 260px;
+      padding: 15px 0;
+      margin: 0;
+      background: linear-gradient(120deg, #fff 0%, #00ff00 40%, #ff0000 100%);
+      border: 2.5px solid #fff;
       text-decoration: none;
-      color: #fff;
-      font-size: 1.3em;
+      color: #b30000;
+      font-size: 1.5em;
       font-family: 'Bebas Neue', sans-serif;
       font-weight: bold;
-      letter-spacing: 1px;
-      box-shadow: 0 0 10px #660000, 0 0 20px #ff4d4d33;
-      transition: background 0.3s, color 0.3s, box-shadow 0.3s;
+      letter-spacing: 2px;
+      box-shadow: 0 0 18px #fff, 0 0 32px #ff000033;
+      transition: background 0.3s, color 0.3s, box-shadow 0.3s, border-color 0.3s, transform 0.2s;
       cursor: pointer;
-      border-radius: 8px;
+      border-radius: 16px;
+      position: relative;
+      overflow: hidden;
+      animation: btnpulse 2.5s infinite alternate;
     }
     .resolution:hover {
-      background: linear-gradient(135deg, #ff4d4d 60%, #800000 100%);
+      background: linear-gradient(120deg, #fff 0%, #ff0000 60%, #00ff00 100%);
       color: #fff;
-      box-shadow: 0 0 20px #ff4d4d, 0 0 40px #66000099;
-      border-color: #fff;
+      box-shadow: 0 0 32px #fff, 0 0 60px #00ff0099;
+      border-color: #00ff00;
+      transform: scale(1.05) rotate(-2deg);
+      z-index: 2;
+    }
+    @keyframes btnpulse {
+      0% { box-shadow: 0 0 18px #fff, 0 0 32px #ff000033; }
+      100% { box-shadow: 0 0 32px #fff, 0 0 60px #00ff0099; }
+    }
+    #update-popup {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.85);
+      color: #fff;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.2em;
+      opacity: 1;
+      transition: opacity 0.5s;
+      backdrop-filter: blur(2px);
+    }
+    #update-popup-box {
+      background: linear-gradient(135deg, #ff0000 60%, #00ff00 100%);
+      border: 2.5px solid #fff;
+      border-radius: 18px;
+      padding: 1.5em 1.5em 1.2em 1.5em;
+      box-shadow: 0 0 32px #fff, 0 0 40px #00ff0099;
+      max-width: 340px;
+      text-align: center;
+      opacity: 1;
+      transition: opacity 0.5s;
+      animation: popupglow 2s infinite alternate;
+    }
+    @keyframes popupglow {
+      0% { box-shadow: 0 0 32px #fff, 0 0 40px #00ff0099; }
+      100% { box-shadow: 0 0 48px #fff, 0 0 80px #ff000099; }
+    }
+    #update-popup-box ul {
+      color: #fff;
+    }
+    #update-popup-box li b {
+      color: #fff;
+      text-shadow: 0 0 4px #ff0000, 0 0 4px #00ff00;
+    }
+    #close-update-popup {
+      margin-top: 0.7em;
+      font-size: 1.1em;
+      background: linear-gradient(90deg, #00ff00 0%, #ff0000 100%);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 0.5em 1.5em;
+      cursor: pointer;
+      font-family: 'Bebas Neue', sans-serif;
+      box-shadow: 0 0 12px #ff000099;
+      transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+    #close-update-popup:hover {
+      background: linear-gradient(90deg, #ff0000 0%, #00ff00 100%);
+      color: #fff;
+      box-shadow: 0 0 24px #00ff00, 0 0 40px #ff000099;
+      transform: scale(1.07);
+    }
+    /* Snowflake animation styles */
+    #snowflakes {
+      pointer-events: none;
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1000;
+      overflow: hidden;
+    }
+    .snowflake {
+      position: absolute;
+      top: 0;
+      left: 0;
+      color: #fff;
+      opacity: 0.7;
+      font-size: 1.5em;
+      pointer-events: none;
+      text-shadow: 0 0 8px #fff, 0 0 12px #00ff00;
+      animation: snowspin 6s linear infinite;
+    }
+    @keyframes snowspin {
+      0% { transform: rotate(0deg);}
+      100% { transform: rotate(360deg);}
     }
   </style>
 </head>
 <body>
-  <h1>Welcome to Warnverlay Access 2.1</h1>
+  <!-- Snowflake animation container -->
+  <div id="snowflakes"></div>
+  <!-- Popup for update info -->
+  <div id="update-popup" style="
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.85);
+    color: #fff;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.2em;
+    opacity: 1;
+    transition: opacity 0.5s;
+    ">
+    <div id="update-popup-box" style="
+      background: linear-gradient(135deg, #ff0000 60%, #00ff00 100%);
+      border: 2.5px solid #fff;
+      border-radius: 18px;
+      padding: 1.5em 1.5em 1.2em 1.5em;
+      box-shadow: 0 0 32px #fff, 0 0 40px #00ff0099;
+      max-width: 340px;
+      text-align: center;
+      opacity: 1;
+      transition: opacity 0.5s;
+      animation: popupglow 2s infinite alternate;
+    ">
+      <div style="font-size:1.2em; color:#ff4d4d; margin-bottom:0.4em;">
+        🎄 Home Page Updated: Christmas Theme! 🎄
+      </div>
+      <div style="font-size:0.95em; color:#b30000; margin-bottom:0.7em;">
+        <b>What's New:</b>
+      </div>
+      <ul style="text-align:left; color:#222; font-size:0.85em; margin:0 0 0.7em 0; padding-left:1.1em;">
+        <li style="margin-bottom:0.5em;">
+          <b>Christmas Theme</b> is now live on the homepage.
+        </li>
+        <li style="margin-bottom:0.5em;">
+          <b>Alert Count Bar Toggles:</b> In the menu, you can now turn <b>each alert count bar</b> on or off (Tornado, Severe Thunderstorm, Flood, Winter Weather). This works on <b>all resolutions</b>.
+        </li>
+        <li style="margin-bottom:0.5em;">
+          <b>Canada Alerts:</b> Fixed alert color priority—alerts are now correctly assigned to their color.
+        </li>
+      </ul>
+      <button id="close-update-popup" style="
+        margin-top: 0.7em;
+        font-size: 1.1em;
+        background: linear-gradient(90deg, #00ff00 0%, #ff0000 100%);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 0.5em 1.5em;
+        cursor: pointer;
+        font-family: 'Bebas Neue', sans-serif;
+        box-shadow: 0 0 12px #ff000099;
+        transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
+        font-weight: bold;
+        letter-spacing: 1px;
+      ">Close</button>
+    </div>
+  </div>
+  <h1 style="
+  font-size: 3.5em;
+  color: #fff;
+  margin-bottom: 0.5em;
+  text-shadow: 0 0 24px #ff0000, 0 0 32px #00ff00, 2px 2px 0 #222, 0 0 8px #fff;
+  letter-spacing: 3px;
+  background: linear-gradient(90deg, #fff 10%, #ff0000 40%, #00ff00 60%, #fff 90%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 2px 8px #b30000);
+  animation: h1glow 2.5s infinite alternate;
+">
+  Welcome to Warnverlay Access 2.1
+</h1>
   <p>select the Resolution below</p>
   <div class="resolution-container">
     <a href="720p.html" class="resolution">720p</a>
@@ -71,7 +262,87 @@
     <a href="canadaalerts1080p.html" class="resolution">Canada Alerts 1080p</a>
     <a href="test.html" class="resolution">Test Pop up Alerts</a>
   </div>
+  <script>
+    // Snowflake animation
+    (function() {
+      const snowflakeCount = 40;
+      const snowflakes = [];
+      const snowflakeContainer = document.getElementById('snowflakes');
+      // Style for snowflake container and flakes
+      Object.assign(snowflakeContainer.style, {
+        pointerEvents: 'none',
+        position: 'fixed',
+        left: 0,
+        top: 0,
+        width: '100vw',
+        height: '100vh',
+        zIndex: 1000,
+        overflow: 'hidden'
+      });
+      for (let i = 0; i < snowflakeCount; i++) {
+        const flake = document.createElement('div');
+        flake.textContent = '❄';
+        Object.assign(flake.style, {
+          position: 'absolute',
+          top: Math.random() * 100 + 'vh',
+          left: Math.random() * 100 + 'vw',
+          fontSize: (Math.random() * 18 + 12) + 'px',
+          color: '#fff',
+          opacity: Math.random() * 0.7 + 0.3,
+          filter: 'drop-shadow(0 0 4px #fff)',
+          userSelect: 'none',
+          transition: 'none'
+        });
+        snowflakes.push({
+          el: flake,
+          x: Math.random() * window.innerWidth,
+          y: Math.random() * window.innerHeight,
+          speed: 1 + Math.random() * 2,
+          drift: (Math.random() - 0.5) * 0.8,
+          size: parseFloat(flake.style.fontSize)
+        });
+        snowflakeContainer.appendChild(flake);
+      }
+      function animateSnow() {
+        for (const flake of snowflakes) {
+          flake.y += flake.speed;
+          flake.x += flake.drift;
+          if (flake.y > window.innerHeight) {
+            flake.y = -flake.size;
+            flake.x = Math.random() * window.innerWidth;
+          }
+          if (flake.x < 0) flake.x = window.innerWidth;
+          if (flake.x > window.innerWidth) flake.x = 0;
+          flake.el.style.top = flake.y + 'px';
+          flake.el.style.left = flake.x + 'px';
+        }
+        requestAnimationFrame(animateSnow);
+      }
+      animateSnow();
+    })();
+
+    (function() {
+      // Only show popup if not dismissed before
+      if (localStorage.getItem('update-popup-dismissed') === '1') {
+        document.getElementById('update-popup').style.display = 'none';
+        return;
+      }
+      var popup = document.getElementById('update-popup');
+      var box = document.getElementById('update-popup-box');
+      var btn = document.getElementById('close-update-popup');
+      btn.onclick = function() {
+        // Save dismissal in localStorage
+        localStorage.setItem('update-popup-dismissed', '1');
+        // Fade out box, then overlay
+        box.style.opacity = '0';
+        setTimeout(function() {
+          popup.style.opacity = '0';
+          setTimeout(function() {
+            popup.style.display = 'none';
+          }, 500);
+        }, 400);
+      };
+    })();
+  </script>
 </body>
 </html>
-
-
