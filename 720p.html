@@ -358,7 +358,7 @@
           <span class="toggle-icon">#</span><span>Tropical Storm Watch</span>
         </div>
       </div>
-      <!-- Special Alerts -->
+      <!-- Additional & Special Alerts -->
       <div class="menu-group">
         <h3>Additional & Special Alerts</h3>
         <div class="alert-toggle" data-type="Special Weather Statement">
@@ -368,7 +368,26 @@
           <span class="toggle-icon">#</span><span>High Wind Warning</span>
         </div>
       </div>
-      <div class="menu-group" id="state-group"><h3>State Filters</h3></div>
+      <!-- Alert Count Bar Toggles -->
+      <div class="menu-group" id="alert-count-toggle-group">
+        <h3>Alert Count Bar</h3>
+        <div class="alert-toggle" data-countbar="tornado">
+          <span class="toggle-icon">ON</span><span>Tornado Warnings</span>
+        </div>
+        <div class="alert-toggle" data-countbar="severe-thunderstorm">
+          <span class="toggle-icon">ON</span><span>Severe Thunderstorm Warnings</span>
+        </div>
+        <div class="alert-toggle" data-countbar="flood-alert">
+          <span class="toggle-icon">ON</span><span>Flood Alerts</span>
+        </div>
+        <div class="alert-toggle" data-countbar="winter-weather">
+          <span class="toggle-icon">ON</span><span>Winter Weather Alerts</span>
+        </div>
+      </div>
+      <!-- State Filters -->
+      <div class="menu-group" id="state-group">
+        <h3>State Filters</h3>
+      </div>
     </div>
 
     <div id="alert-count-bar">
@@ -639,6 +658,7 @@
         document.querySelector(".severe-thunderstorm").textContent = `SEVERE THUNDERSTORM WARNINGS: ${cnt.severeThunderstorm}`;
         document.querySelector(".flood-alert").textContent = `FLOOD ALERTS: ${cnt.flood}`;
         document.querySelector(".winter-weather").textContent = `WINTER WEATHER ALERTS: ${cnt.winterWeather}`;
+        updateAlertCountBarVisibility();
       }
       function determineBackground(alerts) {
         if (!alerts.length) return "No Weather Alerts.png";
