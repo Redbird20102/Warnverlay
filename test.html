@@ -8,9 +8,10 @@
   <style>
     body { font-family: Arial, sans-serif; }
 
-    #overlay {
+      #overlay {
       display: none;
       position: fixed;
+      top: 0; left: 0;
       width: 100%; height: 100%;
       background-color: rgba(0,0,0,0);
       justify-content: center;
@@ -20,16 +21,14 @@
     }
 
     #overlay img {
-      position: fixed;
-      top: 0%; left: -10.5%;
-      max-width: 120%; max-height: 120%;
+      max-width: 90%; max-height: 90%;
       opacity: 1;
-      transition: opacity 2s ease-in-out;
+      transition: opacity 1.5s ease-in-out;
     }
 
     .text-container {
       position: absolute;
-      font-size: 2.6rem;
+      font-size: 2.3rem;
       font-weight: bold;
       font-family: 'Bebas Neue', sans-serif;
       text-align: center;
@@ -869,4 +868,5 @@
 </body>
 
 </html>
+
 
