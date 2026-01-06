@@ -8,7 +8,7 @@
   <style>
     body { font-family: Arial, sans-serif; }
 
-      #overlay {
+    #overlay {
       display: none;
       position: fixed;
       top: 0; left: 0;
@@ -66,7 +66,7 @@
       color: rgb(255, 255, 255);
       font-size: 1.7rem;
     }
-    .considerableFlashFlood#testWarningContainer { color: rgba(255, 255, 255, 1) !important; }
+    .considerableFlashFlood#testWarningContainer { color: rgba(255, 255, 255) !important; }
     .considerableFlashFlood#testCountyContainer { color: rgb(255, 255, 255) !important; }
     .catastrophicFlashFlood#testWarningContainer { color: rgb(255, 255, 255) !important; }
     .catastrophicFlashFlood#testCountyContainer { color: rgb(255, 255, 255) !important; }
@@ -86,7 +86,8 @@
     .pdsTornado#testWarningContainer { color: rgb(255, 255, 255) !important; }
     .pdsTornado#testCountyContainer { color: rgb(255, 255, 255) !important; }
     .tornadoEmergency#testWarningContainer { color: rgb(255, 255, 255) !important; }
-    .tornadoEmergency#testCountyContainer { color: rgb(255, 255, 255) !important; 
+    .tornadoEmergency#testCountyContainer { color: rgb(255, 255, 255) !important; }
+
     .button-group {
       position: absolute;
       top: 10px; left: 50%;
@@ -102,9 +103,43 @@
       font-family: 'Bebas Neue', Arial, sans-serif;
       cursor: pointer;
     }
+    .test-buttons {
+      position: absolute;
+      top: 10px; left: 10px;
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .test-buttons button {
+      font-size: 1rem;
+      padding: 5px 10px;
+      font-family: 'Bebas Neue', Arial, sans-serif;
+      cursor: pointer;
+    }
+    .test-buttons button.active {
+      background-color: grey;
+    }
+    .mode-selector {
+      position: absolute;
+      top: 50px; left: 50%;
+      transform: translateX(-50%);
+      z-index: 10000;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .mode-selector label {
+      font-size: 1.1rem;
+      font-family: 'Bebas Neue', Arial, sans-serif;
+    }
   </style>
 </head>
 <body>
+  <div class="test-buttons">
+    <button onclick="setTestMode('new', this)">Test as New Alert</button>
+    <button onclick="setTestMode('upgraded', this)">Test as Upgraded Alert</button>
+  </div>
   <div class="button-group">
     <button onclick="showAlert('severe')">Severe Thunderstorm Warning</button>
     <button onclick="showAlert('severe_considerable')">Severe Thunderstorm Warning – Considerable</button>
@@ -116,6 +151,15 @@
     <button onclick="showAlert('flashflood')">Flash Flood Warning</button>
     <button onclick="showAlert('flashflood_considerable')">Flash Flood Warning - Considerable</button>
     <button onclick="showAlert('flashflood_catastrophic')">Flash Flood Emergency</button>
+    <button onclick="showAlert('special_statement')">Special Weather Statement</button>
+    <button onclick="showAlert('severe_watch')">Severe Thunderstorm Watch</button>
+    <button onclick="showAlert('tornado_watch')">Tornado Watch</button>
+    <button onclick="showAlert('winter_storm')">Winter Storm Warning</button>
+    <button onclick="showAlert('blizzard')">Blizzard Warning</button>
+    <button onclick="showAlert('tropical_storm')">Tropical Storm Warning</button>
+    <button onclick="showAlert('hurricane')">Hurricane Warning</button>
+    <button onclick="showAlert('snow_squall')">Snow Squall Warning</button>
+    <button onclick="showAlert('winter_watch')">Winter Storm Watch</button>
   </div>
   <div id="overlay">
     <img id="overlayImage" src="" alt="Warning Image" />
@@ -126,6 +170,7 @@
 
   <script>
     let alertQueue = [], isOverlayActive = false, initialLoad = true;
+    let testAsUpgraded = false;
 
     const issuedSevereAlerts       = {};
     const issuedTornadoAlerts      = {};
@@ -248,6 +293,42 @@
           testWarningContainer.classList.add("considerableFlashFlood");
           testCountyContainer.classList.add("considerableFlashFlood");
         }
+      }
+      else if (type === "specialStatement") {
+        testWarningContainer.classList.add("specialStatement");
+        testCountyContainer.classList.add("specialStatement");
+      }
+      else if (type === "severeWatch") {
+        testWarningContainer.classList.add("severeWatch");
+        testCountyContainer.classList.add("severeWatch");
+      }
+      else if (type === "tornadoWatch") {
+        testWarningContainer.classList.add("tornadoWatch");
+        testCountyContainer.classList.add("tornadoWatch");
+      }
+      else if (type === "winterStorm") {
+        testWarningContainer.classList.add("winterStorm");
+        testCountyContainer.classList.add("winterStorm");
+      }
+      else if (type === "blizzard") {
+        testWarningContainer.classList.add("blizzard");
+        testCountyContainer.classList.add("blizzard");
+      }
+      else if (type === "tropicalStorm") {
+        testWarningContainer.classList.add("tropicalStorm");
+        testCountyContainer.classList.add("tropicalStorm");
+      }
+      else if (type === "hurricane") {
+        testWarningContainer.classList.add("hurricane");
+        testCountyContainer.classList.add("hurricane");
+      }
+      else if (type === "snowSquall") {
+        testWarningContainer.classList.add("snowSquall");
+        testCountyContainer.classList.add("snowSquall");
+      }
+      else if (type === "winterWatch") {
+        testWarningContainer.classList.add("winterWatch");
+        testCountyContainer.classList.add("winterWatch");
       }
 
       overlayImage.src = imageSrc + "?t=" + Date.now();
@@ -776,8 +857,27 @@
         areaDesc: "Sample County, State",
         type: "flashFlood",
         flashFloodCatastrophic: true
-      }
+      },
     };
+
+    function setTestMode(mode, button) {
+      testAsUpgraded = (mode === 'upgraded');
+      document.querySelectorAll('.test-buttons button').forEach(btn => btn.classList.remove('active'));
+      button.classList.add('active');
+    }
+
+    function getUpgradedAudio(type, cfg) {
+      if (type === 'tornado') {
+        if (cfg.emergency) return 'TORE Upgraded.mp3';
+        return 'PDS TOR - TOR Upgraded.mp3';
+      }
+      if (type === 'flashFlood') {
+        if (cfg.flashFloodCatastrophic) return 'FFWE Upgraded.mp3';
+        if (cfg.flashFloodConsiderable) return 'FFW - Considerable Upgraded.mp3';
+        return cfg.audioSrc;
+      }
+      return cfg.audioSrc;
+    }
 
     function showAlert(type) {
       const cfg = alertConfigs[type];
@@ -833,14 +933,21 @@
       overlayImage.style.opacity = "1";
       setTimeout(() => overlayImage.style.transition = "opacity 1.5s ease-in-out", 50);
 
-      testWarningContainer.textContent = cfg.eventText;
+      let eventText = cfg.eventText;
+      let audioSrc = cfg.audioSrc;
+      if (testAsUpgraded) {
+        eventText += " Upgraded";
+        audioSrc = getUpgradedAudio(cfg.type, cfg);
+      }
+
+      testWarningContainer.textContent = eventText;
       testCountyContainer.textContent = cfg.areaDesc;
 
       overlay.style.display = "flex";
 
-      if (cfg.audioSrc) {
-        overlayAudio.src = cfg.audioSrc;
-        overlayAudio.play().catch(()=>{});
+      if (audioSrc) {
+        overlayAudio.src = audioSrc;
+        overlayAudio.play().catch(()=>{});  
       } else {
         overlayAudio.pause();
         overlayAudio.src = "";
@@ -866,10 +973,4 @@
     }
   </script>
 </body>
-
 </html>
-
-
-
-
-
