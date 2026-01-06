@@ -766,8 +766,48 @@
           xEl.textContent = "";
           return;
         }
-
-        const a     = alerts[currentAlertIndex],
+        // --- Begin: Multi-level display priority logic ---
+      // 1. If any tornado warning with considerable/catastrophic, show ONLY tornado warnings
+      const tornadoWarnConsCat = alerts.filter(a =>
+        a.eventType.toLowerCase().includes("tornado warning") &&
+        (a.tornadoDamageThreatConsiderable || a.tornadoDamageThreatCatastrophic)
+      );
+      if (tornadoWarnConsCat.length > 0) {
+        alerts = alerts.filter(a => a.eventType.toLowerCase().includes("tornado warning"));
+      } else {
+        // 2. If any tornado/severe/flood warning, show ONLY those three
+        const warnTypes = ["tornado warning", "severe thunderstorm warning", "flash flood warning"];
+        const warnAlerts = alerts.filter(a =>
+          warnTypes.some(type => a.eventType.toLowerCase().includes(type))
+        );
+        if (warnAlerts.length > 0) {
+          alerts = alerts.filter(a =>
+            warnTypes.some(type => a.eventType.toLowerCase().includes(type))
+          );
+        } else {
+          // 3. If any tornado/severe watch, show only watches + snow squall, blizzard, tropical storm, hurricane warnings
+          const watchTypes = ["tornado watch", "severe thunderstorm watch"];
+          const extraWarnTypes = [
+            "snow squall warning",
+            "blizzard warning",
+            "tropical storm warning",
+            "hurricane warning"
+          ];
+          const watchAlerts = alerts.filter(a =>
+            watchTypes.some(type => a.eventType.toLowerCase().includes(type))
+          );
+          if (watchAlerts.length > 0) {
+            alerts = alerts.filter(a =>
+              watchTypes.some(type => a.eventType.toLowerCase().includes(type)) ||
+              extraWarnTypes.some(type => a.eventType.toLowerCase().includes(type))
+            );
+          }
+          // else: show all alerts (alerts remains unchanged)
+        }
+      }
+      // Reset indices if out of bounds
+      if (currentAlertIndex >= alerts.length) currentAlertIndex = 0;
+      const a     = alerts[currentAlertIndex],
               chunk = a.areaChunks[currentAreaIndex],
               mins  = calculateMinutesUntilExpiration(a.expireDate);
 
@@ -916,3 +956,4 @@
     </script>
   </body>
 </html>
+
