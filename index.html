@@ -10,12 +10,12 @@
     body {
       font-family: 'Bebas Neue', sans-serif;
       text-align: center;
-      background: radial-gradient(circle at 70% 20%, #fff 0%, #ffcccc 10%, #ff0000 60%, #b30000 100%), 
-                  repeating-linear-gradient(135deg, #ff3333 0 10px, #ff0000 10px 20px);
+      background: radial-gradient(circle at 70% 20%, #fffbe6 0%, #ffe066 10%, #1a237e 60%, #0d133d 100%),
+                  repeating-linear-gradient(135deg, #ffd700 0 10px, #b0c4de 10px 20px);
       margin: 0;
       padding: 2em;
       min-height: 100vh;
-      box-shadow: 0 0 80px 10px #ff0000 inset;
+      box-shadow: 0 0 80px 10px #ffd700 inset;
       position: relative;
     }
     h1 {
@@ -23,23 +23,23 @@
       font-size: 3.5em;
       color: #fff;
       margin-bottom: 0.5em;
-      text-shadow: 0 0 24px #ff0000, 0 0 32px #00ff00, 2px 2px 0 #222, 0 0 8px #fff;
+      text-shadow: 0 0 24px #ffd700, 0 0 32px #b0c4de, 2px 2px 0 #222, 0 0 8px #fff;
       letter-spacing: 3px;
-      background: linear-gradient(90deg, #fff 10%, #ff0000 40%, #00ff00 60%, #fff 90%);
+      background: linear-gradient(90deg, #fffbe6 10%, #ffd700 40%, #b0c4de 60%, #fffbe6 90%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      filter: drop-shadow(0 2px 8px #b30000);
+      filter: drop-shadow(0 2px 8px #ffd700);
       animation: h1glow 2.5s infinite alternate;
     }
     @keyframes h1glow {
-      0% { filter: drop-shadow(0 2px 8px #b30000); }
-      100% { filter: drop-shadow(0 2px 24px #00ff00); }
+      0% { filter: drop-shadow(0 2px 8px #ffd700); }
+      100% { filter: drop-shadow(0 2px 24px #b0c4de); }
     }
     p {
       font-size: 1.3em;
       color: #fff;
-      text-shadow: 0 0 8px #00ff00, 0 0 2px #fff;
+      text-shadow: 0 0 8px #ffd700, 0 0 2px #fff;
       margin-bottom: 1.5em;
       letter-spacing: 1px;
     }
@@ -55,15 +55,15 @@
       width: 260px;
       padding: 15px 0;
       margin: 0;
-      background: linear-gradient(120deg, #fff 0%, #00ff00 40%, #ff0000 100%);
-      border: 2.5px solid #fff;
+      background: linear-gradient(120deg, #fffbe6 0%, #ffd700 40%, #1a237e 100%);
+      border: 2.5px solid #fffbe6;
       text-decoration: none;
-      color: #b30000;
+      color: #1a237e;
       font-size: 1.5em;
       font-family: 'Bebas Neue', sans-serif;
       font-weight: bold;
       letter-spacing: 2px;
-      box-shadow: 0 0 18px #fff, 0 0 32px #ff000033;
+      box-shadow: 0 0 18px #fffbe6, 0 0 32px #ffd70033;
       transition: background 0.3s, color 0.3s, box-shadow 0.3s, border-color 0.3s, transform 0.2s;
       cursor: pointer;
       border-radius: 16px;
@@ -72,16 +72,16 @@
       animation: btnpulse 2.5s infinite alternate;
     }
     .resolution:hover {
-      background: linear-gradient(120deg, #fff 0%, #ff0000 60%, #00ff00 100%);
-      color: #fff;
-      box-shadow: 0 0 32px #fff, 0 0 60px #00ff0099;
-      border-color: #00ff00;
+      background: linear-gradient(120deg, #fffbe6 0%, #1a237e 60%, #ffd700 100%);
+      color: #fffbe6;
+      box-shadow: 0 0 32px #fffbe6, 0 0 60px #ffd70099;
+      border-color: #ffd700;
       transform: scale(1.05) rotate(-2deg);
       z-index: 2;
     }
     @keyframes btnpulse {
-      0% { box-shadow: 0 0 18px #fff, 0 0 32px #ff000033; }
-      100% { box-shadow: 0 0 32px #fff, 0 0 60px #00ff0099; }
+      0% { box-shadow: 0 0 18px #fffbe6, 0 0 32px #ffd70033; }
+      100% { box-shadow: 0 0 32px #fffbe6, 0 0 60px #ffd70099; }
     }
     #update-popup {
       position: fixed;
@@ -100,11 +100,11 @@
       backdrop-filter: blur(2px);
     }
     #update-popup-box {
-      background: linear-gradient(135deg, #ff0000 60%, #00ff00 100%);
-      border: 2.5px solid #fff;
+      background: linear-gradient(135deg, #1a237e 60%, #ffd700 100%);
+      border: 2.5px solid #fffbe6;
       border-radius: 18px;
       padding: 1.5em 1.5em 1.2em 1.5em;
-      box-shadow: 0 0 32px #fff, 0 0 40px #00ff0099;
+      box-shadow: 0 0 32px #fffbe6, 0 0 40px #ffd70099;
       max-width: 340px;
       text-align: center;
       opacity: 1;
@@ -112,38 +112,38 @@
       animation: popupglow 2s infinite alternate;
     }
     @keyframes popupglow {
-      0% { box-shadow: 0 0 32px #fff, 0 0 40px #00ff0099; }
-      100% { box-shadow: 0 0 48px #fff, 0 0 80px #ff000099; }
+      0% { box-shadow: 0 0 32px #fffbe6, 0 0 40px #ffd70099; }
+      100% { box-shadow: 0 0 48px #fffbe6, 0 0 80px #1a237e99; }
     }
     #update-popup-box ul {
-      color: #fff;
+      color: #fffbe6;
     }
     #update-popup-box li b {
-      color: #fff;
-      text-shadow: 0 0 4px #ff0000, 0 0 4px #00ff00;
+      color: #fffbe6;
+      text-shadow: 0 0 4px #ffd700, 0 0 4px #b0c4de;
     }
     #close-update-popup {
       margin-top: 0.7em;
       font-size: 1.1em;
-      background: linear-gradient(90deg, #00ff00 0%, #ff0000 100%);
-      color: #fff;
+      background: linear-gradient(90deg, #ffd700 0%, #1a237e 100%);
+      color: #fffbe6;
       border: none;
       border-radius: 8px;
       padding: 0.5em 1.5em;
       cursor: pointer;
       font-family: 'Bebas Neue', sans-serif;
-      box-shadow: 0 0 12px #ff000099;
+      box-shadow: 0 0 12px #ffd70099;
       transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
       font-weight: bold;
       letter-spacing: 1px;
     }
     #close-update-popup:hover {
-      background: linear-gradient(90deg, #ff0000 0%, #00ff00 100%);
-      color: #fff;
-      box-shadow: 0 0 24px #00ff00, 0 0 40px #ff000099;
+      background: linear-gradient(90deg, #1a237e 0%, #ffd700 100%);
+      color: #fffbe6;
+      box-shadow: 0 0 24px #ffd700, 0 0 40px #1a237e99;
       transform: scale(1.07);
     }
-    /* Snowflake animation styles */
+    /* Fireworks animation styles */
     #snowflakes {
       pointer-events: none;
       position: fixed;
@@ -154,25 +154,17 @@
       z-index: 1000;
       overflow: hidden;
     }
-    .snowflake {
+    .firework-dot {
       position: absolute;
-      top: 0;
-      left: 0;
-      color: #fff;
-      opacity: 0.7;
-      font-size: 1.5em;
+      border-radius: 50%;
       pointer-events: none;
-      text-shadow: 0 0 8px #fff, 0 0 12px #00ff00;
-      animation: snowspin 6s linear infinite;
-    }
-    @keyframes snowspin {
-      0% { transform: rotate(0deg);}
-      100% { transform: rotate(360deg);}
+      will-change: transform, opacity;
+      box-shadow: 0 0 8px #fff, 0 0 16px #ffd700;
     }
   </style>
 </head>
 <body>
-  <!-- Snowflake animation container -->
+  <!-- Fireworks animation container -->
   <div id="snowflakes"></div>
   <!-- Popup for update info -->
   <div id="update-popup" style="
@@ -191,45 +183,52 @@
     transition: opacity 0.5s;
     ">
     <div id="update-popup-box" style="
-      background: linear-gradient(135deg, #ff0000 60%, #00ff00 100%);
-      border: 2.5px solid #fff;
+      background: linear-gradient(135deg, #1a237e 60%, #ffd700 100%);
+      border: 2.5px solid #fffbe6;
       border-radius: 18px;
       padding: 1.5em 1.5em 1.2em 1.5em;
-      box-shadow: 0 0 32px #fff, 0 0 40px #00ff0099;
+      box-shadow: 0 0 32px #fffbe6, 0 0 40px #ffd70099;
       max-width: 340px;
       text-align: center;
       opacity: 1;
       transition: opacity 0.5s;
       animation: popupglow 2s infinite alternate;
     ">
-      <div style="font-size:1.2em; color:#ff4d4d; margin-bottom:0.4em;">
-        🎄 Home Page Updated: Christmas Theme! 🎄
+      <div style="font-size:1.2em; color:#ffd700; margin-bottom:0.4em;">
+        🎆 Home Page Updated: New Year 2026 Theme! 🎆
       </div>
-      <div style="font-size:0.95em; color:#b30000; margin-bottom:0.7em;">
+      <div style="font-size:0.95em; color:#1a237e; margin-bottom:0.7em;">
         <b>What's New:</b>
       </div>
       <ul style="text-align:left; color:#222; font-size:0.85em; margin:0 0 0.7em 0; padding-left:1.1em;">
         <li style="margin-bottom:0.5em;">
-          <b>Christmas Theme</b> is now live on the homepage.
+          <b>2026 New Year Theme</b> is now live on the homepage.
         </li>
         <li style="margin-bottom:0.5em;">
-          <b>Alert Count Bar Toggles:</b> In the menu, you can now turn <b>each alert count bar</b> on or off (Tornado, Severe Thunderstorm, Flood, Winter Weather). This works on <b>all resolutions</b>.
+          <b>Pop Up Alerts:</b> Now indicate if an alert is <b>new</b> or <b>upgraded</b>. <br>
+          <span style="color:#b71c1c;">We also fixed the position of the alerts—please reposition them as needed.</span>
         </li>
         <li style="margin-bottom:0.5em;">
-          <b>Canada Alerts:</b> Fixed alert color priority—alerts are now correctly assigned to their color.
+          <b>Alert Toggles:</b> You can now toggle overlays for alerts as <b>Upgraded</b>, <b>New</b>, or <b>Updated</b>.
+        </li>
+        <li style="margin-bottom:0.5em;">
+          <b>Alert Prioritization:</b> Fixed for <b>all resolutions</b>—alerts now show in the correct order.
+        </li>
+        <li style="margin-bottom:0.5em;">
+          <b>Video Tutorial:</b> See the link under the <b>Test Pop up Alerts</b> button.
         </li>
       </ul>
       <button id="close-update-popup" style="
         margin-top: 0.7em;
         font-size: 1.1em;
-        background: linear-gradient(90deg, #00ff00 0%, #ff0000 100%);
-        color: #fff;
+        background: linear-gradient(90deg, #ffd700 0%, #1a237e 100%);
+        color: #fffbe6;
         border: none;
         border-radius: 8px;
         padding: 0.5em 1.5em;
         cursor: pointer;
         font-family: 'Bebas Neue', sans-serif;
-        box-shadow: 0 0 12px #ff000099;
+        box-shadow: 0 0 12px #ffd70099;
         transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
         font-weight: bold;
         letter-spacing: 1px;
@@ -240,13 +239,13 @@
   font-size: 3.5em;
   color: #fff;
   margin-bottom: 0.5em;
-  text-shadow: 0 0 24px #ff0000, 0 0 32px #00ff00, 2px 2px 0 #222, 0 0 8px #fff;
+  text-shadow: 0 0 24px #ffd700, 0 0 32px #b0c4de, 2px 2px 0 #222, 0 0 8px #fff;
   letter-spacing: 3px;
-  background: linear-gradient(90deg, #fff 10%, #ff0000 40%, #00ff00 60%, #fff 90%);
+  background: linear-gradient(90deg, #fffbe6 10%, #ffd700 40%, #b0c4de 60%, #fffbe6 90%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  filter: drop-shadow(0 2px 8px #b30000);
+  filter: drop-shadow(0 2px 8px #ffd700);
   animation: h1glow 2.5s infinite alternate;
 ">
   Welcome to Warnverlay Access 2.1
@@ -261,69 +260,55 @@
     <a href="usalertmap.html" class="resolution">US Alert Map</a>
     <a href="canadaalerts1080p.html" class="resolution">Canada Alerts 1080p</a>
     <a href="test.html" class="resolution">Test Pop up Alerts</a>
+    <a href="https://youtu.be/I2t6H0lTaLc?si=n2saD85RnTaj_J_-" class="resolution">video tutorial</a>
   </div>
   <script>
-    // Snowflake animation
+    // Fireworks animation
     (function() {
-      const snowflakeCount = 40;
-      const snowflakes = [];
-      const snowflakeContainer = document.getElementById('snowflakes');
-      // Style for snowflake container and flakes
-      Object.assign(snowflakeContainer.style, {
-        pointerEvents: 'none',
-        position: 'fixed',
-        left: 0,
-        top: 0,
-        width: '100vw',
-        height: '100vh',
-        zIndex: 1000,
-        overflow: 'hidden'
-      });
-      for (let i = 0; i < snowflakeCount; i++) {
-        const flake = document.createElement('div');
-        flake.textContent = '❄';
-        Object.assign(flake.style, {
-          position: 'absolute',
-          top: Math.random() * 100 + 'vh',
-          left: Math.random() * 100 + 'vw',
-          fontSize: (Math.random() * 18 + 12) + 'px',
-          color: '#fff',
-          opacity: Math.random() * 0.7 + 0.3,
-          filter: 'drop-shadow(0 0 4px #fff)',
-          userSelect: 'none',
-          transition: 'none'
-        });
-        snowflakes.push({
-          el: flake,
-          x: Math.random() * window.innerWidth,
-          y: Math.random() * window.innerHeight,
-          speed: 1 + Math.random() * 2,
-          drift: (Math.random() - 0.5) * 0.8,
-          size: parseFloat(flake.style.fontSize)
-        });
-        snowflakeContainer.appendChild(flake);
-      }
-      function animateSnow() {
-        for (const flake of snowflakes) {
-          flake.y += flake.speed;
-          flake.x += flake.drift;
-          if (flake.y > window.innerHeight) {
-            flake.y = -flake.size;
-            flake.x = Math.random() * window.innerWidth;
-          }
-          if (flake.x < 0) flake.x = window.innerWidth;
-          if (flake.x > window.innerWidth) flake.x = 0;
-          flake.el.style.top = flake.y + 'px';
-          flake.el.style.left = flake.x + 'px';
+      const colors = ['#ffd700', '#b0c4de', '#ff5252', '#00e676', '#fffbe6', '#1a237e', '#ff9800', '#e040fb'];
+      const fireworkContainer = document.getElementById('snowflakes');
+      function createFirework() {
+        const burstCount = 18 + Math.floor(Math.random() * 8);
+        const x = Math.random() * window.innerWidth * 0.8 + window.innerWidth * 0.1;
+        const y = Math.random() * window.innerHeight * 0.5 + window.innerHeight * 0.1;
+        const maxRadius = 60 + Math.random() * 40;
+        for (let i = 0; i < burstCount; i++) {
+          const angle = (2 * Math.PI * i) / burstCount;
+          const color = colors[Math.floor(Math.random() * colors.length)];
+          const dot = document.createElement('div');
+          dot.className = 'firework-dot';
+          dot.style.background = color;
+          dot.style.width = dot.style.height = (8 + Math.random() * 6) + 'px';
+          dot.style.left = x + 'px';
+          dot.style.top = y + 'px';
+          dot.style.opacity = '1';
+          fireworkContainer.appendChild(dot);
+          // Animate burst
+          setTimeout(() => {
+            dot.animate([
+              { transform: 'translate(0,0) scale(1)', opacity: 1 },
+              { transform: `translate(${Math.cos(angle)*maxRadius}px,${Math.sin(angle)*maxRadius}px) scale(1.5)`, opacity: 0 }
+            ], {
+              duration: 1200 + Math.random()*400,
+              easing: 'cubic-bezier(.5,0,.5,1)'
+            });
+            setTimeout(() => {
+              dot.remove();
+            }, 1300);
+          }, 10);
         }
-        requestAnimationFrame(animateSnow);
       }
-      animateSnow();
+      // Launch fireworks at intervals
+      setInterval(createFirework, 900);
+      // Initial burst
+      setTimeout(createFirework, 400);
     })();
 
     (function() {
-      // Only show popup if not dismissed before
-      if (localStorage.getItem('update-popup-dismissed') === '1') {
+      // Use a unique key for this script/page
+      var scriptKey = 'update-popup-dismissed-test.html';
+      // Only show popup if not dismissed for this script
+      if (localStorage.getItem(scriptKey) === '1') {
         document.getElementById('update-popup').style.display = 'none';
         return;
       }
@@ -331,8 +316,8 @@
       var box = document.getElementById('update-popup-box');
       var btn = document.getElementById('close-update-popup');
       btn.onclick = function() {
-        // Save dismissal in localStorage
-        localStorage.setItem('update-popup-dismissed', '1');
+        // Save dismissal for this script/page
+        localStorage.setItem(scriptKey, '1');
         // Fade out box, then overlay
         box.style.opacity = '0';
         setTimeout(function() {
