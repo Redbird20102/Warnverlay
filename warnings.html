@@ -269,6 +269,18 @@
         <span class="toggle-icon">ON</span><span>Flash Flood Alerts</span>
       </div>
     </div>
+    <div class="menu-group" id="overlay-options-group">
+      <h3>Overlay Options</h3>
+      <div class="alert-toggle" id="toggle-overlay-new">
+        <span class="toggle-icon">ON</span><span>Overlay as NEW</span>
+      </div>
+      <div class="alert-toggle" id="toggle-overlay-upgraded">
+        <span class="toggle-icon">ON</span><span>Overlay as UPGRADED</span>
+      </div>
+      <div class="alert-toggle" id="toggle-overlay-updated">
+        <span class="toggle-icon">ON</span><span>Overlay as UPDATED</span>
+      </div>
+    </div>
     <div class="menu-group" id="state-group">
       <h3>State Filters</h3>
       <!-- state toggles injected here -->
@@ -584,9 +596,70 @@
           const icon = this.querySelector(".toggle-icon");
           icon.textContent = stateToggles[state] ? "ON" : "OFF";
           icon.classList.toggle("disabled", !stateToggles[state]);
+          saveSettings();
         });
       }
     }
+
+    // Overlay option toggles
+    let overlayOnNew      = true;
+    let overlayOnUpgraded = true;
+    let overlayOnUpdated  = true;
+
+    // Load settings from localStorage
+    function loadSettings() {
+      try {
+        const overlay = JSON.parse(localStorage.getItem("overlayToggles") || "{}");
+        if (typeof overlay.onNew === "boolean") overlayOnNew = overlay.onNew;
+        if (typeof overlay.onUpgraded === "boolean") overlayOnUpgraded = overlay.onUpgraded;
+        if (typeof overlay.onUpdated === "boolean") overlayOnUpdated = overlay.onUpdated;
+
+        const cat = JSON.parse(localStorage.getItem("alertCategoryToggles") || "{}");
+        for (const k in cat) if (k in alertCategoryToggles) alertCategoryToggles[k] = !!cat[k];
+
+        const states = JSON.parse(localStorage.getItem("stateToggles") || "{}");
+        for (const k in states) if (k in stateToggles) stateToggles[k] = !!states[k];
+      } catch {}
+    }
+
+    // Save settings to localStorage
+    function saveSettings() {
+      localStorage.setItem("overlayToggles", JSON.stringify({
+        onNew: overlayOnNew,
+        onUpgraded: overlayOnUpgraded,
+        onUpdated: overlayOnUpdated
+      }));
+      localStorage.setItem("alertCategoryToggles", JSON.stringify(alertCategoryToggles));
+      localStorage.setItem("stateToggles", JSON.stringify(stateToggles));
+    }
+
+    function updateOverlayTogglesUI() {
+      const btnNew      = document.getElementById("toggle-overlay-new");
+      const btnUpgraded = document.getElementById("toggle-overlay-upgraded");
+      const btnUpdated  = document.getElementById("toggle-overlay-updated");
+      btnNew.querySelector(".toggle-icon").textContent      = overlayOnNew ? "ON" : "OFF";
+      btnUpgraded.querySelector(".toggle-icon").textContent = overlayOnUpgraded ? "ON" : "OFF";
+      btnUpdated.querySelector(".toggle-icon").textContent  = overlayOnUpdated ? "ON" : "OFF";
+      btnNew.querySelector(".toggle-icon").classList.toggle("disabled", !overlayOnNew);
+      btnUpgraded.querySelector(".toggle-icon").classList.toggle("disabled", !overlayOnUpgraded);
+      btnUpdated.querySelector(".toggle-icon").classList.toggle("disabled", !overlayOnUpdated);
+    }
+
+    document.getElementById("toggle-overlay-new").addEventListener("click", function() {
+      overlayOnNew = !overlayOnNew;
+      updateOverlayTogglesUI();
+      saveSettings();
+    });
+    document.getElementById("toggle-overlay-upgraded").addEventListener("click", function() {
+      overlayOnUpgraded = !overlayOnUpgraded;
+      updateOverlayTogglesUI();
+      saveSettings();
+    });
+    document.getElementById("toggle-overlay-updated").addEventListener("click", function() {
+      overlayOnUpdated = !overlayOnUpdated;
+      updateOverlayTogglesUI();
+      saveSettings();
+    });
 
     // category toggles
     document.querySelectorAll('#alert-menu .alert-toggle[data-type="tornado"], #alert-menu .alert-toggle[data-type="severe"], #alert-menu .alert-toggle[data-type="flashFlood"]').forEach(toggle => {
@@ -596,6 +669,7 @@
         const icon = this.querySelector(".toggle-icon");
         icon.textContent = alertCategoryToggles[type] ? "ON" : "OFF";
         icon.classList.toggle("disabled", !alertCategoryToggles[type]);
+        saveSettings();
       });
     });
 
@@ -605,7 +679,12 @@
       menu.style.display = window.getComputedStyle(menu).display === "none" ? "block" : "none";
     });
 
+    // Load settings before UI setup
+    loadSettings();
+    // Re-populate state toggles after loading settings
+    document.getElementById("state-group").innerHTML = '<h3>State Filters</h3>';
     populateStateToggles();
+    updateOverlayTogglesUI();
 
     function extractStates(areaDesc) {
       const matches = areaDesc.match(/\b[A-Za-z]{2}\b/g);
@@ -962,12 +1041,18 @@
 
     // Helper: Determine if an overlay should occur based on the action and alert type
     function shouldOverlayUpgrade(record, newState, action, alert, baseEventText) {
-      // For tornado, severe thunderstorm, and flash flood warnings, allow overlay on upgrade (CON or NEW)
+      // Only applies to tornado, severe thunderstorm, and flash flood warnings
       if (baseEventText.includes("Tornado") || baseEventText.includes("Severe Thunderstorm") || baseEventText.includes("Flash Flood")) {
-        return (action === "CON" || action === "NEW");
+        // Overlay on NEW
+        if (action === "NEW" && overlayOnNew) return true;
+        // Overlay on UPGRADED (NEW/CON with common_id, but not NEW if already handled above)
+        if ((action === "NEW" || action === "CON") && alert.common_id && overlayOnUpgraded) return true;
+        // Overlay on UPDATED (CON/EXT/other except NEW)
+        if (action !== "NEW" && overlayOnUpdated) return true;
+        return false;
       }
-      // For other alerts, only overlay on NEW action
-      return action === "NEW";
+      // For other alerts, only overlay on NEW action if enabled
+      return action === "NEW" && overlayOnNew;
     }
 
     pollAlerts();
