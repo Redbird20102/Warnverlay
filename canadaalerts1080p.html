@@ -759,7 +759,7 @@
     // ---------- Replace: fetchCanada API & normalizer (now excludes expired alerts) ----------
     async function fetchWeatherAlerts() {
       try {
-        const res = await fetch('https://canada-api.vercel.app/');
+        const res = await fetch('https://www.stormsalert.com/zonemapping/canada.php?nogeo=true');
         const json = await res.json();
 
         // Recursively collect all objects in the response
