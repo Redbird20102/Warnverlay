@@ -497,7 +497,7 @@
     // Fetch alerts from warnverlay API
     async function fetchWarnverlayAlerts() {
       try {
-        const resp = await fetch("https://warnverlay-usa-alerts--redbird20102.replit.app/");
+        const resp = await fetch("https://warnverlay-usa-alerts.onrender.com");
         const data = await resp.json();
         if (!Array.isArray(data) || !data.length) return [];
         return data.map(alert => {
@@ -1269,4 +1269,5 @@
   </script>
 </body>
 </html>
+
 
