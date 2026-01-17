@@ -497,7 +497,7 @@
     // Fetch alerts from warnverlay API
     async function fetchWarnverlayAlerts() {
       try {
-        const resp = await fetch("https://warnverlay-usa-alerts.netlify.app/");
+        const resp = await fetch("https://warnverlay-usa-warnings.netlify.app/");
         const data = await resp.json();
         if (!Array.isArray(data) || !data.length) return [];
         return data.map(alert => {
@@ -1269,6 +1269,7 @@
   </script>
 </body>
 </html>
+
 
 
 
