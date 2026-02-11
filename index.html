@@ -10,246 +10,56 @@
     body {
       font-family: 'Bebas Neue', sans-serif;
       text-align: center;
-      background: radial-gradient(circle at 70% 20%, #fffbe6 0%, #ffe066 10%, #1a237e 60%, #0d133d 100%),
-                  repeating-linear-gradient(135deg, #ffd700 0 10px, #b0c4de 10px 20px);
+      background: linear-gradient(135deg, #2c0000 0%, #660000 100%);
       margin: 0;
       padding: 2em;
-      min-height: 100vh;
-      box-shadow: 0 0 80px 10px #ffd700 inset;
-      position: relative;
     }
     h1 {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 3.5em;
-      color: #fff;
+      font-size: 3em;
+      color: #ff4d4d;
       margin-bottom: 0.5em;
-      text-shadow: 0 0 24px #ffd700, 0 0 32px #b0c4de, 2px 2px 0 #222, 0 0 8px #fff;
-      letter-spacing: 3px;
-      background: linear-gradient(90deg, #fffbe6 10%, #ffd700 40%, #b0c4de 60%, #fffbe6 90%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      filter: drop-shadow(0 2px 8px #ffd700);
-      animation: h1glow 2.5s infinite alternate;
-    }
-    @keyframes h1glow {
-      0% { filter: drop-shadow(0 2px 8px #ffd700); }
-      100% { filter: drop-shadow(0 2px 24px #b0c4de); }
+      text-shadow: 0 0 10px #ff4d4d, 0 0 20px #660000;
     }
     p {
-      font-size: 1.3em;
+      font-size: 1.2em;
       color: #fff;
-      text-shadow: 0 0 8px #ffd700, 0 0 2px #fff;
-      margin-bottom: 1.5em;
-      letter-spacing: 1px;
+      text-shadow: 0 0 5px #660000;
     }
     .resolution-container {
       margin-top: 1em;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 0.7em;
     }
     .resolution {
       display: block;
-      width: 260px;
-      padding: 15px 0;
-      margin: 0;
-      background: linear-gradient(120deg, #fffbe6 0%, #ffd700 40%, #1a237e 100%);
-      border: 2.5px solid #fffbe6;
+      width: 220px;
+      padding: 12px;
+      margin: 10px 0;
+      background: linear-gradient(135deg, #800000 60%, #ff4d4d 100%);
+      border: 2px solid #ff4d4d;
       text-decoration: none;
-      color: #1a237e;
-      font-size: 1.5em;
-      font-family: 'Bebas Neue', sans-serif;
-      font-weight: bold;
-      letter-spacing: 2px;
-      box-shadow: 0 0 18px #fffbe6, 0 0 32px #ffd70033;
-      transition: background 0.3s, color 0.3s, box-shadow 0.3s, border-color 0.3s, transform 0.2s;
-      cursor: pointer;
-      border-radius: 16px;
-      position: relative;
-      overflow: hidden;
-      animation: btnpulse 2.5s infinite alternate;
-    }
-    .resolution:hover {
-      background: linear-gradient(120deg, #fffbe6 0%, #1a237e 60%, #ffd700 100%);
-      color: #fffbe6;
-      box-shadow: 0 0 32px #fffbe6, 0 0 60px #ffd70099;
-      border-color: #ffd700;
-      transform: scale(1.05) rotate(-2deg);
-      z-index: 2;
-    }
-    @keyframes btnpulse {
-      0% { box-shadow: 0 0 18px #fffbe6, 0 0 32px #ffd70033; }
-      100% { box-shadow: 0 0 32px #fffbe6, 0 0 60px #ffd70099; }
-    }
-    #update-popup {
-      position: fixed;
-      top: 0; left: 0; width: 100vw; height: 100vh;
-      background: rgba(0,0,0,0.85);
       color: #fff;
-      z-index: 9999;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
+      font-size: 1.3em;
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 1.2em;
-      opacity: 1;
-      transition: opacity 0.5s;
-      backdrop-filter: blur(2px);
-    }
-    #update-popup-box {
-      background: linear-gradient(135deg, #1a237e 60%, #ffd700 100%);
-      border: 2.5px solid #fffbe6;
-      border-radius: 18px;
-      padding: 1.5em 1.5em 1.2em 1.5em;
-      box-shadow: 0 0 32px #fffbe6, 0 0 40px #ffd70099;
-      max-width: 340px;
-      text-align: center;
-      opacity: 1;
-      transition: opacity 0.5s;
-      animation: popupglow 2s infinite alternate;
-    }
-    @keyframes popupglow {
-      0% { box-shadow: 0 0 32px #fffbe6, 0 0 40px #ffd70099; }
-      100% { box-shadow: 0 0 48px #fffbe6, 0 0 80px #1a237e99; }
-    }
-    #update-popup-box ul {
-      color: #fffbe6;
-    }
-    #update-popup-box li b {
-      color: #fffbe6;
-      text-shadow: 0 0 4px #ffd700, 0 0 4px #b0c4de;
-    }
-    #close-update-popup {
-      margin-top: 0.7em;
-      font-size: 1.1em;
-      background: linear-gradient(90deg, #ffd700 0%, #1a237e 100%);
-      color: #fffbe6;
-      border: none;
-      border-radius: 8px;
-      padding: 0.5em 1.5em;
-      cursor: pointer;
-      font-family: 'Bebas Neue', sans-serif;
-      box-shadow: 0 0 12px #ffd70099;
-      transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
       font-weight: bold;
       letter-spacing: 1px;
+      box-shadow: 0 0 10px #660000, 0 0 20px #ff4d4d33;
+      transition: background 0.3s, color 0.3s, box-shadow 0.3s;
+      cursor: pointer;
+      border-radius: 8px;
     }
-    #close-update-popup:hover {
-      background: linear-gradient(90deg, #1a237e 0%, #ffd700 100%);
-      color: #fffbe6;
-      box-shadow: 0 0 24px #ffd700, 0 0 40px #1a237e99;
-      transform: scale(1.07);
-    }
-    /* Fireworks animation styles */
-    #snowflakes {
-      pointer-events: none;
-      position: fixed;
-      left: 0;
-      top: 0;
-      width: 100vw;
-      height: 100vh;
-      z-index: 1000;
-      overflow: hidden;
-    }
-    .firework-dot {
-      position: absolute;
-      border-radius: 50%;
-      pointer-events: none;
-      will-change: transform, opacity;
-      box-shadow: 0 0 8px #fff, 0 0 16px #ffd700;
+    .resolution:hover {
+      background: linear-gradient(135deg, #ff4d4d 60%, #800000 100%);
+      color: #fff;
+      box-shadow: 0 0 20px #ff4d4d, 0 0 40px #66000099;
+      border-color: #fff;
     }
   </style>
 </head>
 <body>
-  <!-- Fireworks animation container -->
-  <div id="snowflakes"></div>
-  <!-- Popup for update info -->
-  <div id="update-popup" style="
-    position: fixed;
-    top: 0; left: 0; width: 100vw; height: 100vh;
-    background: rgba(0,0,0,0.85);
-    color: #fff;
-    z-index: 9999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.2em;
-    opacity: 1;
-    transition: opacity 0.5s;
-    ">
-    <div id="update-popup-box" style="
-      background: linear-gradient(135deg, #1a237e 60%, #ffd700 100%);
-      border: 2.5px solid #fffbe6;
-      border-radius: 18px;
-      padding: 1.5em 1.5em 1.2em 1.5em;
-      box-shadow: 0 0 32px #fffbe6, 0 0 40px #ffd70099;
-      max-width: 340px;
-      text-align: center;
-      opacity: 1;
-      transition: opacity 0.5s;
-      animation: popupglow 2s infinite alternate;
-    ">
-      <div style="font-size:1.2em; color:#ffd700; margin-bottom:0.4em;">
-        🎆 Home Page Updated: New Year 2026 Theme! 🎆
-      </div>
-      <div style="font-size:0.95em; color:#1a237e; margin-bottom:0.7em;">
-        <b>What's New:</b>
-      </div>
-      <ul style="text-align:left; color:#222; font-size:0.85em; margin:0 0 0.7em 0; padding-left:1.1em;">
-        <li style="margin-bottom:0.5em;">
-          <b>2026 New Year Theme</b> is now live on the homepage.
-        </li>
-        <li style="margin-bottom:0.5em;">
-          <b>Pop Up Alerts:</b> Now indicate if an alert is <b>new</b> or <b>upgraded</b>. <br>
-          <span style="color:#b71c1c;">We also fixed the position of the alerts—please reposition them as needed.</span>
-        </li>
-        <li style="margin-bottom:0.5em;">
-          <b>Alert Toggles:</b> You can now toggle overlays for alerts as <b>Upgraded</b>, <b>New</b>, or <b>Updated</b>.
-        </li>
-        <li style="margin-bottom:0.5em;">
-          <b>Alert Prioritization:</b> Fixed for <b>all resolutions</b>—alerts now show in the correct order.
-        </li>
-        <li style="margin-bottom:0.5em;">
-          <b>Video Tutorial:</b> See the link under the <b>Test Pop up Alerts</b> button.
-        </li>
-      </ul>
-      <button id="close-update-popup" style="
-        margin-top: 0.7em;
-        font-size: 1.1em;
-        background: linear-gradient(90deg, #ffd700 0%, #1a237e 100%);
-        color: #fffbe6;
-        border: none;
-        border-radius: 8px;
-        padding: 0.5em 1.5em;
-        cursor: pointer;
-        font-family: 'Bebas Neue', sans-serif;
-        box-shadow: 0 0 12px #ffd70099;
-        transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
-        font-weight: bold;
-        letter-spacing: 1px;
-      ">Close</button>
-    </div>
-  </div>
-  <h1 style="
-  font-size: 3.5em;
-  color: #fff;
-  margin-bottom: 0.5em;
-  text-shadow: 0 0 24px #ffd700, 0 0 32px #b0c4de, 2px 2px 0 #222, 0 0 8px #fff;
-  letter-spacing: 3px;
-  background: linear-gradient(90deg, #fffbe6 10%, #ffd700 40%, #b0c4de 60%, #fffbe6 90%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  filter: drop-shadow(0 2px 8px #ffd700);
-  animation: h1glow 2.5s infinite alternate;
-">
-  Welcome to Warnverlay Access 2.2
-</h1>
+  <h1>Welcome to Warnverlay Access 2.1</h1>
   <p>select the Resolution below</p>
   <div class="resolution-container">
     <a href="720p.html" class="resolution">720p</a>
@@ -260,76 +70,6 @@
     <a href="usalertmap.html" class="resolution">US Alert Map</a>
     <a href="canadaalerts1080p.html" class="resolution">Canada Alerts 1080p</a>
     <a href="test.html" class="resolution">Test Pop up Alerts</a>
-    <a href="https://youtu.be/AtTtNPobqZg?si=YlqQvtqt_UUjDz5Y" class="resolution">video tutorial</a>
   </div>
-  <script>
-    // Fireworks animation
-    (function() {
-      const colors = ['#ffd700', '#b0c4de', '#ff5252', '#00e676', '#fffbe6', '#1a237e', '#ff9800', '#e040fb'];
-      const fireworkContainer = document.getElementById('snowflakes');
-      function createFirework() {
-        const burstCount = 18 + Math.floor(Math.random() * 8);
-        const x = Math.random() * window.innerWidth * 0.8 + window.innerWidth * 0.1;
-        const y = Math.random() * window.innerHeight * 0.5 + window.innerHeight * 0.1;
-        const maxRadius = 60 + Math.random() * 40;
-        for (let i = 0; i < burstCount; i++) {
-          const angle = (2 * Math.PI * i) / burstCount;
-          const color = colors[Math.floor(Math.random() * colors.length)];
-          const dot = document.createElement('div');
-          dot.className = 'firework-dot';
-          dot.style.background = color;
-          dot.style.width = dot.style.height = (8 + Math.random() * 6) + 'px';
-          dot.style.left = x + 'px';
-          dot.style.top = y + 'px';
-          dot.style.opacity = '1';
-          fireworkContainer.appendChild(dot);
-          // Animate burst
-          setTimeout(() => {
-            dot.animate([
-              { transform: 'translate(0,0) scale(1)', opacity: 1 },
-              { transform: `translate(${Math.cos(angle)*maxRadius}px,${Math.sin(angle)*maxRadius}px) scale(1.5)`, opacity: 0 }
-            ], {
-              duration: 1200 + Math.random()*400,
-              easing: 'cubic-bezier(.5,0,.5,1)'
-            });
-            setTimeout(() => {
-              dot.remove();
-            }, 1300);
-          }, 10);
-        }
-      }
-      // Launch fireworks at intervals
-      setInterval(createFirework, 900);
-      // Initial burst
-      setTimeout(createFirework, 400);
-    })();
-
-    (function() {
-      // Use a unique key for this script/page
-      var scriptKey = 'update-popup-dismissed-test.html';
-      // Only show popup if not dismissed for this script
-      if (localStorage.getItem(scriptKey) === '1') {
-        document.getElementById('update-popup').style.display = 'none';
-        return;
-      }
-      var popup = document.getElementById('update-popup');
-      var box = document.getElementById('update-popup-box');
-      var btn = document.getElementById('close-update-popup');
-      btn.onclick = function() {
-        // Save dismissal for this script/page
-        localStorage.setItem(scriptKey, '1');
-        // Fade out box, then overlay
-        box.style.opacity = '0';
-        setTimeout(function() {
-          popup.style.opacity = '0';
-          setTimeout(function() {
-            popup.style.display = 'none';
-          }, 500);
-        }, 400);
-      };
-    })();
-  </script>
 </body>
 </html>
-
-
