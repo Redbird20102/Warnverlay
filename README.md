@@ -24,6 +24,7 @@ Warnverlay is a real-time weather alert overlay designed for live streaming. It 
 1. Open: https://redbird20102.github.io/Warnverlay/
 2. Add it as a **Browser Source** in OBS
 3. Adjust width/height to fit your scene
+4. if help needed, watch the video tutorial by clicking on the video tutorial.
 
 ### Run Locally
 ```bash
