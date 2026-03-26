@@ -863,12 +863,30 @@
         return;
       }
 
-      // If using the generic background ("AlertActive.png"), display all active alerts (not just filtered/allowed).
+      // If using the generic background ("AlertActive.png"), cycle through alerts one at a time.
       if (bgImage === "AlertActive.png") {
         // Use the full alerts list (not filteredForTornado) for display
-        eventElement.textContent = alerts.map(a => a.eventType).join(" | ");
-        areaElement.textContent = alerts.map(a => a.areaChunks.join(" | ")).join(" | ");
-        expireDateElement.textContent = "";
+        if (alerts.length === 0) {
+          eventElement.textContent = "No Active Weather Alerts";
+          areaElement.textContent = "";
+          expireDateElement.textContent = "";
+          return;
+        }
+        
+        const alert = alerts[alertIndex];
+        const currentChunk = alert.areaChunks[areaIndex];
+        const minutesLeft = calculateMinutesUntilExpiration(alert.expireDate);
+
+        eventElement.style.opacity = 0;
+        areaElement.style.opacity = 0;
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        eventElement.textContent = alert.eventType;
+        areaElement.textContent = currentChunk;
+        expireDateElement.textContent = `Expires in: ${minutesLeft}`;
+        
+        eventElement.style.opacity = 1;
+        areaElement.style.opacity = 1;
         return;
       }
 
