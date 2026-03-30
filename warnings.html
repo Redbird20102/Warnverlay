@@ -562,37 +562,85 @@
       };
     }
 
-    // Fetch alerts from new warnverlay API
-    async function fetchWarnverlayAlerts() {
-      try {
-        const resp = await fetch("https://a8890-c7a1.e.jrnm.app/alerts");
-        // If service is down or returns non-2xx, signal failure by returning null
-        if (!resp.ok) return null;
-        const data = await resp.json();
-        // Accept several common shapes: top-level array, {alerts: []}, {data: []}, or GeoJSON {features: []}
-        let arr = null;
-        if (Array.isArray(data)) arr = data;
-        else if (data && Array.isArray(data.alerts)) arr = data.alerts;
-        else if (data && Array.isArray(data.data)) arr = data.data;
-        else if (data && Array.isArray(data.features)) arr = data.features.map(f => f.properties ? Object.assign({}, f.properties, { alertinfo: f.properties.alertinfo || f.alertinfo }) : f);
-        if (!arr) return null;
-        return arr.map(alert => {
-          // New API returns fields at top-level; use id and alertinfo
-          const props = alert.properties || {};
-          return {
-            id: alert.id || props.common_id || undefined,
-            event: alert.event || alert.event_description || "",
-            areaDesc: alert.areaDesc || alert.areaDescText || alert.area || "",
-            expires: alert.expires || "",
-            description: alert.description || "",
-            threats: extractThreatsFromWarnverlay(alert.alertinfo || alert.alertInfo || {}),
-            action: (props.vtec && props.vtec.action) || alert.action || ""
+   // Fetch alerts from new warnverlay API
+      // SSE logic for warnverlay API
+      let sseAlerts = [];
+      let sseActive = false;
+      let sseError = false;
+      function startWarnverlaySSE() {
+        try {
+          const es = new EventSource("https://a8890-c7a1.e.jrnm.app/alerts");
+          sseActive = true;
+          sseError = false;
+          es.onmessage = function(event) {
+            try {
+              let data = JSON.parse(event.data);
+              let arr = null;
+              if (Array.isArray(data)) arr = data;
+              else if (data && Array.isArray(data.alerts)) arr = data.alerts;
+              else if (data && Array.isArray(data.data)) arr = data.data;
+              else if (data && Array.isArray(data.features)) arr = data.features.map(f => f.properties ? Object.assign({}, f.properties, { alertinfo: f.properties.alertinfo || f.alertinfo }) : f);
+              if (!arr) return;
+              sseAlerts = arr.map(alert => {
+                const props = alert.properties || {};
+                return {
+                  id: alert.id || props.common_id || undefined,
+                  event: alert.event || alert.event_description || "",
+                  areaDesc: alert.areaDesc || alert.areaDescText || alert.area || "",
+                  expires: alert.expires || "",
+                  description: alert.description || "",
+                  threats: extractThreatsFromWarnverlay(alert.alertinfo || alert.alertInfo || {}),
+                  action: (props.vtec && props.vtec.action) || alert.action || ""
+                };
+              });
+            } catch (e) {}
           };
-        });
-      } catch (e) {
-        return null;
+          es.onerror = function() {
+            sseActive = false;
+            sseError = true;
+            es.close();
+          };
+        } catch (e) {
+          sseActive = false;
+          sseError = true;
+        }
       }
-    }
+
+      // Start SSE on load
+      startWarnverlaySSE();
+
+      async function fetchWarnverlayAlerts() {
+        // If SSE is working and has data, use it
+        if (sseActive && sseAlerts.length) {
+          return sseAlerts;
+        }
+        // If SSE failed, fallback to fetch
+        try {
+          const resp = await fetch("https://a8890-c7a1.e.jrnm.app/alerts");
+          if (!resp.ok) return null;
+          const data = await resp.json();
+          let arr = null;
+          if (Array.isArray(data)) arr = data;
+          else if (data && Array.isArray(data.alerts)) arr = data.alerts;
+          else if (data && Array.isArray(data.data)) arr = data.data;
+          else if (data && Array.isArray(data.features)) arr = data.features.map(f => f.properties ? Object.assign({}, f.properties, { alertinfo: f.properties.alertinfo || f.alertinfo }) : f);
+          if (!arr) return null;
+          return arr.map(alert => {
+            const props = alert.properties || {};
+            return {
+              id: alert.id || props.common_id || undefined,
+              event: alert.event || alert.event_description || "",
+              areaDesc: alert.areaDesc || alert.areaDescText || alert.area || "",
+              expires: alert.expires || "",
+              description: alert.description || "",
+              threats: extractThreatsFromWarnverlay(alert.alertinfo || alert.alertInfo || {}),
+              action: (props.vtec && props.vtec.action) || alert.action || ""
+            };
+          });
+        } catch (e) {
+          return null;
+        }
+      }
 
     // Fetch alerts from NWS API (weather.gov only)
     async function fetchNWSAlerts() {
