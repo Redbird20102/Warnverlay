@@ -476,8 +476,47 @@
       );
     }
 
-    // Fetch alerts from warnverlay API
+     // SSE logic for warnverlay API
+    let sseAlerts = [];
+    let sseActive = false;
+    let sseError = false;
+    function startWarnverlaySSE() {
+      try {
+        const es = new EventSource("https://a8890-c7a1.e.jrnm.app/alerts");
+        sseActive = true;
+        sseError = false;
+        es.onmessage = function(event) {
+          try {
+            let data = JSON.parse(event.data);
+            let arr = null;
+            if (Array.isArray(data)) arr = data;
+            else if (data && Array.isArray(data.alerts)) arr = data.alerts;
+            else if (data && Array.isArray(data.data)) arr = data.data;
+            else if (data && Array.isArray(data.features)) arr = data.features.map(f => f.properties ? Object.assign({}, f.properties, { alertinfo: f.properties.alertinfo || f.alertinfo }) : f);
+            if (!arr) return;
+            sseAlerts = arr.map(normalizeWarnverlayAlert);
+          } catch (e) {}
+        };
+        es.onerror = function() {
+          sseActive = false;
+          sseError = true;
+          es.close();
+        };
+      } catch (e) {
+        sseActive = false;
+        sseError = true;
+      }
+    }
+
+    // Start SSE on load
+    startWarnverlaySSE();
+
     async function fetchWarnverlayAlerts() {
+      // If SSE is working and has data, use it
+      if (sseActive && sseAlerts.length) {
+        return sseAlerts;
+      }
+      // If SSE failed, fallback to fetch
       try {
         const response = await fetch('https://a8890-c7a1.e.jrnm.app/alerts');
         if (!response.ok) throw new Error("Warnverlay API error");
