@@ -1103,6 +1103,20 @@
       if (states.length === 0) return true;
       return states.some(s => stateToggles[s]);
     }
+    // ignore individual errors but keep loop running
+      } finally {
+        if (!scheduled) {
+          pollInProgress = false;
+          if (ssePending && !isOverlayActive) {
+            ssePending = false;
+            setTimeout(pollAlerts, 0);
+          } else {
+            // poll more frequently now that basic logic is in place
+            setTimeout(pollAlerts, 2000);
+          }
+        }
+      }
+    }
 
     pollAlerts();
   </script>
