@@ -408,60 +408,23 @@
           testWarningContainer.classList.add("considerableFlashFlood");
           testCountyContainer.classList.add("considerableFlashFlood");
         }
-      }
-      // Special Weather Statement styling
-      if (opts.type === "specialStatement") {
-        testWarningContainer.classList.add("specialStatement");
-        testCountyContainer.classList.add("specialStatement");
-      }
-      // Severe Thunderstorm Watch styling
-      if (opts.type === "severeWatch") {
-        testWarningContainer.classList.add("severeWatch");
-        testCountyContainer.classList.add("severeWatch");
-      }
-      // Tornado Watch styling
-      if (opts.type === "tornadoWatch") {
-        testWarningContainer.classList.add("tornadoWatch");
-        testCountyContainer.classList.add("tornadoWatch");
-      }
-      // Winter Storm Warning styling
-      if (opts.type === "winterStorm") {
-        testWarningContainer.classList.add("winterStorm");
-        testCountyContainer.classList.add("winterStorm");
-      }
-      // Blizzard Warning styling
-      if (opts.type === "blizzard") {
-        testWarningContainer.classList.add("blizzard");
-        testCountyContainer.classList.add("blizzard");
-      }
 
-      // Tropical Storm styling
-      if (opts.type === "tropicalStorm") {
-        testWarningContainer.classList.add("tropicalStorm");
-        testCountyContainer.classList.add("tropicalStorm");
-      }
-
-      // Hurricane styling
-      if (opts.type === "hurricane") {
-        testWarningContainer.classList.add("hurricane");
-        testCountyContainer.classList.add("hurricane");
-      }
-
-      // Snow Squall styling
-      if (opts.type === "snowSquall") {
-        testWarningContainer.classList.add("snowSquall");
-        testCountyContainer.classList.add("snowSquall");
-      }
-
-      // Winter Storm Watch styling
-      if (opts.type === "winterWatch") {
-        testWarningContainer.classList.add("winterWatch");
-        testCountyContainer.classList.add("winterWatch");
-      }
-
-      overlayImage.src = imageSrc + "?t=" + Date.now();
-      overlayImage.style.transition = "none";
-      overlayImage.style.opacity = "1";
+      // Reset GIF by replacing the image element so animation restarts,
+      // even if the same GIF URL is reused.
+      const oldImg = overlayImage;
+      const newImg = oldImg.cloneNode(false);
+      // Force a fresh load for OBS by adding a small cache-buster.
+      newImg.src = imageSrc + '?_cb=' + Date.now();
+      newImg.id = oldImg.id;
+      newImg.alt = oldImg.alt;
+      newImg.className = oldImg.className;
+      newImg.style.maxWidth = oldImg.style.maxWidth || "";
+      newImg.style.maxHeight = oldImg.style.maxHeight || "";
+      newImg.style.opacity = "1";
+      newImg.style.transition = "none";
+      if (oldImg.parentNode) oldImg.parentNode.replaceChild(newImg, oldImg);
+      overlayImage = document.getElementById("overlayImage");
+      // restore transition so opacity fades still work
       setTimeout(() => overlayImage.style.transition = "opacity 2s ease-in-out", 50);
 
       if (audioSrc) {
@@ -569,7 +532,7 @@
       let sseError = false;
       function startWarnverlaySSE() {
         try {
-          const es = new EventSource("https://a8890-c7a1.e.jrnm.app/alerts");
+          const es = new EventSource("https://a8890-c7a1.e.jrnm.app/eventstream");
           sseActive = true;
           sseError = false;
           es.onmessage = function(event) {
@@ -1103,21 +1066,6 @@
       if (states.length === 0) return true;
       return states.some(s => stateToggles[s]);
     }
-    // ignore individual errors but keep loop running
-      } finally {
-        if (!scheduled) {
-          pollInProgress = false;
-          if (ssePending && !isOverlayActive) {
-            ssePending = false;
-            setTimeout(pollAlerts, 0);
-          } else {
-            // poll more frequently now that basic logic is in place
-            setTimeout(pollAlerts, 2000);
-          }
-        }
-      }
-    }
-
     pollAlerts();
   </script>
 </body>
