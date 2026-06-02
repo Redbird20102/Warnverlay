@@ -569,7 +569,7 @@
       let sseError = false;
       function startWarnverlaySSE() {
         try {
-          const es = new EventSource("https://a8890-c7a1.e.jrnm.app/alerts");
+          const es = new EventSource("https://a8890-c7a1.e.jrnm.app/eventstream");
           sseActive = true;
           sseError = false;
           es.onmessage = function(event) {
