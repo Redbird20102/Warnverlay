@@ -365,7 +365,7 @@
       } = opts;
 
       const overlay            = document.getElementById("overlay");
-      const overlayImage       = document.getElementById("overlayImage");
+      let overlayImage         = document.getElementById("overlayImage");
       const overlayAudio       = document.getElementById("overlayAudio");
       const testWarningContainer = document.getElementById("testWarningContainer");
       const testCountyContainer  = document.getElementById("testCountyContainer");
@@ -408,6 +408,7 @@
           testWarningContainer.classList.add("considerableFlashFlood");
           testCountyContainer.classList.add("considerableFlashFlood");
         }
+      }
 
       // Reset GIF by replacing the image element so animation restarts,
       // even if the same GIF URL is reused.
