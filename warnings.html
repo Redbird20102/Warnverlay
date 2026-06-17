@@ -6,9 +6,9 @@
   <title>Weather Warning Overlay</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet" />
   <style>
-  body { font-family: Arial, sans-serif; }
+    body { font-family: Arial, sans-serif; }
 
-   #overlay {
+    #overlay {
       display: none;
       position: fixed;
       width: 100%; height: 100%;
@@ -119,6 +119,13 @@
       animation: glow-pulse 2s ease-in-out infinite;
       border: 2px solid rgba(255, 50, 50, 0.6);
       transition: all 0.3s ease;
+      opacity: 0;
+      pointer-events: none;
+    }
+    html:hover #menu-icon,
+    body:hover #menu-icon {
+      opacity: 1;
+      pointer-events: auto;
     }
     #menu-icon:hover {
       box-shadow: 0 0 30px rgba(255, 50, 50, 1), 0 0 60px rgba(255, 50, 50, 0.5);
@@ -247,12 +254,11 @@
 <body>
   <div id="overlay">
     <img id="overlayImage" src="" alt="Warning Image" />
-    <audio id="overlayAudio"></audio>
+    <audio id="overlayAudio" preload="auto"></audio>
     <div id="testWarningContainer" class="text-container severe"></div>
     <div id="testCountyContainer"  class="text-container severe"></div>
   </div>
 
-  <!-- Menu (added from test.html) -->
   <div id="menu-icon">
     <span></span><span></span><span></span>
   </div>
@@ -273,6 +279,11 @@
       <h3>State Filters</h3>
       <!-- state toggles injected here -->
     </div>
+    <div class="menu-group" id="office-filter-group">
+      <h3>Office Filters</h3>
+      <input id="office-search" type="text" placeholder="Search offices or ID" style="width:100%; padding:8px; margin:10px 0 8px; border-radius:6px; border:1px solid rgba(255,50,50,0.5);" />
+      <div id="office-list" style="max-height: 220px; overflow-y: auto; margin-top: 8px;"></div>
+    </div>
   </div>
 
   <script>
@@ -280,6 +291,7 @@
     // Fix: define swsNewIds to prevent ReferenceError and restore pop-up alerts
     const swsNewIds = new Set();
     let alertQueue = [], isOverlayActive = false, initialLoad = true;
+    let pollInProgress = false;
 
     const issuedSevereAlerts       = {};
     const issuedTornadoAlerts      = {};
@@ -291,6 +303,242 @@
       flashFlood: 0,
     };
     const throttleDelay = 0;
+
+    const STORAGE_KEYS = {
+      offices: "popupalertsmyown_officeToggles"
+    };
+
+    let alertCategoryToggles = {
+      tornado: true,
+      severe: true,
+      flashFlood: true
+    };
+
+    let selectedOfficeIds = [];
+    let officeToggles = {};
+    let nwsofficeMap = {};
+
+    let stateToggles = {
+      "AL": true, "AK": true, "AZ": true, "AR": true, "CA": true,
+      "CO": true, "CT": true, "DE": true, "FL": true, "GA": true,
+      "HI": true, "ID": true, "IL": true, "IN": true, "IA": true,
+      "KS": true, "KY": true, "LA": true, "ME": true, "MD": true,
+      "MA": true, "MI": true, "MN": true, "MS": true, "MO": true,
+      "MT": true, "NE": true, "NV": true, "NH": true, "NJ": true,
+      "NM": true, "NY": true, "NC": true, "ND": true, "OH": true,
+      "OK": true, "OR": true, "PA": true, "RI": true, "SC": true,
+      "SD": true, "TN": true, "TX": true, "UT": true, "VT": true,
+      "VA": true, "WA": true, "WV": true, "WI": true, "WY": true,
+      "GU": true, "PR": true, "VI": true, "AS": true, "MP": true
+    };
+
+    async function loadNWSOffices() {
+      try {
+        const resp = await fetch('nwsoffices.json');
+        if (!resp.ok) return;
+        const list = await resp.json();
+        if (!Array.isArray(list)) return;
+        list.forEach(o => {
+          if (o && o.officeId) {
+            const up = o.officeId.toUpperCase();
+            nwsofficeMap[up] = o.name || up;
+          }
+        });
+        list.forEach(o => {
+          if (!o || !o.officeId) return;
+          const id = o.officeId.toUpperCase();
+          if (!officeToggles[id]) {
+            officeToggles[id] = { name: o.name || id, enabled: false };
+          } else if (!officeToggles[id].name || officeToggles[id].name === id) {
+            officeToggles[id].name = o.name || id;
+          }
+        });
+      } catch (e) {
+        console.warn('Could not load nwsoffices.json', e);
+      }
+    }
+
+    function saveSettings() {
+      try {
+        localStorage.setItem(STORAGE_KEYS.offices, JSON.stringify(officeToggles));
+      } catch (e) {
+        console.warn('Could not save office settings', e);
+      }
+    }
+
+    function loadSettings() {
+      try {
+        const storedOffices = JSON.parse(localStorage.getItem(STORAGE_KEYS.offices) || "{}");
+        if (storedOffices && typeof storedOffices === 'object') {
+          Object.keys(storedOffices).forEach(id => {
+            const up = id.toUpperCase();
+            officeToggles[up] = Object.assign(officeToggles[up] || {}, storedOffices[id]);
+          });
+          selectedOfficeIds = Object.keys(officeToggles).filter(id => officeToggles[id] && officeToggles[id].enabled);
+        }
+      } catch (e) {
+        console.warn('Could not load office settings', e);
+      }
+    }
+
+    function deriveOfficeNameFromSender(sender, officeId) {
+      if (!sender) return officeId || 'Unknown Office';
+      let s = String(sender || '').trim();
+      s = s.replace(/\S+@\S+/, '').trim();
+      if (officeId) {
+        s = s.replace(new RegExp("\\b" + officeId + "\\b", 'i'), '').trim();
+      }
+      s = s.replace(/^[\s\-:\(\)]+|[\s\-:\(\)]+$/g, '').trim();
+      if (!s || s.length <= 2) return officeId || sender || 'Unknown Office';
+      return s;
+    }
+
+    function formatOfficeDisplayName(officeId, officeObj) {
+      const up = (officeId || '').toUpperCase();
+      let name = nwsofficeMap[up] || (officeObj && officeObj.name) || officeId || '';
+      try {
+        name = name.replace(new RegExp('\\s*\\(\\s*' + up + '\\s*\\)\\s*$', 'i'), '').trim();
+      } catch (e) {}
+      return `${name} (${up})`;
+    }
+
+    function registerOffice(officeId, officeName) {
+      if (!officeId) return;
+      const up = officeId.toUpperCase();
+      const mappedName = nwsofficeMap[up];
+      let nameToStore = officeName || mappedName || officeId;
+      try {
+        nameToStore = String(nameToStore).replace(new RegExp('\\s*\\(\\s*' + up + '\\s*\\)\\s*$', 'i'), '').trim();
+      } catch (e) {}
+      if (!officeToggles[up]) {
+        officeToggles[up] = { name: nameToStore, enabled: false };
+      } else if (officeName) {
+        officeToggles[up].name = nameToStore;
+      } else if (mappedName && (!officeToggles[up].name || officeToggles[up].name === officeId)) {
+        officeToggles[up].name = nameToStore;
+      }
+    }
+
+    function registerOfficesFromAlerts(alerts) {
+      if (!Array.isArray(alerts)) return;
+      alerts.forEach(alert => {
+        if (alert && alert.officeId) {
+          registerOffice(alert.officeId, alert.officeName);
+        }
+      });
+      updateOfficeFilterUI();
+    }
+
+    function updateOfficeFilterUI() {
+      const container = document.getElementById('office-list');
+      if (!container) return;
+      container.innerHTML = '';
+      const searchEl = document.getElementById('office-search');
+      const term = searchEl ? (searchEl.value || '').trim().toLowerCase() : '';
+      let officeIds = Object.keys(officeToggles).sort((a, b) => {
+        const an = formatOfficeDisplayName(a, officeToggles[a]).toLowerCase();
+        const bn = formatOfficeDisplayName(b, officeToggles[b]).toLowerCase();
+        return an.localeCompare(bn);
+      });
+      if (term) {
+        officeIds = officeIds.filter(id => {
+          const storedName = (officeToggles[id] && officeToggles[id].name) ? officeToggles[id].name.toLowerCase() : '';
+          const displayName = formatOfficeDisplayName(id, officeToggles[id]).toLowerCase();
+          return id.toLowerCase().includes(term) || storedName.includes(term) || displayName.includes(term);
+        });
+      }
+      if (!officeIds.length) {
+        const placeholder = document.createElement('div');
+        placeholder.className = 'alert-toggle';
+        placeholder.style.cursor = 'default';
+        placeholder.innerHTML = `<span class="toggle-icon">--</span><span>No office data yet</span>`;
+        container.appendChild(placeholder);
+        return;
+      }
+      officeIds.forEach(id => {
+        const office = officeToggles[id];
+        const div = document.createElement('div');
+        div.className = 'alert-toggle';
+        div.setAttribute('data-officeid', id);
+        const displayName = formatOfficeDisplayName(id, office);
+        div.innerHTML = `<span class="toggle-icon">${office.enabled ? 'ON' : 'OFF'}</span><span>${displayName}</span>`;
+        div.classList.toggle('selected', office.enabled);
+        const icon = div.querySelector('.toggle-icon');
+        icon.classList.toggle('disabled', !office.enabled);
+        div.addEventListener('click', () => {
+          office.enabled = !office.enabled;
+          div.classList.toggle('selected', office.enabled);
+          icon.textContent = office.enabled ? 'ON' : 'OFF';
+          icon.classList.toggle('disabled', !office.enabled);
+          selectedOfficeIds = Object.keys(officeToggles).filter(key => officeToggles[key].enabled);
+          saveSettings();
+        });
+        container.appendChild(div);
+      });
+    }
+
+    function applyOfficeFilters(alerts) {
+      if (!selectedOfficeIds.length) return alerts;
+      return alerts.filter(a => a.officeId && selectedOfficeIds.includes((a.officeId || '').toUpperCase()));
+    }
+
+    function parseOfficeIdFromSender(sender) {
+      if (!sender) return '';
+      const token = sender.split(/[@\s]+/).find(Boolean);
+      return token ? token.toUpperCase() : '';
+    }
+
+    function getOfficeIdFromWMOIdentifier(wmoIdentifier) {
+      if (!wmoIdentifier) return '';
+      const parts = wmoIdentifier.trim().split(/\s+/).filter(Boolean);
+      return parts.length >= 2 ? parts[1].toUpperCase() : '';
+    }
+
+    // removed new/updated filters per user request
+
+    function populateStateToggles() {
+      const container = document.getElementById("state-group");
+      for (let state in stateToggles) {
+        const div = document.createElement("div");
+        div.className = "alert-toggle";
+        div.setAttribute("data-type", state);
+        div.innerHTML = '<span class="toggle-icon">' + (stateToggles[state] ? "ON" : "OFF") + '</span><span>' + state + "</span>";
+        container.appendChild(div);
+        div.addEventListener("click", function () {
+          stateToggles[state] = !stateToggles[state];
+          const icon = this.querySelector(".toggle-icon");
+          icon.textContent = stateToggles[state] ? "ON" : "OFF";
+          icon.classList.toggle("disabled", !stateToggles[state]);
+        });
+      }
+    }
+
+    document.querySelectorAll('#alert-menu .alert-toggle[data-type="tornado"], #alert-menu .alert-toggle[data-type="severe"], #alert-menu .alert-toggle[data-type="flashFlood"]').forEach(toggle => {
+      toggle.addEventListener("click", function() {
+        const type = this.getAttribute("data-type");
+        alertCategoryToggles[type] = !alertCategoryToggles[type];
+        const icon = this.querySelector(".toggle-icon");
+        icon.textContent = alertCategoryToggles[type] ? "ON" : "OFF";
+        icon.classList.toggle("disabled", !alertCategoryToggles[type]);
+      });
+    });
+
+    document.getElementById("menu-icon").addEventListener("click", () => {
+      const menu = document.getElementById("alert-menu");
+      menu.style.display = window.getComputedStyle(menu).display === "none" ? "block" : "none";
+    });
+
+    populateStateToggles();
+
+    function extractStates(areaDesc) {
+      const matches = areaDesc.match(/\b[A-Za-z]{2}\b/g);
+      return matches ? matches.map(m => m.toUpperCase()) : [];
+    }
+    function passesStateFilter(areaDesc) {
+      const states = extractStates(areaDesc);
+      if (states.length === 0) return true;
+      return states.some(s => stateToggles[s]);
+    }
 
     function getText(node, tag) {
       return node.querySelector(tag)?.textContent || "";
@@ -365,7 +613,7 @@
       } = opts;
 
       const overlay            = document.getElementById("overlay");
-      const overlayImage       = document.getElementById("overlayImage");
+      let overlayImage         = document.getElementById("overlayImage");
       const overlayAudio       = document.getElementById("overlayAudio");
       const testWarningContainer = document.getElementById("testWarningContainer");
       const testCountyContainer  = document.getElementById("testCountyContainer");
@@ -409,59 +657,23 @@
           testCountyContainer.classList.add("considerableFlashFlood");
         }
       }
-      // Special Weather Statement styling
-      if (opts.type === "specialStatement") {
-        testWarningContainer.classList.add("specialStatement");
-        testCountyContainer.classList.add("specialStatement");
-      }
-      // Severe Thunderstorm Watch styling
-      if (opts.type === "severeWatch") {
-        testWarningContainer.classList.add("severeWatch");
-        testCountyContainer.classList.add("severeWatch");
-      }
-      // Tornado Watch styling
-      if (opts.type === "tornadoWatch") {
-        testWarningContainer.classList.add("tornadoWatch");
-        testCountyContainer.classList.add("tornadoWatch");
-      }
-      // Winter Storm Warning styling
-      if (opts.type === "winterStorm") {
-        testWarningContainer.classList.add("winterStorm");
-        testCountyContainer.classList.add("winterStorm");
-      }
-      // Blizzard Warning styling
-      if (opts.type === "blizzard") {
-        testWarningContainer.classList.add("blizzard");
-        testCountyContainer.classList.add("blizzard");
-      }
 
-      // Tropical Storm styling
-      if (opts.type === "tropicalStorm") {
-        testWarningContainer.classList.add("tropicalStorm");
-        testCountyContainer.classList.add("tropicalStorm");
-      }
-
-      // Hurricane styling
-      if (opts.type === "hurricane") {
-        testWarningContainer.classList.add("hurricane");
-        testCountyContainer.classList.add("hurricane");
-      }
-
-      // Snow Squall styling
-      if (opts.type === "snowSquall") {
-        testWarningContainer.classList.add("snowSquall");
-        testCountyContainer.classList.add("snowSquall");
-      }
-
-      // Winter Storm Watch styling
-      if (opts.type === "winterWatch") {
-        testWarningContainer.classList.add("winterWatch");
-        testCountyContainer.classList.add("winterWatch");
-      }
-
-      overlayImage.src = imageSrc + "?t=" + Date.now();
-      overlayImage.style.transition = "none";
-      overlayImage.style.opacity = "1";
+      // Reset GIF by replacing the image element so animation restarts,
+      // even if the same GIF URL is reused.
+      const oldImg = overlayImage;
+      const newImg = oldImg.cloneNode(false);
+      // Force a fresh load for OBS by adding a small cache-buster.
+      newImg.src = imageSrc + '?_cb=' + Date.now();
+      newImg.id = oldImg.id;
+      newImg.alt = oldImg.alt;
+      newImg.className = oldImg.className;
+      newImg.style.maxWidth = oldImg.style.maxWidth || "";
+      newImg.style.maxHeight = oldImg.style.maxHeight || "";
+      newImg.style.opacity = "1";
+      newImg.style.transition = "none";
+      if (oldImg.parentNode) oldImg.parentNode.replaceChild(newImg, oldImg);
+      overlayImage = document.getElementById("overlayImage");
+      // restore transition so opacity fades still work
       setTimeout(() => overlayImage.style.transition = "opacity 2s ease-in-out", 50);
 
       if (audioSrc) {
@@ -490,6 +702,8 @@
       setTimeout(() => {
         overlay.style.display = "none";
         overlayImage.style.opacity = "1";
+        // clear src to release the GIF and ensure next alert starts fresh
+        try { overlayImage.src = ""; } catch (e) {}
         isOverlayActive = false;
         processNextAlert();
       }, 19000);
@@ -562,17 +776,18 @@
       };
     }
 
-   // Fetch alerts from new warnverlay API
+    // Fetch alerts from new warnverlay API
       // SSE logic for warnverlay API
       let sseAlerts = [];
       let sseActive = false;
       let sseError = false;
+      let ssePending = false;
       function startWarnverlaySSE() {
         try {
           const es = new EventSource("https://a8890-c7a1.e.jrnm.app/eventstream");
           sseActive = true;
           sseError = false;
-          es.onmessage = function(event) {
+              es.onmessage = function(event) {
             try {
               let data = JSON.parse(event.data);
               let arr = null;
@@ -593,6 +808,10 @@
                   action: (props.vtec && props.vtec.action) || alert.action || ""
                 };
               });
+              let ssePending = true;
+              // New SSE data arrived — process immediately so overlays
+              // show without waiting for the next poll timeout.
+              try { pollAlerts(); } catch (e) {}
             } catch (e) {}
           };
           es.onerror = function() {
@@ -627,12 +846,17 @@
           if (!arr) return null;
           return arr.map(alert => {
             const props = alert.properties || {};
+            const sender = alert.sender || props.sender || '';
+            const officeId = parseOfficeIdFromSender(sender) || parseOfficeIdFromSender(alert.officeId || '');
+            const officeName = alert.officeName || props.officeName || deriveOfficeNameFromSender(sender, officeId);
             return {
               id: alert.id || props.common_id || undefined,
               event: alert.event || alert.event_description || "",
               areaDesc: alert.areaDesc || alert.areaDescText || alert.area || "",
               expires: alert.expires || "",
               description: alert.description || "",
+              officeId,
+              officeName,
               threats: extractThreatsFromWarnverlay(alert.alertinfo || alert.alertInfo || {}),
               action: (props.vtec && props.vtec.action) || alert.action || ""
             };
@@ -655,12 +879,16 @@
           const areaEl  = entry.querySelector("cap\\:areaDesc") || entry.querySelector("areaDesc");
           const descEl  = entry.querySelector("summary") || entry.querySelector("description");
           const idEl    = entry.querySelector("cap\\:identifier") || entry.querySelector("id");
+          const rawId   = idEl ? (idEl.textContent || "").trim() : "";
+          const officeId = getOfficeIdFromWMOIdentifier(rawId);
           return {
-            id: idEl ? (idEl.textContent || "").trim() : undefined,
+            id: rawId || undefined,
             event: eventEl ? eventEl.textContent.trim() : "",
             areaDesc: areaEl ? areaEl.textContent.trim() : "",
             expires: entry.querySelector("cap\\:expires")?.textContent || "",
             description: descEl ? descEl.textContent : "",
+            officeId,
+            officeName: nwsofficeMap[officeId] || undefined,
             threats: extractThreatsFromAtom(entry)
           };
         });
@@ -683,22 +911,34 @@
 
     // Main pollAlerts logic: use unified fetchWeatherAlerts
     async function pollAlerts() {
-      if (isOverlayActive) {
-        setTimeout(pollAlerts, 0);
-        return;
-      }
+      if (pollInProgress) return;
+      pollInProgress = true;
+      let scheduled = false;
+      try {
+        if (isOverlayActive) {
+          // try again immediately after overlay finishes
+          setTimeout(() => { pollInProgress = false; pollAlerts(); }, 0);
+          scheduled = true;
+          return;
+        }
 
-      let alerts = await fetchWeatherAlerts();
-      if (!alerts.length) {
-        // no alerts yet – poll again sooner
-        setTimeout(pollAlerts, 1800);
-        return;
-      }
+        let alerts = await fetchWeatherAlerts();
+        if (Array.isArray(alerts) && alerts.length) {
+          const filtered = applyOfficeFilters(alerts);
+          registerOfficesFromAlerts(filtered);
+          alerts = filtered;
+        }
+        if (!alerts || !alerts.length) {
+          // no alerts yet – poll again sooner
+          setTimeout(() => { pollInProgress = false; pollAlerts(); }, 1800);
+          scheduled = true;
+          return;
+        }
 
-      const currentFeedKeys    = new Set();
-      const processedThisCycle = new Set();
+        const currentFeedKeys    = new Set();
+        const processedThisCycle = new Set();
 
-      alerts.forEach(alert => {
+        alerts.forEach(alert => {
         const eventTextRaw = alert.event || "";
         const areaDesc     = alert.areaDesc || "";
         const expireDate   = alert.expires || "";
@@ -844,7 +1084,6 @@
           }
 
           groups.forEach(group => {
-            if (!passesStateFilter(group)) return;
             const key = generateAlertKey(baseEventText, group, alert.id);
             if (processedThisCycle.has(key)) return;
             processedThisCycle.add(key);
@@ -1031,79 +1270,43 @@
         }
       });
 
-      if (!initialLoad && !isOverlayActive && alertQueue.length) {
-        processNextAlert();
-      }
-      if (initialLoad) {
-        initialLoad = false;
-      }
-      // poll more frequently now that basic logic is in place
-      setTimeout(pollAlerts, 2000);
-    }
-
-    // --- Menu/filter data and helpers (added) ---
-    let alertCategoryToggles = { tornado: true, severe: true, flashFlood: true };
-
-    let stateToggles = {
-      "AL": true, "AK": true, "AZ": true, "AR": true, "CA": true,
-      "CO": true, "CT": true, "DE": true, "FL": true, "GA": true,
-      "HI": true, "ID": true, "IL": true, "IN": true, "IA": true,
-      "KS": true, "KY": true, "LA": true, "ME": true, "MD": true,
-      "MA": true, "MI": true, "MN": true, "MS": true, "MO": true,
-      "MT": true, "NE": true, "NV": true, "NH": true, "NJ": true,
-      "NM": true, "NY": true, "NC": true, "ND": true, "OH": true,
-      "OK": true, "OR": true, "PA": true, "RI": true, "SC": true,
-      "SD": true, "TN": true, "TX": true, "UT": true, "VT": true,
-      "VA": true, "WA": true, "WV": true, "WI": true, "WY": true,
-      "GU": true, "PR": true, "VI": true, "AS": true, "MP": true
-    };
-
-    function populateStateToggles() {
-      const container = document.getElementById("state-group");
-      for (let state in stateToggles) {
-        const div = document.createElement("div");
-        div.className = "alert-toggle";
-        div.setAttribute("data-type", state);
-        div.innerHTML = '<span class="toggle-icon">' + (stateToggles[state] ? "ON" : "OFF") + '</span><span>' + state + "</span>";
-        container.appendChild(div);
-        div.addEventListener("click", function () {
-          stateToggles[state] = !stateToggles[state];
-          const icon = this.querySelector(".toggle-icon");
-          icon.textContent = stateToggles[state] ? "ON" : "OFF";
-          icon.classList.toggle("disabled", !stateToggles[state]);
-        });
+        if (!isOverlayActive && alertQueue.length) {
+          processNextAlert();
+        }
+        // Clear the initialLoad flag after first cycle so upgrade logic runs
+        if (initialLoad) {
+          initialLoad = false;
+        }
+      } catch (e) {
+        // ignore individual errors but keep loop running
+      } finally {
+        if (!scheduled) {
+          pollInProgress = false;
+          if (ssePending && !isOverlayActive) {
+            ssePending = false;
+            setTimeout(pollAlerts, 0);
+          } else {
+            // poll more frequently now that basic logic is in place
+            setTimeout(pollAlerts, 2000);
+          }
+        }
       }
     }
 
-    // category toggles
-    document.querySelectorAll('#alert-menu .alert-toggle[data-type="tornado"], #alert-menu .alert-toggle[data-type="severe"], #alert-menu .alert-toggle[data-type="flashFlood"]').forEach(toggle => {
-      toggle.addEventListener("click", function() {
-        const type = this.getAttribute("data-type");
-        alertCategoryToggles[type] = !alertCategoryToggles[type];
-        const icon = this.querySelector(".toggle-icon");
-        icon.textContent = alertCategoryToggles[type] ? "ON" : "OFF";
-        icon.classList.toggle("disabled", !alertCategoryToggles[type]);
+    function initializeOfficeFilters() {
+      loadNWSOffices().then(() => {
+        loadSettings();
+        updateOfficeFilterUI();
+        const officeSearch = document.getElementById('office-search');
+        if (officeSearch) {
+          officeSearch.addEventListener('input', () => updateOfficeFilterUI());
+        }
+      }).finally(() => {
+        pollAlerts();
       });
-    });
-
-    // menu icon toggle
-    document.getElementById("menu-icon").addEventListener("click", () => {
-      const menu = document.getElementById("alert-menu");
-      menu.style.display = window.getComputedStyle(menu).display === "none" ? "block" : "none";
-    });
-
-    populateStateToggles();
-
-    function extractStates(areaDesc) {
-      const matches = areaDesc.match(/\b[A-Za-z]{2}\b/g);
-      return matches ? matches.map(m => m.toUpperCase()) : [];
     }
-    function passesStateFilter(areaDesc) {
-      const states = extractStates(areaDesc);
-      if (states.length === 0) return true;
-      return states.some(s => stateToggles[s]);
-    }
-    pollAlerts();
+
+    initializeOfficeFilters();
   </script>
 </body>
 </html>
