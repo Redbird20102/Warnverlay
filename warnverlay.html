@@ -1,0 +1,1387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Weather Alert System</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet" />
+  <style>
+    /* Basic Page Styles */
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background: rgba(0, 0, 0, 0);
+      font-family: Arial, sans-serif;
+      background-size: cover;
+      transition: background 1s ease-in-out;
+    }
+
+    /* Fancy glowing menu animations */
+    @keyframes glow-pulse {
+      0% { box-shadow: 0 0 10px rgba(255, 50, 50, 0.5), inset 0 0 10px rgba(255, 50, 50, 0.2); }
+      50% { box-shadow: 0 0 20px rgba(255, 50, 50, 0.8), inset 0 0 15px rgba(255, 50, 50, 0.3); }
+      100% { box-shadow: 0 0 10px rgba(255, 50, 50, 0.5), inset 0 0 10px rgba(255, 50, 50, 0.2); }
+    }
+
+    @keyframes light-sweep {
+      0% { left: -100%; }
+      100% { left: 100%; }
+    }
+
+    @keyframes menu-glow {
+      0%, 100% { box-shadow: 0 0 15px rgba(255, 50, 50, 0.6), 0 0 30px rgba(255, 50, 50, 0.3), inset 0 0 20px rgba(255, 50, 50, 0.1); }
+      50% { box-shadow: 0 0 25px rgba(255, 50, 50, 0.9), 0 0 40px rgba(255, 50, 50, 0.5), inset 0 0 30px rgba(255, 50, 50, 0.2); }
+    }
+
+    @keyframes alert-light-sweep {
+      0%   { left: -80%; opacity: 0.2; }
+      40%  { opacity: 0.5; }
+      50%  { left: 100%; opacity: 0.7; }
+      100% { left: 100%; opacity: 0; }
+    }
+
+    #menu-icon {
+      position: fixed; top: 10px; left: 10px;
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, rgba(100, 20, 20, 0.8), rgba(150, 50, 50, 0.8));
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; z-index: 400;
+      animation: glow-pulse 2s ease-in-out infinite;
+      border: 2px solid rgba(255, 50, 50, 0.6);
+      transition: all 0.3s ease;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    html:hover #menu-icon,
+    body:hover #menu-icon {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    #menu-icon:hover {
+      box-shadow: 0 0 30px rgba(255, 50, 50, 1), 0 0 60px rgba(255, 50, 50, 0.5);
+      border-color: rgba(255, 100, 100, 1);
+    }
+
+    #menu-icon span {
+      display: block; width: 24px; height: 3px;
+      background: white; margin: 3px 0; transition: 0.4s;
+      box-shadow: 0 0 5px rgba(255, 50, 50, 0.8);
+    }
+
+    #alert-menu {
+      position: fixed; top: 60px; left: 10px;
+      width: 280px; 
+      background: linear-gradient(135deg, rgba(80, 10, 10, 0.95), rgba(120, 20, 20, 0.95));
+      padding: 15px; border-radius: 8px; z-index: 300;
+      display: none; max-height: 80vh; overflow-y: scroll;
+      border: 1.5px solid rgba(255, 50, 50, 0.5);
+      animation: menu-glow 3s ease-in-out infinite;
+      box-shadow: 0 0 20px rgba(255, 50, 50, 0.4), inset 0 0 20px rgba(255, 50, 50, 0.1);
+      overflow-x: hidden;
+      position: relative;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 50, 50, 0.8) rgba(80, 10, 10, 0.5);
+    }
+
+    #alert-menu::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      animation: light-sweep 3s infinite;
+      pointer-events: none;
+    }
+
+    #alert-menu::-webkit-scrollbar {
+      width: 12px;
+    }
+
+    #alert-menu::-webkit-scrollbar-track {
+      background: rgba(80, 10, 10, 0.5);
+      border-radius: 6px;
+    }
+
+    #alert-menu::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, rgba(255, 100, 100, 0.8), rgba(255, 50, 50, 0.8));
+      border-radius: 6px;
+      box-shadow: 0 0 10px rgba(255, 50, 50, 0.6), inset 0 0 5px rgba(255, 100, 100, 0.4);
+      border: 1px solid rgba(255, 50, 50, 0.6);
+    }
+
+    #alert-menu::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(180deg, rgba(255, 150, 150, 1), rgba(255, 80, 80, 1));
+      box-shadow: 0 0 20px rgba(255, 50, 50, 0.9), inset 0 0 8px rgba(255, 150, 150, 0.6);
+    }
+
+    .menu-group { margin-bottom: 20px; position: relative; z-index: 1; }
+    
+    .menu-group h3 {
+      margin: 10px 0 8px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.1rem;
+      border-bottom: 2px solid rgba(255, 50, 50, 0.6);
+      padding-bottom: 5px;
+      color: rgba(255, 100, 100, 1);
+      text-shadow: 0 0 10px rgba(255, 50, 50, 0.6);
+    }
+
+    .alert-toggle {
+      display: flex; align-items: center;
+      cursor: pointer;
+      border: 1.5px solid rgba(255, 50, 50, 0.5);
+      padding: 8px 12px; margin-bottom: 6px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, rgba(150, 50, 50, 0.3), rgba(130, 30, 30, 0.3));
+      color: white;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 0.9rem;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .alert-toggle::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+      transition: left 0.5s ease;
+    }
+
+    .alert-toggle:hover {
+      background: linear-gradient(135deg, rgba(200, 80, 80, 0.5), rgba(170, 50, 50, 0.5));
+      border-color: rgba(255, 100, 100, 0.8);
+      box-shadow: 0 0 15px rgba(255, 50, 50, 0.6), inset 0 0 10px rgba(255, 50, 50, 0.2);
+    }
+
+    .alert-toggle:hover::before {
+      left: 100%;
+    }
+
+    .alert-toggle.selected {
+      background: linear-gradient(135deg, rgba(100, 200, 100, 0.4), rgba(80, 180, 80, 0.4));
+      border-color: lime;
+    }
+
+    .toggle-icon {
+      width: 34px; height: 24px;
+      border-radius: 4px;
+      background: linear-gradient(135deg, #00ff00, #00cc00);
+      color: white;
+      display: inline-flex; align-items: center; justify-content: center;
+      margin-right: 8px; font-size: 0.75rem;
+      font-weight: bold;
+      box-shadow: 0 0 8px rgba(0, 255, 0, 0.6);
+      transition: all 0.3s ease;
+    }
+
+    .toggle-icon.disabled {
+      background: linear-gradient(135deg, #ff3333, #cc0000);
+      box-shadow: 0 0 8px rgba(255, 0, 0, 0.6);
+    }
+
+    #event-text, #area-text {
+      position: fixed; top: 95%;
+      color: white; font-family: 'Bebas Neue', sans-serif;
+      font-size: 2rem; font-weight: bold;
+      text-shadow: 2px 2px 5px rgba(0,0,0,0.8);
+    }
+    #event-text { left: -30.8%; width: 83%; text-align: center; }
+    #area-text  { left: 22%; }
+
+    #expire-date-container {
+      position: fixed; bottom: 5.2%; right: 84%;
+      display: flex; align-items: center; justify-content: center;
+      padding: 10px;
+    }
+    #expire-date {
+      color: black; font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.4rem; font-weight: bold;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <!-- Loading Overlay -->
+  <div id="loading-overlay">
+    <img src="AlertLoad.gif" alt="Loading..." />
+  </div>
+  <!-- Background fade overlay -->
+  <div id="bg-fade-overlay"></div>
+
+  <!-- Menu icon / settings dialog -->
+  <div id="menu-icon">
+    <span></span><span></span><span></span>
+  </div>
+  <div id="alert-menu">
+    <!-- Tornado Alerts -->
+    <div class="menu-group">
+      <h3>Tornado Alerts</h3>
+      <div class="alert-toggle" data-type="Tornado Warning"><span class="toggle-icon">#</span><span>Tornado Warning</span></div>
+      <div class="alert-toggle" data-type="Observed Tornado Warning"><span class="toggle-icon">#</span><span>Observed Tornado Warning</span></div>
+      <div class="alert-toggle" data-type="PDS Tornado Warning"><span class="toggle-icon">#</span><span>PDS Tornado Warning</span></div>
+      <div class="alert-toggle" data-type="Tornado Emergency"><span class="toggle-icon">#</span><span>Tornado Emergency</span></div>
+      <div class="alert-toggle" data-type="Tornado Watch"><span class="toggle-icon">#</span><span>Tornado Watch</span></div>
+    </div>
+    <!-- Flash Flood Alerts -->
+    <div class="menu-group">
+      <h3>Flash Flood Alerts</h3>
+      <div class="alert-toggle" data-type="Flash Flood Warning"><span class="toggle-icon">#</span><span>Flash Flood Warning</span></div>
+      <div class="alert-toggle" data-type="Considerable Flash Flood Warning"><span class="toggle-icon">#</span><span>Considerable Flash Flood Warning</span></div>
+      <div class="alert-toggle" data-type="Flash Flood Emergency"><span class="toggle-icon">#</span><span>Flash Flood Emergency</span></div>
+      <div class="alert-toggle" data-type="Flash Flood Watch"><span class="toggle-icon">#</span><span>Flash Flood Watch</span></div>
+      <div class="alert-toggle" data-type="Flood Watch"><span class="toggle-icon">#</span><span>Flood Watch</span></div>
+    </div>
+    <!-- Severe Thunderstorm Alerts -->
+    <div class="menu-group">
+      <h3>Severe Thunderstorm Alerts</h3>
+      <div class="alert-toggle" data-type="Severe Thunderstorm Warning"><span class="toggle-icon">#</span><span>Severe Thunderstorm Warning</span></div>
+      <div class="alert-toggle" data-type="Considerable Severe Thunderstorm Warning"><span class="toggle-icon">#</span><span>Considerable Severe TSW</span></div>
+      <div class="alert-toggle" data-type="Destructive Severe Thunderstorm Warning"><span class="toggle-icon">#</span><span>Destructive Severe TSW</span></div>
+      <div class="alert-toggle" data-type="Severe Thunderstorm Watch"><span class="toggle-icon">#</span><span>Severe Thunderstorm Watch</span></div>
+    </div>
+    <!-- Winter Alerts -->
+    <div class="menu-group">
+      <h3>Winter Alerts</h3>
+      <div class="alert-toggle" data-type="Winter Storm Warning"><span class="toggle-icon">#</span><span>Winter Storm Warning</span></div>
+      <div class="alert-toggle" data-type="Blizzard Warning"><span class="toggle-icon">#</span><span>Blizzard Warning</span></div>
+      <div class="alert-toggle" data-type="Winter Storm Watch"><span class="toggle-icon">#</span><span>Winter Storm Watch</span></div>
+    </div>
+    <!-- Hurricane Alerts -->
+    <div class="menu-group">
+      <h3>Hurricane Alerts</h3>
+      <div class="alert-toggle" data-type="Hurricane Warning"><span class="toggle-icon">#</span><span>Hurricane Warning</span></div>
+      <div class="alert-toggle" data-type="Hurricane Watch"><span class="toggle-icon">#</span><span>Hurricane Watch</span></div>
+    </div>
+    <!-- Other Alerts -->
+    <div class="menu-group">
+      <h3>Other Alerts</h3>
+      <div class="alert-toggle" data-type="Snow Squall Warning"><span class="toggle-icon">#</span><span>Snow Squall Warning</span></div>
+      <div class="alert-toggle" data-type="Tropical Storm Warning"><span class="toggle-icon">#</span><span>Tropical Storm Warning</span></div>
+      <div class="alert-toggle" data-type="Tropical Storm Watch"><span class="toggle-icon">#</span><span>Tropical Storm Watch</span></div>
+    </div>
+    <!-- Additional & Special Alerts -->
+    <div class="menu-group">
+      <h3>Additional & Special Alerts</h3>
+      <div class="alert-toggle" data-type="Special Weather Statement"><span class="toggle-icon">#</span><span>Special Weather Statement</span></div>
+      <div class="alert-toggle" data-type="High Wind Warning"><span class="toggle-icon">#</span><span>High Wind Warning</span></div>
+    </div>
+    <!-- Alert Count Filters -->
+    <div class="menu-group" id="alert-count-toggle-group">
+      <h3>Alert Count Filters</h3>
+      <div class="alert-toggle" data-countbar="tornado"><span class="toggle-icon">ON</span><span>Tornado Group</span></div>
+      <div class="alert-toggle" data-countbar="severe-thunderstorm"><span class="toggle-icon">ON</span><span>Severe Thunderstorm Group</span></div>
+      <div class="alert-toggle" data-countbar="flood-alert"><span class="toggle-icon">ON</span><span>Flood Alert Group</span></div>
+      <div class="alert-toggle" data-countbar="winter-weather"><span class="toggle-icon">ON</span><span>Winter Weather Group</span></div>
+    </div>
+    <!-- State Filters -->
+    <div class="menu-group" id="state-group">
+      <h3>State Filters</h3>
+    </div>
+    <div class="menu-group" id="office-filter-group">
+      <h3>Office Filters</h3>
+      <input id="office-search" type="text" placeholder="Search offices or ID" style="width:100%; padding:8px; margin-bottom:8px; border-radius:6px; border:1px solid rgba(255,50,50,0.5);" />
+      <div id="office-list" style="max-height: 220px; overflow-y: auto; margin-top: 8px;"></div>
+    </div>
+  </div>
+
+  <!-- Display Elements for Alert Texts -->
+  <div id="event-text" style="text-align: center; width:83%;"></div>
+  <div id="area-text"></div>
+  <div id="expire-date-container">
+    <div id="expire-date">Expires in: N/A</div>
+  </div>
+  
+  <script>
+    // Variables for sequential display
+    let currentAlertIndex = 0;
+    let currentAreaIndex = 0;
+    let selectedBackground = "";
+
+    // Settings from test.html (alert and state filtering toggles)
+    const CORE_KEYS = [
+      "tornado warning","observed tornado warning","pds tornado warning",
+      "tornado emergency","tornado watch","flash flood warning",
+      "considerable flash flood warning","flash flood emergency",
+      "severe thunderstorm warning","considerable severe thunderstorm warning",
+      "destructive severe thunderstorm warning","severe thunderstorm watch",
+      "winter storm warning","blizzard warning","winter storm watch",
+      "hurricane warning","hurricane watch","snow squall warning",
+      "tropical storm warning","tropical storm watch"
+    ];
+
+    let selectedCategories = [];
+
+    const STORAGE_KEYS = {
+      categories: "warnverlay_selectedCategories",
+      states: "warnverlay_stateToggles",
+      countBar: "warnverlay_alertCountBarToggles",
+      offices: "warnverlay_officeToggles"
+    };
+
+    function saveSettings() {
+      try {
+        localStorage.setItem(STORAGE_KEYS.offices, JSON.stringify(officeToggles));
+      } catch (e) {
+        console.warn('Could not save settings', e);
+      }
+    }
+
+    function loadSettings() {
+      try {
+        const storedOffices = localStorage.getItem(STORAGE_KEYS.offices);
+        if (storedOffices) {
+          const parsed = JSON.parse(storedOffices) || {};
+          // Merge stored settings into preloaded `officeToggles` so names from nwsoffices.json persist
+          Object.keys(parsed).forEach(id => {
+            const up = id.toUpperCase();
+            officeToggles[up] = Object.assign(officeToggles[up] || {}, parsed[id]);
+          });
+          selectedOfficeIds = Object.keys(officeToggles).filter(id => officeToggles[id] && officeToggles[id].enabled);
+        }
+      } catch (e) {
+        console.warn('Could not load stored office settings, keeping preloaded office list', e);
+      }
+    }
+
+    let selectedOfficeIds = [];
+    let officeToggles = {};
+
+    const stateToggles = {
+      AL:true, AK:true, AZ:true, AR:true, CA:true,
+      CO:true, CT:true, DE:true, FL:true, GA:true,
+      HI:true, ID:true, IL:true, IN:true, IA:true,
+      KS:true, KY:true, LA:true, ME:true, MD:true,
+      MA:true, MI:true, MN:true, MS:true, MO:true,
+      MT:true, NE:true, NV:true, NH:true, NJ:true,
+      NM:true, NY:true, NC:true, ND:true, OH:true,
+      OK:true, OR:true, PA:true, RI:true, SC:true,
+      SD:true, TN:true, TX:true, UT:true, VT:true,
+      VA:true, WA:true, WV:true, WI:true, WY:true
+    };
+
+    const alertCountBarToggles = {
+      "tornado": true,
+      "severe-thunderstorm": true,
+      "flood-alert": true,
+      "winter-weather": true
+    };
+
+    // Track last displayed alert/area for cycling
+    let lastAlertListSignature = "";
+
+    // Global caching to prevent flickering
+    let cachedAlerts = [];
+    let lastUpdateTime = 0; // Timestamp (in ms) of last valid update
+
+    // Latest fetched raw alerts from polling
+    let latestFetchedAlerts = [];
+    let weatherPollingInProgress = false;
+
+    // Helper: Extract damage threats and detection from new warnverlay API's "alertinfo"
+    function extractThreatsFromWarnverlay(alertInfo) {
+      const ai = alertInfo || {};
+      const tornadoDetection = ai.TORNADO || null;
+      const tornadoDetectionRadarIndicated = tornadoDetection === "RADAR INDICATED";
+      const tornadoDetectionObserved = tornadoDetection === "OBSERVED";
+      const tornadoDamageThreatCatastrophic = ai.TORNADO_DAMAGE_THREAT === "CATASTROPHIC";
+      const tornadoDamageThreatConsiderable = ai.TORNADO_DAMAGE_THREAT === "CONSIDERABLE";
+      const thunderstormDamageThreatConsiderable = ai.THUNDERSTORM_DAMAGE_THREAT === "CONSIDERABLE";
+      const thunderstormDamageThreatDestructive = ai.THUNDERSTORM_DAMAGE_THREAT === "DESTRUCTIVE";
+      let flashFloodDamageThreat = null;
+      if (ai.FLASH_FLOOD_DAMAGE_THREAT === "CATASTROPHIC" || ai.FLASH_FLOOD_DAMAGE_THREAT === "CONSIDERABLE") {
+        flashFloodDamageThreat = ai.FLASH_FLOOD_DAMAGE_THREAT;
+      }
+      return {
+        tornadoDetectionRadarIndicated,
+        tornadoDetectionObserved,
+        tornadoDetection,
+        tornadoDamageThreatCatastrophic,
+        tornadoDamageThreatConsiderable,
+        thunderstormDamageThreatConsiderable,
+        thunderstormDamageThreatDestructive,
+        flashFloodDamageThreat
+      };
+    }
+
+    function parseOfficeIdFromSender(sender) {
+      if (!sender) return "";
+      const token = sender.split(/[@\s]+/).find(Boolean);
+      return token ? token.toUpperCase() : "";
+    }
+
+    function getOfficeIdFromWMOIdentifier(wmoIdentifier) {
+      if (!wmoIdentifier) return "";
+      const parts = wmoIdentifier.trim().split(/\s+/).filter(Boolean);
+      return parts.length >= 2 ? parts[1].toUpperCase() : "";
+    }
+
+    // Map of known NWS officeId -> friendly name loaded from nwsoffices.json
+    let nwsofficeMap = {};
+    async function loadNWSOffices() {
+      try {
+        const resp = await fetch('nwsoffices.json');
+        if (!resp.ok) return;
+        const list = await resp.json();
+        if (!Array.isArray(list)) return;
+        list.forEach(o => {
+          if (o && o.officeId) {
+            const up = o.officeId.toUpperCase();
+            nwsofficeMap[up] = o.name || up;
+          }
+        });
+        // Ensure officeToggles contains every known office (so searching by name works before alerts arrive)
+        list.forEach(o => {
+          if (!o || !o.officeId) return;
+          const id = o.officeId.toUpperCase();
+          if (!officeToggles[id]) {
+            officeToggles[id] = { name: o.name || id, enabled: false };
+          } else if (!officeToggles[id].name || officeToggles[id].name === id) {
+            officeToggles[id].name = o.name || id;
+          }
+        });
+        updateOfficeFilterUI();
+      } catch (e) {
+        console.warn('Could not load nwsoffices.json', e);
+      }
+    }
+
+    function deriveOfficeNameFromSender(sender, officeId) {
+      if (!sender) return officeId || "Unknown Office";
+      let s = String(sender || "").trim();
+      // Remove email addresses or URLs
+      s = s.replace(/\S+@\S+/, '').trim();
+      // Remove explicit office id tokens
+      if (officeId) {
+        s = s.replace(new RegExp("\\b" + officeId + "\\b", 'i'), '').trim();
+      }
+      // Remove surrounding punctuation
+      s = s.replace(/^[\s\-:\(\)]+|[\s\-:\(\)]+$/g, '').trim();
+      // If nothing useful remains, return officeId
+      if (!s || s.length <= 2) return officeId || sender || "Unknown Office";
+      return s;
+    }
+
+    function formatOfficeDisplayName(officeId, officeObj) {
+      const up = (officeId || '').toUpperCase();
+      let name = nwsofficeMap[up] || (officeObj && officeObj.name) || officeId || '';
+      // remove any trailing '(ID)' if accidentally included
+      try {
+        name = name.replace(new RegExp('\\s*\\(\\s*' + up + '\\s*\\)\\s*$', 'i'), '').trim();
+      } catch (e) {}
+      return `${name} (${up})`;
+    }
+
+    function registerOffice(officeId, officeName) {
+      if (!officeId) return;
+      const up = officeId.toUpperCase();
+      const mappedName = nwsofficeMap[up];
+      let nameToStore = officeName || mappedName || officeId;
+      try {
+        nameToStore = String(nameToStore).replace(new RegExp('\\s*\\(\\s*' + up + '\\s*\\)\\s*$', 'i'), '').trim();
+      } catch (e) {}
+      if (!officeToggles[officeId]) {
+        officeToggles[officeId] = { name: nameToStore, enabled: false };
+      } else if (officeName) {
+        officeToggles[officeId].name = nameToStore;
+      } else if (mappedName && (!officeToggles[officeId].name || officeToggles[officeId].name === officeId)) {
+        officeToggles[officeId].name = nameToStore;
+      }
+    }
+
+    function registerOfficesFromAlerts(alerts) {
+      if (!Array.isArray(alerts)) return;
+      alerts.forEach(alert => {
+        if (alert && alert.officeId) registerOffice(alert.officeId, alert.officeName);
+      });
+      updateOfficeFilterUI();
+    }
+
+    function updateOfficeFilterUI() {
+      const container = document.getElementById("office-list");
+      if (!container) return;
+      container.innerHTML = "";
+      const searchEl = document.getElementById('office-search');
+      const term = searchEl ? (searchEl.value || '').trim().toLowerCase() : '';
+      let officeIds = Object.keys(officeToggles).sort((a,b) => {
+        const an = formatOfficeDisplayName(a, officeToggles[a]).toLowerCase();
+        const bn = formatOfficeDisplayName(b, officeToggles[b]).toLowerCase();
+        return an.localeCompare(bn);
+      });
+      if (term) {
+        officeIds = officeIds.filter(id => {
+          const storedName = (officeToggles[id] && officeToggles[id].name) ? officeToggles[id].name.toLowerCase() : '';
+          const displayName = formatOfficeDisplayName(id, officeToggles[id]).toLowerCase();
+          return id.toLowerCase().includes(term) || storedName.includes(term) || displayName.includes(term);
+        });
+      }
+      if (!officeIds.length) {
+        const placeholder = document.createElement("div");
+        placeholder.className = "alert-toggle";
+        placeholder.style.cursor = "default";
+        placeholder.innerHTML = `<span class="toggle-icon">--</span><span>No office data yet</span>`;
+        container.appendChild(placeholder);
+        return;
+      }
+      officeIds.forEach(id => {
+        const office = officeToggles[id];
+        const div = document.createElement("div");
+        div.className = "alert-toggle";
+        div.setAttribute("data-officeid", id);
+        const displayName = formatOfficeDisplayName(id, office);
+        div.innerHTML = `<span class="toggle-icon">${office.enabled ? "ON" : "OFF"}</span><span>${displayName}</span>`;
+        div.classList.toggle("selected", office.enabled);
+        const icon = div.querySelector(".toggle-icon");
+        if (icon) icon.classList.toggle("disabled", !office.enabled);
+        div.addEventListener("click", () => {
+          office.enabled = !office.enabled;
+          div.classList.toggle("selected", office.enabled);
+          icon.textContent = office.enabled ? "ON" : "OFF";
+          icon.classList.toggle("disabled", !office.enabled);
+          selectedOfficeIds = Object.keys(officeToggles).filter(key => officeToggles[key].enabled);
+          saveSettings();
+          currentAlertIndex = 0;
+          currentAreaIndex = 0;
+          updateBackgroundCycle();
+        });
+        container.appendChild(div);
+      });
+    }
+
+    function applyOfficeFilters(alerts) {
+      if (!selectedOfficeIds.length) return alerts;
+      return alerts.filter(a => a.officeId && selectedOfficeIds.includes(a.officeId));
+    }
+
+    
+
+    // Normalize warnverlay API alert to internal format
+    function normalizeWarnverlayAlert(alert) {
+      const props = alert.properties || {};
+      const eventType = alert.event || props.event || "Unknown Event";
+      const areaDesc = alert.areaDesc || props.areaDesc || "Unknown Area";
+      const expireDate = alert.expires || props.expires || "N/A";
+      const sender = alert.sender || props.sender || "";
+      const officeId = parseOfficeIdFromSender(sender);
+      const officeName = props.officeName || alert.officeName || deriveOfficeNameFromSender(sender, officeId) || sender || "Unknown Office";
+      const status = (alert.status || props.status || alert.messageType || props.messageType || "").toString();
+      const isNew = /\bnew\b/i.test(status) || /\bnew\b/i.test(eventType);
+      const isUpdated = /updated|upgrade|upgraded/i.test(status) || /updated|upgrade|upgraded/i.test(eventType);
+      const threats = extractThreatsFromWarnverlay(
+        alert.alertinfo || alert.alertInfo || props.alertinfo || {}
+      );
+      const areaChunks = splitAreaDesc(areaDesc, 17);
+      return Object.assign(
+        {
+          eventType,
+          areaChunks,
+          expireDate
+          , officeId,
+          officeName,
+          isNew,
+          isUpdated
+        },
+        threats
+      );
+    }
+
+     // SSE logic for warnverlay API
+    let sseAlerts = [];
+    let sseActive = false;
+    let sseError = false;
+    function startWarnverlaySSE() {
+      try {
+        const es = new EventSource("https://a8890-c7a1.e.jrnm.app/eventstream");
+        sseActive = true;
+        sseError = false;
+        es.onmessage = function(event) {
+          try {
+            let data = JSON.parse(event.data);
+            let arr = null;
+            if (Array.isArray(data)) arr = data;
+            else if (data && Array.isArray(data.alerts)) arr = data.alerts;
+            else if (data && Array.isArray(data.data)) arr = data.data;
+            else if (data && Array.isArray(data.features)) arr = data.features.map(f => f.properties ? Object.assign({}, f.properties, { alertinfo: f.properties.alertinfo || f.alertinfo }) : f);
+            if (!arr) return;
+            sseAlerts = arr.map(normalizeWarnverlayAlert);
+            registerOfficesFromAlerts(sseAlerts);
+          } catch (e) {}
+        };
+        es.onerror = function() {
+          sseActive = false;
+          sseError = true;
+          es.close();
+        };
+      } catch (e) {
+        sseActive = false;
+        sseError = true;
+      }
+    }
+
+    // Start SSE on load
+    startWarnverlaySSE();
+
+    async function fetchWarnverlayAlerts() {
+      // If SSE is working and has data, use it
+      if (sseActive && sseAlerts.length) {
+        registerOfficesFromAlerts(sseAlerts);
+        return sseAlerts;
+      }
+      // If SSE failed, fallback to fetch
+      try {
+        const response = await fetch('https://a8890-c7a1.e.jrnm.app/alerts');
+        if (!response.ok) throw new Error("Warnverlay API error");
+        const data = await response.json();
+        let arr = null;
+        if (Array.isArray(data)) arr = data;
+        else if (data && Array.isArray(data.alerts)) arr = data.alerts;
+        else if (data && Array.isArray(data.data)) arr = data.data;
+        else if (data && Array.isArray(data.features)) {
+          arr = data.features.map(f =>
+            f.properties
+              ? Object.assign({}, f.properties, { alertinfo: f.properties.alertinfo || f.alertinfo })
+              : f
+          );
+        }
+        if (!arr) return [];
+        const normalized = arr.map(normalizeWarnverlayAlert);
+        registerOfficesFromAlerts(normalized);
+        return normalized;
+      } catch (error) {
+        console.warn("Warnverlay API failed:", error);
+        return [];
+      }
+    }
+
+    // Fetch and parse alerts from the Atom API (existing logic)
+    async function fetchAtomAlerts() {
+      try {
+        const response = await fetch('https://api.weather.gov/alerts/active.atom');
+        const text = await response.text();
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(text, "application/xml");
+        let entries = [];
+        const xpathResult = xmlDoc.evaluate("//*[local-name()='entry']", xmlDoc, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+        for (let i = 0; i < xpathResult.snapshotLength; i++) {
+          entries.push(xpathResult.snapshotItem(i));
+        }
+        function getText(node, tagName) {
+          const result = node.ownerDocument.evaluate(
+            `.//*[local-name()='${tagName}']`,
+            node,
+            null,
+            XPathResult.STRING_TYPE,
+            null
+          );
+          return result.stringValue.trim();
+        }
+        const alerts = entries.map(entry => {
+          const eventType = getText(entry, "event") || "Unknown Event";
+          const areaDesc = getText(entry, "areaDesc") || "Unknown Area";
+          const expireDate = getText(entry, "expires") || "N/A";
+          let parameterNodes = Array.from(entry.getElementsByTagNameNS("*", "parameter"));
+          const tornadoDetection = parameterNodes.find(param => getText(param, "valueName") === "tornadoDetection")
+                                    ? getText(parameterNodes.find(param => getText(param, "valueName") === "tornadoDetection"), "value")
+                                    : null;
+          const flashFloodDamageThreat = parameterNodes.find(param => getText(param, "valueName") === "flashFloodDamageThreat")
+                                    ? getText(parameterNodes.find(param => getText(param, "valueName") === "flashFloodDamageThreat"), "value")
+                                    : null;
+          const tornadoDamageThreat = parameterNodes.find(param => getText(param, "valueName") === "tornadoDamageThreat")
+                                    ? getText(parameterNodes.find(param => getText(param, "valueName") === "tornadoDamageThreat"), "value")
+                                    : null;
+          const thunderstormDamageThreat = parameterNodes.find(param => getText(param, "valueName") === "thunderstormDamageThreat")
+                                    ? getText(parameterNodes.find(param => getText(param, "valueName") === "thunderstormDamageThreat"), "value")
+                                    : null;
+          const thunderstormDamageThreatConsiderable = thunderstormDamageThreat === "CONSIDERABLE";
+          const thunderstormDamageThreatDestructive  = thunderstormDamageThreat === "DESTRUCTIVE";
+          const tornadoDamageThreatCatastrophic       = tornadoDamageThreat === "CATASTROPHIC";
+          const tornadoDamageThreatConsiderable       = tornadoDamageThreat === "CONSIDERABLE";
+          const wmoIdentifierParam = parameterNodes.find(param => getText(param, "valueName") === "WMOIdentifier");
+          const officeId = getOfficeIdFromWMOIdentifier(
+            wmoIdentifierParam ? getText(wmoIdentifierParam, "value") : ""
+          );
+          const officeName = deriveOfficeNameFromSender(getText(entry, "sender"), officeId) || getText(entry, "sender") || officeId || "Unknown Office";
+          const titleText = getText(entry, "title") || "";
+          const isNew = /\bnew\b/i.test(titleText) || /\bnew\b/i.test(eventType);
+          const isUpdated = /updated|upgrade|upgraded/i.test(titleText) || /updated|upgrade|upgraded/i.test(eventType);
+          const areaChunks = splitAreaDesc(areaDesc, 17);
+          return {
+            eventType,
+            areaChunks,
+            expireDate,
+            tornadoDetection,
+            flashFloodDamageThreat,
+            tornadoDamageThreatCatastrophic,
+            tornadoDamageThreatConsiderable,
+            thunderstormDamageThreatConsiderable,
+            thunderstormDamageThreatDestructive
+            , officeId,
+            officeName,
+            isNew,
+            isUpdated
+          };
+        });
+        registerOfficesFromAlerts(alerts);
+        return alerts.filter(alert => {
+          if (alert.expireDate === "N/A") return true;
+          return new Date(alert.expireDate).getTime() > Date.now();
+        });
+      } catch (error) {
+        console.error("Error fetching Atom alerts:", error);
+        return [];
+      }
+    }
+
+    // Unified fetch function: try warnverlay, fallback to Atom
+    async function fetchWeatherAlerts() {
+      let alerts = await fetchWarnverlayAlerts();
+      if (!alerts || alerts.length === 0) {
+        alerts = await fetchAtomAlerts();
+      }
+      return alerts;
+    }
+
+    // Filtering function:
+    // If any alerts are toggled/selected by the user, always display those (override default filter logic).
+    // Otherwise, use the original filtering logic.
+    function filterAlerts(alerts) {
+      if (selectedCategories.length > 0) {
+        // Always show all alerts matching any selected category
+        return alerts.filter(alert => {
+          const evt = alert.eventType.toLowerCase();
+          return selectedCategories.some(cat => evt.includes(cat.toLowerCase()));
+        });
+      }
+      // If any tornado, severe thunderstorm, or flash flood warnings are active, only show those
+      const tsvf = alerts.filter(alert =>
+        alert.eventType.includes("Snow Squall Warning") ||
+        alert.eventType.toLowerCase().includes("tornado warning") ||
+        alert.eventType.toLowerCase().includes("severe thunderstorm warning") ||
+        alert.eventType.toLowerCase().includes("flash flood warning")
+      );
+      if (tsvf.length > 0) {
+        return tsvf;
+      }
+      // Otherwise, show all high-priority alerts
+      const allowedAlerts = alerts.filter(alert =>
+        alert.eventType.includes("Hurricane Warning") ||
+        alert.eventType.includes("Tropical Storm Warning") ||
+        alert.eventType.includes("Storm Surge Warning") ||
+        alert.eventType.includes("Storm Surge Watch") ||
+        alert.eventType.includes("Hurricane Watch") ||
+        alert.eventType.includes("Tropical Storm Watch") ||
+        alert.eventType.includes("Tornado Watch") ||
+        alert.eventType.includes("Severe Thunderstorm Watch") ||
+        alert.eventType.includes("Blizzard Warning") ||
+        alert.eventType.includes("Winter Storm Warning") ||
+        alert.eventType.includes("Ice Storm Warning")
+      );
+      if (allowedAlerts.length > 0) {
+        return allowedAlerts;
+      } else {
+        return alerts;
+      }
+    }
+
+    // Split the area description into chunks with a maximum number of words per chunk.
+    function splitAreaDesc(areaDesc, maxWords) {
+      const parts = areaDesc.split(";");
+      const chunks = [];
+      let currentChunk = [];
+      for (let part of parts) {
+        const wordCount = (currentChunk.join(" ") + " " + part).trim().split(/\s+/).length;
+        if (wordCount > maxWords && currentChunk.length > 0) {
+          chunks.push(currentChunk.join("; "));
+          currentChunk = [];
+        }
+        currentChunk.push(part.trim());
+      }
+      if (currentChunk.length > 0) {
+        chunks.push(currentChunk.join("; "));
+      }
+      return chunks;
+    }
+    
+    // Calculate minutes until expiration.
+    function calculateMinutesUntilExpiration(expireDate) {
+      if (expireDate === "N/A") return "N/A";
+      const expireTime = new Date(expireDate).getTime();
+      const minutesLeft = Math.max(Math.floor((expireTime - Date.now()) / (1000 * 60)), 0);
+      return `${minutesLeft} minute(s)`;
+    }
+    
+    // Calculate alert counts for header display.
+    function calculateAlertCounts(alerts) {
+      const counts = { tornado: 0, severeThunderstorm: 0, flood: 0, winterWeather: 0 };
+      alerts.forEach(alert => {
+        const type = alert.eventType.toLowerCase();
+        if (type.includes("tornado warning")) counts.tornado++;
+        if (type.includes("severe thunderstorm warning")) counts.severeThunderstorm++;
+        if (type.includes("flash flood warning") || type.includes("flood alert")) counts.flood++;
+        // Count all winter weather alerts, watches, advisories
+        if (
+          type.includes("blizzard warning") ||
+          type.includes("winter storm warning") ||
+          type.includes("ice storm warning") ||
+          type.includes("snow squall warning") ||
+          type.includes("lake effect snow warning") ||
+          type.includes("wind chill warning") ||
+          type.includes("winter storm watch") ||
+          type.includes("ice storm watch") ||
+          type.includes("lake effect snow watch") ||
+          type.includes("wind chill watch") ||
+          type.includes("winter weather advisory") ||
+          type.includes("snow advisory") ||
+          type.includes("freezing fog advisory") ||
+          type.includes("lake effect snow advisory") ||
+          type.includes("wind chill advisory")
+        ) {
+          counts.winterWeather++;
+        }
+      });
+      return counts;
+    }
+    
+    // Update header alert counts if any count UI exists.
+    function updateAlertCounts(alerts) {
+      const counts = calculateAlertCounts(alerts);
+      const tornadoEl = document.querySelector(".tornado");
+      const severeEl = document.querySelector(".severe-thunderstorm");
+      const floodEl = document.querySelector(".flood-alert");
+      const winterEl = document.querySelector(".winter-weather");
+      if (tornadoEl) tornadoEl.textContent = `TORNADO WARNINGS: ${counts.tornado}`;
+      if (severeEl) severeEl.textContent = `SEVERE THUNDERSTORM WARNINGS: ${counts.severeThunderstorm}`;
+      if (floodEl) floodEl.textContent = `FLOOD ALERTS: ${counts.flood}`;
+      if (winterEl) winterEl.textContent = `WINTER WEATHER ALERTS: ${counts.winterWeather}`;
+    }
+
+    function getOverlayPlaceholderToken(cssClass, placeholder) {
+      if (!window.OVERLAY_DESIGN_DATA) return null;
+      const data = window.OVERLAY_DESIGN_DATA[cssClass] || {};
+      const config = data.placeholders && data.placeholders[placeholder];
+      return config ? config.token || null : null;
+    }
+
+    function getEventTextCountLabel(alerts, token) {
+      const counts = calculateAlertCounts(alerts);
+      if (!token || !alerts) return null;
+      if (token === '(TornadoWarnings)') return `Tornado Warnings: ${counts.tornado}`;
+      if (token === '(SevereThunderstormWarnings)') return `Severe Thunderstorm Warnings: ${counts.severeThunderstorm}`;
+      if (token === '(FloodAlerts)') return `Flood Alerts: ${counts.flood}`;
+      if (token === '(WinterWeatherAlerts)') return `Winter Weather Alerts: ${counts.winterWeather}`;
+      return null;
+    }
+
+    function updateCountPlaceholderElements(alerts) {
+      const placeholderIds = [
+        'event-text-tornado-warnings',
+        'event-text-severe-thunderstorm-warnings',
+        'event-text-flood-alerts',
+        'event-text-winter-weather-alerts'
+      ];
+      placeholderIds.forEach(function(id) {
+        var token = getOverlayPlaceholderToken(document.body.className || '', id);
+        var el = document.getElementById(id);
+        if (!el || !token) return;
+        var label = getEventTextCountLabel(alerts, token);
+        updateTextSafely(el, label || '');
+      });
+    }
+
+    // Determine the background image based on strict priority.
+    // If no alerts exist, return "No Weather Alerts.png".
+    function determineBackground(alerts) {
+      if (alerts.length === 0) {
+        console.log("No active alerts—returning 'No Weather Alerts.png'");
+        return "No Weather Alerts.png";
+      }
+      if (alerts.some(alert => alert.tornadoDetection === "OBSERVED" && alert.tornadoDamageThreatCatastrophic)) {
+        return "TORE.png";
+      }
+      if (alerts.some(alert =>
+          alert.eventType.toLowerCase().includes("pds tornado warning") ||
+          ((alert.tornadoDetection === "OBSERVED" || alert.tornadoDetection === "RADAR INDICATED") &&
+           alert.tornadoDamageThreatConsiderable)
+      )) {
+        return "PDS TOR.png";
+      }
+      if (alerts.some(alert => alert.tornadoDetection === "OBSERVED" && alert.eventType.toLowerCase().includes("tornado warning"))) {
+        return "TOR - Observed.png";
+      }
+      if (alerts.some(alert => alert.eventType.toLowerCase().includes("tornado warning"))) {
+        return "TOR.png";
+      }
+      if (alerts.some(alert =>
+          alert.eventType.toLowerCase().includes("flash flood warning") &&
+          alert.flashFloodDamageThreat === "CATASTROPHIC"
+      )) {
+        return "FFWE.png";
+      }
+      if (alerts.some(alert =>
+          alert.thunderstormDamageThreatDestructive &&
+          alert.eventType.toLowerCase().includes("severe thunderstorm warning")
+      )) {
+        return "PDS SVR.png";
+      }
+      if (alerts.some(alert =>
+          alert.thunderstormDamageThreatConsiderable &&
+          alert.eventType.toLowerCase().includes("severe thunderstorm warning")
+      )) {
+        return "SVR - Considerable.png";
+      }
+      if (alerts.some(alert => alert.eventType.toLowerCase().includes("severe thunderstorm warning"))) {
+        return "SVR.png";
+      }
+      if (alerts.some(alert => alert.eventType.toLowerCase().includes("hurricane warning"))) {
+        return "HUW.png";
+      }
+      if (alerts.some(alert =>
+          alert.eventType.toLowerCase().includes("flash flood warning") &&
+          alert.flashFloodDamageThreat === "CONSIDERABLE"
+      )) {
+        return "FFW - Considerable.png";
+      }
+      if (alerts.some(alert => alert.eventType.toLowerCase().includes("flash flood warning"))) {
+        return "FFW.png";
+      }
+      if (alerts.some(alert => alert.eventType.toLowerCase().includes("tropical storm warning"))) {
+        return "TSW.png";
+      }
+      if (alerts.some(alert => alert.eventType.toLowerCase().includes("snow squall warning"))) {
+        return "SQW.png";
+      }
+      if (alerts.some(alert => alert.eventType.toLowerCase().includes("tornado watch"))) {
+        return "TOA.png";
+      }
+      if (alerts.some(alert => alert.eventType.toLowerCase().includes("ice storm warning"))) {
+        return "ISW.png";
+      }
+      if (alerts.some(alert => alert.eventType.toLowerCase().includes("blizzard warning"))) {
+        return "BZW.png";
+      }
+      if (alerts.some(alert => alert.eventType.toLowerCase().includes("winter storm warning"))) {
+        return "WSW.png";
+      }
+      if (alerts.some(alert => alert.eventType.toLowerCase().includes("severe thunderstorm watch"))) {
+        return "SVA.png";
+      }
+      if (alerts.some(alert => alert.eventType.toLowerCase().includes("winter storm watch"))) {
+        return "WSA.png";
+      }
+      if (alerts.some(alert =>
+          alert.eventType.toLowerCase().includes("special weather statement") ||
+          alert.eventType.toLowerCase().includes("sws")
+      )) {
+        return "SWS.png";
+      }
+      return "AlertActive.png";
+    }
+    
+    // Update the page background if it has changed.
+    function updateBackground(image) {
+      // The background is now managed by the downloaded CSS files.
+      // We no longer set document.body.style.background here so it doesn't 
+      // override the custom light sweep animations or external CSS.
+    }
+    
+    // Helper to create a signature for the current alert list
+    function getAlertListSignature(alerts) {
+      return alerts.map(a => `${a.eventType}|${a.areaChunks.join(",")}|${a.expireDate}`).join("||");
+    }
+
+    function getBaseAlerts(raw) {
+      if (selectedCategories.length) return raw;
+      const core = raw.filter(a => {
+        const et = a.eventType.toLowerCase();
+        return CORE_KEYS.some(k => et.includes(k));
+      });
+      return core.length ? core : raw;
+    }
+
+    function applyUserToggles(alerts) {
+      if (!selectedCategories.length) return alerts;
+      return alerts.filter(a => {
+        const evt = a.eventType.toLowerCase();
+        return selectedCategories.some(cat => evt.includes(cat.toLowerCase()));
+      });
+    }
+
+    function applyStateToggles(alerts) {
+      const on = Object.keys(stateToggles).filter(s => stateToggles[s]);
+      return alerts.map(a => {
+        const filtered = a.areaChunks.filter(ch => {
+          const sts = (ch.match(/\b[A-Z]{2}\b/g) || []).map(v => v.toUpperCase());
+          return !sts.length || sts.some(st => on.includes(st));
+        });
+        return {...a, areaChunks: filtered};
+      }).filter(a => a.areaChunks.length);
+    }
+
+    function categoryMatchesCountToggle(categoryKey, eventTypeLower) {
+      if (categoryKey === "tornado") {
+        return eventTypeLower.includes("tornado warning") || eventTypeLower.includes("tornado emergency") || eventTypeLower.includes("tornado watch");
+      }
+      if (categoryKey === "severe-thunderstorm") {
+        return eventTypeLower.includes("severe thunderstorm warning") || eventTypeLower.includes("considerable severe thunderstorm warning") || eventTypeLower.includes("destructive severe thunderstorm warning") || eventTypeLower.includes("severe thunderstorm watch");
+      }
+      if (categoryKey === "flood-alert") {
+        return eventTypeLower.includes("flash flood warning") || eventTypeLower.includes("flash flood emergency") || eventTypeLower.includes("flash flood watch") || eventTypeLower.includes("flood warning") || eventTypeLower.includes("flood watch") || eventTypeLower.includes("flood advisory") || eventTypeLower.includes("flood alert");
+      }
+      if (categoryKey === "winter-weather") {
+        return eventTypeLower.includes("blizzard warning") || eventTypeLower.includes("winter storm warning") || eventTypeLower.includes("winter storm watch") || eventTypeLower.includes("ice storm warning") || eventTypeLower.includes("ice storm watch") || eventTypeLower.includes("snow squall warning") || eventTypeLower.includes("lake effect snow warning") || eventTypeLower.includes("wind chill warning") || eventTypeLower.includes("winter weather advisory") || eventTypeLower.includes("snow advisory");
+      }
+      return false;
+    }
+
+    function applyAlertCountCategoryFilters(alerts) {
+      const activeCategories = Object.keys(alertCountBarToggles).filter(key => alertCountBarToggles[key]);
+      if (activeCategories.length === 0 || activeCategories.length === Object.keys(alertCountBarToggles).length) {
+        return alerts;
+      }
+      return alerts.filter(alert => {
+        const type = alert.eventType.toLowerCase();
+        return activeCategories.some(cat => categoryMatchesCountToggle(cat, type));
+      });
+    }
+
+    function populateStateToggles() {
+      const ctr = document.getElementById("state-group");
+      ctr.innerHTML = "";
+      Object.keys(stateToggles).forEach(s => {
+        const d = document.createElement("div");
+        d.className = "alert-toggle";
+        d.setAttribute("data-state", s);
+        d.innerHTML = `<span class="toggle-icon">${stateToggles[s] ? "ON" : "OFF"}</span><span>${s}</span>`;
+        if (!stateToggles[s]) d.classList.add("selected");
+        d.addEventListener("click", () => {
+          stateToggles[s] = !stateToggles[s];
+          d.classList.toggle("selected", !stateToggles[s]);
+          d.querySelector(".toggle-icon").textContent = stateToggles[s] ? "ON" : "OFF";
+          saveSettings();
+          updateBackgroundCycle();
+        });
+        ctr.appendChild(d);
+      });
+    }
+
+    // Helper to update text content safely to prevent resetting CSS animations
+    function updateTextSafely(element, newText) {
+      if (element.textContent !== newText) {
+        element.textContent = newText;
+      }
+    }
+
+    // Display alerts sequentially.
+    async function displayAlertsSequentially(alerts, alertIndex, areaIndex) {
+      const eventElement = document.getElementById("event-text");
+      const areaElement = document.getElementById("area-text");
+      const expireDateElement = document.getElementById("expire-date");
+
+      // Filter for tornado warning logic
+      let tornadoPresent = alerts.some(alert =>
+        alert.eventType.toLowerCase().includes("tornado warning")
+      );
+      let filteredForTornado = alerts;
+      if (tornadoPresent) {
+        filteredForTornado = alerts.filter(alert =>
+          alert.eventType.toLowerCase().includes("tornado warning") ||
+          alert.eventType.toLowerCase().includes("severe thunderstorm warning") ||
+          alert.eventType.toLowerCase().includes("flash flood warning")
+        );
+      }
+
+      // --- NEW LOGIC: Only show tornado warnings if specific threat detected ---
+      const hasSpecialTornadoThreat = filteredForTornado.some(alert =>
+        alert.eventType.toLowerCase().includes("tornado warning") &&
+        (
+          (alert.tornadoDetection === "OBSERVED" &&
+            (alert.tornadoDamageThreatCatastrophic || alert.tornadoDamageThreatConsiderable)
+          ) ||
+          (alert.tornadoDetection === "RADAR INDICATED" &&
+            alert.tornadoDamageThreatConsiderable
+          )
+        )
+      );
+      if (hasSpecialTornadoThreat) {
+        filteredForTornado = filteredForTornado.filter(alert =>
+          alert.eventType.toLowerCase().includes("tornado warning")
+        );
+      }
+      // --- END NEW LOGIC ---
+
+      const bgImage = determineBackground(alerts);
+      updateBackground(bgImage);
+
+      const eventTextToken = getOverlayPlaceholderToken(document.body.className || '', 'event-text');
+      const countLabel = getEventTextCountLabel(alerts, eventTextToken);
+      const eventTextOverride = countLabel || null;
+      updateCountPlaceholderElements(alerts);
+
+      // If no alerts exist, display a default message or count label if one is configured.
+      if (filteredForTornado.length === 0) {
+        if (eventTextOverride) {
+          updateTextSafely(eventElement, eventTextOverride);
+          updateTextSafely(areaElement, "");
+          updateTextSafely(expireDateElement, "");
+          return;
+        }
+        updateTextSafely(eventElement, "No Active Weather Alerts");
+        updateTextSafely(areaElement, "");
+        updateTextSafely(expireDateElement, "");
+        return;
+      }
+
+      // If using the generic background ("AlertActive.png"), cycle through alerts one at a time.
+      if (bgImage === "AlertActive.png") {
+        // Use the full alerts list (not filteredForTornado) for display
+        if (alerts.length === 0) {
+          if (eventTextOverride) {
+            updateTextSafely(eventElement, eventTextOverride);
+            updateTextSafely(areaElement, "");
+            updateTextSafely(expireDateElement, "");
+            return;
+          }
+          updateTextSafely(eventElement, "No Active Weather Alerts");
+          updateTextSafely(areaElement, "");
+          updateTextSafely(expireDateElement, "");
+          return;
+        }
+        
+        const alert = alerts[alertIndex];
+        const currentChunk = alert.areaChunks[areaIndex];
+        const minutesLeft = calculateMinutesUntilExpiration(alert.expireDate);
+
+        if (eventTextOverride) {
+          updateTextSafely(eventElement, eventTextOverride);
+        } else {
+          updateTextSafely(eventElement, alert.eventType);
+        }
+        updateTextSafely(areaElement, currentChunk);
+        updateTextSafely(expireDateElement, `Expires in: ${minutesLeft}`);
+        return;
+      }
+
+      // Otherwise, display detailed information for one high-priority alert.
+      const alert = filteredForTornado[alertIndex];
+      const currentChunk = alert.areaChunks[areaIndex];
+      const minutesLeft = calculateMinutesUntilExpiration(alert.expireDate);
+
+      if (eventTextOverride) {
+        updateTextSafely(eventElement, eventTextOverride);
+      } else if (alert.eventType.toLowerCase().includes("flash flood warning") && alert.flashFloodDamageThreat === "CATASTROPHIC") {
+        updateTextSafely(eventElement, "Flash Flood Emergency");
+      } else if (alert.tornadoDetection === "OBSERVED" && alert.tornadoDamageThreatCatastrophic) {
+        updateTextSafely(eventElement, "Tornado Emergency");
+      } else if (
+        alert.eventType.toLowerCase().includes("pds tornado warning") ||
+        ((alert.tornadoDetection === "OBSERVED" || alert.tornadoDetection === "RADAR INDICATED") &&
+         alert.tornadoDamageThreatConsiderable)
+      ) {
+        updateTextSafely(eventElement, "PDS Tornado Warning");
+      } else if (alert.tornadoDetection === "OBSERVED") {
+        updateTextSafely(eventElement, "Observed Tornado Warning");
+      } else {
+        updateTextSafely(eventElement, alert.eventType);
+      }
+
+      if (alert.eventType.toLowerCase().includes("tornado warning") && alert.tornadoDetection === "RADAR INDICATED") {
+        updateTextSafely(areaElement, `Radar Indicated: ${currentChunk}`);
+      } else if (alert.eventType.toLowerCase().includes("severe thunderstorm warning") && alert.thunderstormDamageThreatConsiderable) {
+        updateTextSafely(areaElement, `Considerable: ${currentChunk}`);
+      } else if (alert.eventType.toLowerCase().includes("severe thunderstorm warning") && alert.thunderstormDamageThreatDestructive) {
+        updateTextSafely(areaElement, `Destructive: ${currentChunk}`);
+      } else if (alert.eventType.toLowerCase().includes("flash flood warning") && alert.flashFloodDamageThreat === "CONSIDERABLE") {
+        updateTextSafely(areaElement, `Considerable: ${currentChunk}`);
+      } else {
+        updateTextSafely(areaElement, currentChunk);
+      }
+
+      updateTextSafely(expireDateElement, `Expires in: ${minutesLeft}`);
+    }
+
+    // Main update function.
+    let weatherUpdateStarted = false;
+
+    async function updateBackgroundCycle(firstRun = false) {
+      // Use cached polling data if available, otherwise fetch once.
+      let alertsRaw = latestFetchedAlerts.length ? latestFetchedAlerts : await fetchWeatherAlerts();
+      let filteredAlerts = filterAlerts(alertsRaw);
+
+      // Apply settings toggles (from menu selections)
+      filteredAlerts = getBaseAlerts(filteredAlerts);
+      filteredAlerts = applyUserToggles(filteredAlerts);
+      filteredAlerts = applyStateToggles(filteredAlerts);
+      filteredAlerts = applyOfficeFilters(filteredAlerts);
+      filteredAlerts = applyAlertCountCategoryFilters(filteredAlerts);
+
+      const hasRawData = Array.isArray(alertsRaw) && alertsRaw.length > 0;
+
+      // Cache new valid alerts (if any).
+      if (filteredAlerts.length > 0) {
+        cachedAlerts = filteredAlerts;
+        lastUpdateTime = Date.now();
+      } else if (!hasRawData && cachedAlerts.length > 0 && (Date.now() - lastUpdateTime) < (10 * 60 * 1000)) {
+        console.log("Using cached alerts (no new raw data)");
+        filteredAlerts = cachedAlerts;
+      }
+
+      // If user filter is on and no matches, do not fallback to cache
+      const alertsToDisplay = filteredAlerts.length > 0 ? filteredAlerts : [];
+
+      // --- NEW: Reset cycling if alert list changes ---
+      const newSignature = getAlertListSignature(alertsToDisplay);
+      if (newSignature !== lastAlertListSignature) {
+        currentAlertIndex = 0;
+        currentAreaIndex = 0;
+        lastAlertListSignature = newSignature;
+      }
+
+      // --- NEW: Advance indices for cycling ---
+      if (alertsToDisplay.length > 0) {
+        let alert = alertsToDisplay[currentAlertIndex];
+        let areaChunks = alert.areaChunks || [""];
+        currentAreaIndex++;
+        if (currentAreaIndex >= areaChunks.length) {
+          currentAreaIndex = 0;
+          currentAlertIndex++;
+          if (currentAlertIndex >= alertsToDisplay.length) {
+            currentAlertIndex = 0;
+          }
+        }
+      } else {
+        currentAlertIndex = 0;
+        currentAreaIndex = 0;
+      }
+      console.log("Active Alerts Count:", alertsToDisplay.length);
+      console.log("[Cycle] alertsToDisplay", alertsToDisplay.map(a => a.eventType));
+      console.log("[Cycle] selectedCategories", selectedCategories);
+      await displayAlertsSequentially(alertsToDisplay, currentAlertIndex, currentAreaIndex);
+
+      // Fade out loading overlay after first PNG background is set
+      if (firstRun) {
+        const overlay = document.getElementById('loading-overlay');
+        overlay.classList.add('fade-out');
+        setTimeout(() => {
+          overlay.style.display = 'none';
+        }, 1000);
+      }
+    }
+    
+    async function pollWeatherAlerts() {
+      if (weatherPollingInProgress) return;
+      weatherPollingInProgress = true;
+      try {
+        const alerts = await fetchWeatherAlerts();
+        if (Array.isArray(alerts)) latestFetchedAlerts = alerts;
+      } catch (error) {
+        console.warn('Polling fetch failed:', error);
+      } finally {
+        weatherPollingInProgress = false;
+      }
+      if (weatherUpdateStarted) {
+        updateBackgroundCycle();
+      }
+    }
+
+    function getPlaceholderCycleMs() {
+      const DEFAULT_MS = 5000;
+      try {
+        const cssClass = document.body.className || '';
+        const designs = window.OVERLAY_DESIGN_DATA;
+        if (!designs) return DEFAULT_MS;
+        // Prefer design for current cssClass, fallback to first design entry
+        const design = designs[cssClass] || Object.values(designs)[0];
+        if (!design || !design.placeholders) return DEFAULT_MS;
+        let maxMs = 0;
+        Object.values(design.placeholders).forEach(ph => {
+          const t = ph.transitionOut || ph.transition || {};
+          const delay = (t && t.delay != null) ? Number(t.delay) : (ph.delay != null ? Number(ph.delay) : 0);
+          const duration = (t && t.duration != null) ? Number(t.duration) : (ph.duration != null ? Number(ph.duration) : 0);
+          if (!isNaN(delay) && !isNaN(duration)) {
+            const total = (delay + duration) * 1000;
+            if (total > maxMs) maxMs = total;
+          }
+        });
+        if (maxMs <= 0) return DEFAULT_MS;
+        // Add a small buffer so transitions complete and text remains visible briefly
+        return Math.max(1000, Math.round(maxMs + 250));
+      } catch (e) {
+        console.warn('getPlaceholderCycleMs error', e);
+        return DEFAULT_MS;
+      }
+    }
+
+    // Start updates after DOM is ready
+    window.addEventListener('DOMContentLoaded', async () => {
+      // Load settings from menu
+      populateStateToggles();
+
+      document.getElementById("menu-icon").addEventListener("click", () => {
+        const m = document.getElementById("alert-menu");
+        m.style.display = m.style.display === "block" ? "none" : "block";
+      });
+
+      document.querySelectorAll('.alert-toggle[data-type]').forEach(el => {
+        el.addEventListener('click', () => {
+          const t = el.dataset.type;
+          if (!t) return;
+          el.classList.toggle('selected');
+          if (el.classList.contains('selected')) {
+            if (!selectedCategories.includes(t)) selectedCategories.push(t);
+          } else {
+            selectedCategories = selectedCategories.filter(c => c !== t);
+          }
+          // use '#' for category toggles and .disabled for red/green
+          const icon = el.querySelector('.toggle-icon');
+          if (icon) { icon.textContent = '#'; icon.classList.toggle('disabled', !el.classList.contains('selected')); }
+          currentAlertIndex = 0;
+          currentAreaIndex  = 0;
+          console.log('[Toggle] selectedCategories:', selectedCategories);
+          updateBackgroundCycle();
+        });
+      });
+
+      document.querySelectorAll('.alert-toggle[data-countbar]').forEach(el => {
+        const key = el.getAttribute('data-countbar');
+        el.addEventListener('click', () => {
+          if (!key) return;
+          alertCountBarToggles[key] = !alertCountBarToggles[key];
+          const icon = el.querySelector('.toggle-icon');
+          icon.textContent = alertCountBarToggles[key] ? 'ON' : 'OFF';
+          icon.classList.toggle('disabled', !alertCountBarToggles[key]);
+          console.log('[Toggle Count Filter] ', key, alertCountBarToggles[key]);
+          currentAlertIndex = 0;
+          currentAreaIndex = 0;
+          updateBackgroundCycle();
+        });
+      });
+
+      await loadNWSOffices();
+      loadSettings();
+      updateOfficeFilterUI();
+      const officeSearch = document.getElementById('office-search');
+      if (officeSearch) {
+        officeSearch.addEventListener('input', () => updateOfficeFilterUI());
+      }
+
+      // Run initial fetch immediately, then poll using the chosen placeholder timing
+      await pollWeatherAlerts();
+      weatherUpdateStarted = true;
+      updateBackgroundCycle(true);
+      setInterval(pollWeatherAlerts, getPlaceholderCycleMs());
+    });
+  </script>
+</body>
+</html>
