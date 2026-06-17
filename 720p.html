@@ -6,7 +6,8 @@
   <title>Weather Alert System</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet" />
   <style>
-   body {
+    /* Basic Page Styles */
+    body {
         margin: 0; padding: 0;
         background: rgba(0, 0, 0, 0);
         font-family: Arial, sans-serif;
@@ -276,6 +277,12 @@
     <span></span><span></span><span></span>
   </div>
   <div id="alert-menu">
+    <!-- Office Filters (moved up) -->
+    <div class="menu-group" id="office-filter-group">
+      <h3>Office Filters</h3>
+      <input id="office-search" type="text" placeholder="Search offices or ID" style="width:100%; padding:8px; margin:10px 0 8px; border-radius:6px; border:1px solid rgba(255,50,50,0.5);" />
+      <div id="office-list" style="max-height: 220px; overflow-y: auto; margin-top: 8px;"></div>
+    </div>
     <!-- Tornado Alerts -->
     <div class="menu-group">
       <h3>Tornado Alerts</h3>
@@ -340,6 +347,7 @@
     <div class="menu-group" id="state-group">
       <h3>State Filters</h3>
     </div>
+    <!-- Office Filters (moved) -->
   </div>
 
   <!-- Alert Count Bar -->
@@ -377,7 +385,14 @@
 
     let selectedCategories = [];
 
-    const stateToggles = {
+    const STORAGE_KEYS = {
+      categories: "warnverlay_bg_selectedCategories",
+      states: "warnverlay_bg_stateToggles",
+      countBar: "warnverlay_bg_alertCountBarToggles",
+      offices: "warnverlay_bg_officeToggles",
+    };
+
+    const DEFAULT_STATE_TOGGLES = {
       AL:true, AK:true, AZ:true, AR:true, CA:true,
       CO:true, CT:true, DE:true, FL:true, GA:true,
       HI:true, ID:true, IL:true, IN:true, IA:true,
@@ -390,12 +405,64 @@
       VA:true, WA:true, WV:true, WI:true, WY:true
     };
 
+    let stateToggles = {...DEFAULT_STATE_TOGGLES};
+    let selectedOfficeIds = [];
+    let officeToggles = {};
+    let nwsofficeMap = {};
+
     const alertCountBarToggles = {
       "tornado": true,
       "severe-thunderstorm": true,
       "flood-alert": true,
       "winter-weather": true
     };
+
+    async function loadNWSOffices() {
+      try {
+        const resp = await fetch('nwsoffices.json');
+        if (!resp.ok) return;
+        const list = await resp.json();
+        if (!Array.isArray(list)) return;
+        list.forEach(o => {
+          if (o && o.officeId) {
+            const up = o.officeId.toUpperCase();
+            nwsofficeMap[up] = o.name || up;
+          }
+        });
+        list.forEach(o => {
+          if (!o || !o.officeId) return;
+          const id = o.officeId.toUpperCase();
+          if (!officeToggles[id]) {
+              officeToggles[id] = { name: o.name || id, enabled: true };
+          } else if (!officeToggles[id].name || officeToggles[id].name === id) {
+            officeToggles[id].name = o.name || id;
+          }
+        });
+      } catch (e) {
+        console.warn('Could not load nwsoffices.json', e);
+      }
+    }
+
+    function deriveOfficeNameFromSender(sender, officeId) {
+      if (!sender) return officeId || 'Unknown Office';
+      let s = String(sender || '').trim();
+      s = s.replace(/\S+@\S+/, '').trim();
+      if (officeId) {
+        s = s.replace(new RegExp("\\b" + officeId + "\\b", 'i'), '').trim();
+      }
+      s = s.replace(/^[\s\-:\(\)]+|[\s\-:\(\)]+$/g, '').trim();
+      if (!s || s.length <= 2) return officeId || sender || 'Unknown Office';
+      return s;
+    }
+
+    function formatOfficeDisplayName(officeId, officeObj) {
+      const up = (officeId || '').toUpperCase();
+      let name = nwsofficeMap[up] || (officeObj && officeObj.name) || officeId || '';
+      try {
+        name = name.replace(new RegExp('\\s*\\(\\s*' + up + '\\s*\\)\\s*$', 'i'), '').trim();
+      } catch (e) {}
+      return `${name} (${up})`;
+    }
 
     // Track last displayed alert/area for cycling
     let lastAlertListSignature = "";
@@ -436,6 +503,12 @@
       const eventType = alert.event || props.event || "Unknown Event";
       const areaDesc = alert.areaDesc || props.areaDesc || "Unknown Area";
       const expireDate = alert.expires || props.expires || "N/A";
+      const sender = alert.sender || props.sender || "";
+      const officeId = parseOfficeIdFromSender(sender);
+      const officeName = props.officeName || alert.officeName || sender || "Unknown Office";
+      const status = (alert.status || props.status || alert.messageType || props.messageType || "").toString();
+      const isNew = /new/i.test(status) || /new/i.test(eventType);
+      const isUpdated = /updated|upgrade|upgraded/i.test(status) || /updated|upgrade|upgraded/i.test(eventType);
       const threats = extractThreatsFromWarnverlay(
         alert.alertinfo || alert.alertInfo || props.alertinfo || {}
       );
@@ -444,7 +517,11 @@
         {
           eventType,
           areaChunks,
-          expireDate
+          expireDate,
+          officeId,
+          officeName,
+          isNew,
+          isUpdated
         },
         threats
       );
@@ -456,7 +533,7 @@
     let sseError = false;
     function startWarnverlaySSE() {
       try {
-        const es = new EventSource("https://a8890-c7a1.e.jrnm.app/alerts");
+        const es = new EventSource("https://a8890-c7a1.e.jrnm.app/eventstream");
         sseActive = true;
         sseError = false;
         es.onmessage = function(event) {
@@ -557,6 +634,15 @@
           const thunderstormDamageThreatDestructive  = thunderstormDamageThreat === "DESTRUCTIVE";
           const tornadoDamageThreatCatastrophic       = tornadoDamageThreat === "CATASTROPHIC";
           const tornadoDamageThreatConsiderable       = tornadoDamageThreat === "CONSIDERABLE";
+          const officeId = getOfficeIdFromWMOIdentifier(
+            parameterNodes.find(param => getText(param, "valueName") === "WMOIdentifier")
+              ? getText(parameterNodes.find(param => getText(param, "valueName") === "WMOIdentifier"), "value")
+              : ""
+          );
+          const officeName = getText(entry, "sender") || officeId || "Unknown Office";
+          const titleText = getText(entry, "title") || "";
+          const isNew = /\bnew\b/i.test(titleText) || /\bnew\b/i.test(eventType);
+          const isUpdated = /updated|upgrade|upgraded/i.test(titleText) || /updated|upgrade|upgraded/i.test(eventType);
           const areaChunks = splitAreaDesc(areaDesc, 17);
           return {
             eventType,
@@ -567,7 +653,11 @@
             tornadoDamageThreatCatastrophic,
             tornadoDamageThreatConsiderable,
             thunderstormDamageThreatConsiderable,
-            thunderstormDamageThreatDestructive
+            thunderstormDamageThreatDestructive,
+            officeId,
+            officeName,
+            isNew,
+            isUpdated
           };
         });
         return alerts.filter(alert => {
@@ -833,6 +923,147 @@
       });
     }
 
+    function saveSettings() {
+      try {
+        localStorage.setItem(STORAGE_KEYS.categories, JSON.stringify(selectedCategories));
+        localStorage.setItem(STORAGE_KEYS.states, JSON.stringify(stateToggles));
+        localStorage.setItem(STORAGE_KEYS.countBar, JSON.stringify(alertCountBarToggles));
+        localStorage.setItem(STORAGE_KEYS.offices, JSON.stringify(officeToggles));
+      } catch (e) {
+        console.warn("Unable to save settings", e);
+      }
+    }
+
+    function loadSettings() {
+      try {
+        const storedCategories = JSON.parse(localStorage.getItem(STORAGE_KEYS.categories) || "[]");
+        if (Array.isArray(storedCategories)) selectedCategories = storedCategories;
+
+        const storedStates = JSON.parse(localStorage.getItem(STORAGE_KEYS.states) || "{}");
+        if (storedStates && typeof storedStates === "object") {
+          Object.keys(DEFAULT_STATE_TOGGLES).forEach(k => {
+            if (k in storedStates) stateToggles[k] = !!storedStates[k];
+          });
+        }
+
+        const storedCountBar = JSON.parse(localStorage.getItem(STORAGE_KEYS.countBar) || "{}");
+        if (storedCountBar && typeof storedCountBar === "object") {
+          Object.keys(alertCountBarToggles).forEach(k => {
+            if (k in storedCountBar) alertCountBarToggles[k] = !!storedCountBar[k];
+          });
+        }
+
+        const storedOffices = JSON.parse(localStorage.getItem(STORAGE_KEYS.offices) || "{}");
+        if (storedOffices && typeof storedOffices === "object") {
+          Object.keys(storedOffices).forEach(id => {
+            const up = id.toUpperCase();
+            officeToggles[up] = Object.assign(officeToggles[up] || {}, storedOffices[id]);
+          });
+          selectedOfficeIds = Object.keys(officeToggles).filter(id => officeToggles[id] && officeToggles[id].enabled);
+        }
+
+        } catch (e) {
+        console.warn("Unable to load settings", e);
+      }
+    }
+
+    function parseOfficeIdFromSender(sender) {
+      if (!sender) return "";
+      const firstToken = sender.split(/[@\s]+/).find(Boolean);
+      return firstToken ? firstToken.toUpperCase() : "";
+    }
+
+    function getOfficeIdFromWMOIdentifier(wmoIdentifier) {
+      if (!wmoIdentifier) return "";
+      const parts = wmoIdentifier.trim().split(/\s+/).filter(Boolean);
+      return parts.length >= 2 ? parts[1].toUpperCase() : "";
+    }
+
+    function registerOffice(officeId, officeName) {
+      if (!officeId) return;
+      const up = officeId.toUpperCase();
+      const mappedName = nwsofficeMap[up];
+      let nameToStore = officeName || mappedName || officeId;
+      try {
+        nameToStore = String(nameToStore).replace(new RegExp('\\s*\\(\\s*' + up + '\\s*\\)\\s*$', 'i'), '').trim();
+      } catch (e) {}
+      if (!officeToggles[up]) {
+            officeToggles[up] = { name: nameToStore, enabled: true };
+      } else if (officeName) {
+        officeToggles[up].name = nameToStore;
+      } else if (mappedName && (!officeToggles[up].name || officeToggles[up].name === officeId)) {
+        officeToggles[up].name = nameToStore;
+      }
+    }
+
+    function registerOfficesFromAlerts(alerts) {
+      if (!Array.isArray(alerts)) return;
+      alerts.forEach(alert => {
+        if (alert && alert.officeId) {
+          registerOffice(alert.officeId, alert.officeName);
+        }
+      });
+      updateOfficeFilterUI();
+    }
+
+    function updateOfficeFilterUI() {
+      const container = document.getElementById("office-list");
+      if (!container) return;
+      container.innerHTML = "";
+      const searchEl = document.getElementById('office-search');
+      const term = searchEl ? (searchEl.value || '').trim().toLowerCase() : '';
+      let officeIds = Object.keys(officeToggles).sort((a,b) => {
+        const an = formatOfficeDisplayName(a, officeToggles[a]).toLowerCase();
+        const bn = formatOfficeDisplayName(b, officeToggles[b]).toLowerCase();
+        return an.localeCompare(bn);
+      });
+      if (term) {
+        officeIds = officeIds.filter(id => {
+          const storedName = (officeToggles[id] && officeToggles[id].name) ? officeToggles[id].name.toLowerCase() : '';
+          const displayName = formatOfficeDisplayName(id, officeToggles[id]).toLowerCase();
+          return id.toLowerCase().includes(term) || storedName.includes(term) || displayName.includes(term);
+        });
+      }
+      if (!officeIds.length) {
+        const placeholder = document.createElement("div");
+        placeholder.className = "alert-toggle";
+        placeholder.style.cursor = "default";
+        placeholder.innerHTML = `<span class="toggle-icon">--</span><span>No office data yet</span>`;
+        container.appendChild(placeholder);
+        return;
+      }
+      officeIds.forEach(id => {
+        const office = officeToggles[id];
+        const d = document.createElement("div");
+        d.className = "alert-toggle";
+        d.setAttribute("data-officeid", id);
+        const displayName = formatOfficeDisplayName(id, office);
+        d.innerHTML = `<span class="toggle-icon">#</span><span>${displayName}</span>`;
+        d.classList.toggle("selected", office.enabled);
+        const icon = d.querySelector(".toggle-icon");
+        icon.classList.toggle("disabled", !office.enabled);
+        d.addEventListener("click", () => {
+          office.enabled = !office.enabled;
+          d.classList.toggle("selected", office.enabled);
+          icon.textContent = "#";
+          icon.classList.toggle("disabled", !office.enabled);
+          selectedOfficeIds = Object.keys(officeToggles).filter(key => officeToggles[key].enabled);
+          saveSettings();
+          currentAlertIndex = 0;
+          currentAreaIndex = 0;
+          updateBackgroundCycle();
+        });
+        container.appendChild(d);
+      });
+    }
+
+    function applyOfficeFilters(alerts) {
+      if (!selectedOfficeIds.length) return alerts;
+      return alerts.filter(a => a.officeId && selectedOfficeIds.includes(a.officeId));
+    }
+
+    // removed new/updated filters per user request
+
     function populateStateToggles() {
       const ctr = document.getElementById("state-group");
       ctr.innerHTML = "";
@@ -846,6 +1077,7 @@
           stateToggles[s] = !stateToggles[s];
           d.classList.toggle("selected", !stateToggles[s]);
           d.querySelector(".toggle-icon").textContent = stateToggles[s] ? "ON" : "OFF";
+          saveSettings();
           updateBackgroundCycle();
         });
         ctr.appendChild(d);
@@ -977,12 +1209,14 @@
     async function updateBackgroundCycle(firstRun = false) {
       // Fetch only weather.gov alerts
       let alertsRaw = await fetchWeatherAlerts();
+      registerOfficesFromAlerts(alertsRaw);
       let filteredAlerts = filterAlerts(alertsRaw);
 
       // Apply settings toggles (from menu selections)
       filteredAlerts = getBaseAlerts(filteredAlerts);
       filteredAlerts = applyUserToggles(filteredAlerts);
       filteredAlerts = applyStateToggles(filteredAlerts);
+      filteredAlerts = applyOfficeFilters(filteredAlerts);
 
       const hasRawData = Array.isArray(alertsRaw) && alertsRaw.length > 0;
 
@@ -1040,7 +1274,7 @@
     }
     
     // Start updates after DOM is ready
-    window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', async () => {
       // Load settings from menu
       populateStateToggles();
       updateAlertCountBarVisibility();
@@ -1056,12 +1290,17 @@
           if (!t) return;
           el.classList.toggle('selected');
           if (el.classList.contains('selected')) {
-            selectedCategories.push(t);
-            el.querySelector('.toggle-icon').textContent = 'ON';
+            if (!selectedCategories.includes(t)) selectedCategories.push(t);
           } else {
             selectedCategories = selectedCategories.filter(c => c !== t);
-            el.querySelector('.toggle-icon').textContent = 'OFF';
           }
+          // Use '#' icon and color via .disabled class
+          const iconEl = el.querySelector('.toggle-icon');
+          if (iconEl) {
+            iconEl.textContent = '#';
+            iconEl.classList.toggle('disabled', !el.classList.contains('selected'));
+          }
+          saveSettings();
           currentAlertIndex = 0;
           currentAreaIndex  = 0;
           console.log('[Toggle] selectedCategories:', selectedCategories);
@@ -1075,12 +1314,52 @@
           if (!key) return;
           alertCountBarToggles[key] = !alertCountBarToggles[key];
           const icon = el.querySelector('.toggle-icon');
-          icon.textContent = alertCountBarToggles[key] ? 'ON' : 'OFF';
-          icon.classList.toggle('disabled', !alertCountBarToggles[key]);
+          if (icon) {
+            icon.textContent = alertCountBarToggles[key] ? 'ON' : 'OFF';
+            icon.classList.toggle('disabled', !alertCountBarToggles[key]);
+          }
+          saveSettings();
           console.log('[Toggle CountBar] ', key, alertCountBarToggles[key]);
           updateAlertCountBarVisibility();
         });
       });
+
+
+      function syncSelectedCategoryUI() {
+        document.querySelectorAll('.alert-toggle[data-type]').forEach(el => {
+          const t = el.dataset.type;
+          const icon = el.querySelector('.toggle-icon');
+          if (!t || !icon) return;
+          const active = selectedCategories.includes(t);
+          el.classList.toggle('selected', active);
+          icon.textContent = '#';
+          icon.classList.toggle('disabled', !active);
+        });
+      }
+
+      function syncCountBarUI() {
+        document.querySelectorAll('.alert-toggle[data-countbar]').forEach(el => {
+          const key = el.getAttribute('data-countbar');
+          const icon = el.querySelector('.toggle-icon');
+          if (!key || !icon) return;
+          const active = !!alertCountBarToggles[key];
+          icon.textContent = active ? 'ON' : 'OFF';
+          icon.classList.toggle('disabled', !active);
+        });
+      }
+
+      await loadNWSOffices();
+      loadSettings();
+      syncSelectedCategoryUI();
+      syncCountBarUI();
+      populateStateToggles();
+      updateAlertCountBarVisibility();
+      updateOfficeFilterUI();
+      const officeSearch = document.getElementById('office-search');
+      if (officeSearch) {
+        officeSearch.addEventListener('input', () => updateOfficeFilterUI());
+      }
+      registerOfficesFromAlerts([]);
 
       // Run initial updates and keep running every 5s
       updateBackgroundCycle(true);
