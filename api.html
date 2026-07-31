@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API Link</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Bebas Neue', sans-serif;
+      font-weight: 700;
+      background: linear-gradient(135deg, #bb0000, #6d0000);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .box {
+      background: rgba(0, 0, 0, 0.75);
+      border: 2px solid #ff4d4d;
+      border-radius: 10px;
+      padding: 24px;
+      max-width: 460px;
+      width: 100%;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.35);
+    }
+
+    .label {
+      display: block;
+      font-size: 1.6rem;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+      color: #ffd6d6;
+      text-shadow: 1px 1px 2px rgba(255, 0, 0, 0.5);
+      background: linear-gradient(90deg, #ff0000, #790000);
+    }
+
+    .link {
+      display: block;
+      font-size: 1.2rem;
+      color: #ffefef;
+      text-decoration: none;
+      word-break: break-all;
+    }
+
+    .link:hover {
+      color: #ff0000;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <span class="label">NATIONAL WEATHER SERVICE POLLING LINK</span>
+    <a class="link" href="https://a8890-c7a1.e.jrnm.app/alerts" target="_blank" rel="noopener noreferrer">https://warnverlaynwws/alerts</a>
+    <span class="label">NATIONAL WEATHER SERVICE SSE LINK</span>
+    <a class="link" href="https://a8890-c7a1.e.jrnm.app/eventstream" target="_blank" rel="noopener noreferrer">https://warnverlaynwws/eventstream</a>
+    <span class="label">ENVIRONMENTAL CANADA POLLING LINK</span>
+    <a class="link" href="https://api.weather.gc.ca/collections/weather-alerts/items?f=json" target="_blank" rel="noopener noreferrer">https://environmentalcanada/alerts</a>
+  </div>
+</body>
+</html>
