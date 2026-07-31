@@ -533,7 +533,7 @@
     let sseError = false;
     function startWarnverlaySSE() {
       try {
-        const es = new EventSource("https://arrangement-fisheries-publicly-flu.trycloudflare.com/eventstream");
+        const es = new EventSource("https://a8890-c7a1.e.jrnm.app/eventstream");
         sseActive = true;
         sseError = false;
         es.onmessage = function(event) {
@@ -569,7 +569,7 @@
       }
       // If SSE failed, fallback to fetch
       try {
-        const response = await fetch('https://arrangement-fisheries-publicly-flu.trycloudflare.com/alerts');
+        const response = await fetch('https://a8890-c7a1.e.jrnm.app/alerts');
         if (!response.ok) throw new Error("Warnverlay API error");
         const data = await response.json();
         let arr = null;
