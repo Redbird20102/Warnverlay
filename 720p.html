@@ -533,7 +533,7 @@
     let sseError = false;
     function startWarnverlaySSE() {
       try {
-        const es = new EventSource("https://a8890-c7a1.e.jrnm.app/eventstream");
+        const es = new EventSource("http://bore.pub:11145/eventstream");
         sseActive = true;
         sseError = false;
         es.onmessage = function(event) {
