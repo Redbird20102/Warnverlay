@@ -570,7 +570,7 @@
     let sseError = false;
     function startWarnverlaySSE() {
       try {
-        const es = new EventSource("http://bore.pub:24545/eventstream");
+        const es = new EventSource("http://100.90.251.73:8433/eventstream");
         sseActive = true;
         sseError = false;
         es.onmessage = function(event) {
@@ -606,7 +606,7 @@
       }
       // If SSE failed, fallback to fetch
       try {
-        const response = await fetch('http://bore.pub:24545/alerts');
+        const response = await fetch('http://100.90.251.73:8433/alerts');
         if (!response.ok) throw new Error("Warnverlay API error");
         const data = await response.json();
         let arr = null;
