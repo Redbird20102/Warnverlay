@@ -784,7 +784,7 @@
       let ssePending = false;
       function startWarnverlaySSE() {
         try {
-          const es = new EventSource("http://bore.pub:11145/eventstream");
+          const es = new EventSource("https://ce13bd7076dd25.lhr.life/eventstream");
           sseActive = true;
           sseError = false;
               es.onmessage = function(event) {
@@ -835,7 +835,7 @@
         }
         // If SSE failed, fallback to fetch
         try {
-          const resp = await fetch("http://bore.pub:11145/alerts");
+          const resp = await fetch("https://ce13bd7076dd25.lhr.life/alerts");
           if (!resp.ok) return null;
           const data = await resp.json();
           let arr = null;
