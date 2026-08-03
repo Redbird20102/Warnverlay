@@ -570,7 +570,7 @@
     let sseError = false;
     function startWarnverlaySSE() {
       try {
-        const es = new EventSource("http://[fd7a:115c:a1e0::6b01:fbc9]:8433/eventstream");
+        const es = new EventSource("https://ce13bd7076dd25.lhr.life/eventstream");
         sseActive = true;
         sseError = false;
         es.onmessage = function(event) {
@@ -606,7 +606,7 @@
       }
       // If SSE failed, fallback to fetch
       try {
-        const response = await fetch('http://[fd7a:115c:a1e0::6b01:fbc9]:8433/alerts');
+        const response = await fetch('https://ce13bd7076dd25.lhr.life/alerts');
         if (!response.ok) throw new Error("Warnverlay API error");
         const data = await response.json();
         let arr = null;
