@@ -527,49 +527,67 @@
       );
     }
 
-     // SSE logic for warnverlay API
-    let sseAlerts = [];
-    let sseActive = false;
-    let sseError = false;
-    function startWarnverlaySSE() {
+    // WebSocket logic for warnverlay API
+    let wsAlerts = [];
+    let wsActive = false;
+    let wsError = false;
+    function startWarnverlayWS() {
       try {
-        const es = new EventSource("https://ce13bd7076dd25.lhr.life/eventstream");
-        sseActive = true;
-        sseError = false;
-        es.onmessage = function(event) {
+        const ws = new WebSocket("ws://accessories-pictures-newfoundland-cookies.trycloudflare.com/ws");
+        wsActive = false;
+        wsError = false;
+
+        ws.onopen = function() {
+          wsActive = true;
+          wsError = false;
+          console.log('Warnverlay websocket connected');
+        };
+
+        ws.onmessage = function(event) {
           try {
-            let data = JSON.parse(event.data);
+            let data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
             let arr = null;
             if (Array.isArray(data)) arr = data;
             else if (data && Array.isArray(data.alerts)) arr = data.alerts;
             else if (data && Array.isArray(data.data)) arr = data.data;
             else if (data && Array.isArray(data.features)) arr = data.features.map(f => f.properties ? Object.assign({}, f.properties, { alertinfo: f.properties.alertinfo || f.alertinfo }) : f);
             if (!arr) return;
-            sseAlerts = arr.map(normalizeWarnverlayAlert);
-          } catch (e) {}
+            wsAlerts = arr.map(normalizeWarnverlayAlert);
+          } catch (e) {
+            console.warn('Failed to parse warnverlay websocket message', e);
+          }
         };
-        es.onerror = function() {
-          sseActive = false;
-          sseError = true;
-          es.close();
+
+        ws.onerror = function(event) {
+          wsError = true;
+          console.warn('Warnverlay websocket error', event);
+        };
+
+        ws.onclose = function(event) {
+          wsActive = false;
+          console.warn('Warnverlay websocket closed', event);
+          if (!wsError) {
+            setTimeout(startWarnverlayWS, 5000);
+          }
         };
       } catch (e) {
-        sseActive = false;
-        sseError = true;
+        wsActive = false;
+        wsError = true;
+        console.warn('Unable to create warnverlay websocket', e);
       }
     }
 
-    // Start SSE on load
-    startWarnverlaySSE();
+    // Start Warnverlay WebSocket on load
+    startWarnverlayWS();
 
     async function fetchWarnverlayAlerts() {
-      // If SSE is working and has data, use it
-      if (sseActive && sseAlerts.length) {
-        return sseAlerts;
+      // If websocket is working and has data, use it
+      if (wsActive && wsAlerts.length) {
+        return wsAlerts;
       }
-      // If SSE failed, fallback to fetch
+      // If websocket failed, fallback to fetch
       try {
-        const response = await fetch('https://ce13bd7076dd25.lhr.life/alerts');
+        const response = await fetch('https://accessories-pictures-newfoundland-cookies.trycloudflare.com/alerts');
         if (!response.ok) throw new Error("Warnverlay API error");
         const data = await response.json();
         let arr = null;
@@ -1368,3 +1386,4 @@
   </script>
 </body>
 </html>
+
