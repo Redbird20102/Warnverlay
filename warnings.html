@@ -784,7 +784,7 @@
       let wsPending = false;
       function startWarnverlayWS() {
         try {
-          const ws = new WebSocket("ws://accessories-pictures-newfoundland-cookies.trycloudflare.com/ws");
+          const ws = new WebSocket("wss://accessories-pictures-newfoundland-cookies.trycloudflare.com/ws");
           wsActive = false;
           wsError = false;
 
@@ -1301,8 +1301,8 @@
       } finally {
         if (!scheduled) {
           pollInProgress = false;
-          if (ssePending && !isOverlayActive) {
-            ssePending = false;
+          if (wsPending && !isOverlayActive) {
+            wsPending = false;
             setTimeout(pollAlerts, 0);
           } else {
             // poll more frequently now that basic logic is in place
