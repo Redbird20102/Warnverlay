@@ -784,7 +784,7 @@
       let wsPending = false;
       function startWarnverlayWS() {
         try {
-          const ws = new WebSocket("wss://accessories-pictures-newfoundland-cookies.trycloudflare.com/ws");
+          const ws = new WebSocket("wss://warnverlaynwwsalerts.dpdns.org/ws");
           wsActive = false;
           wsError = false;
 
@@ -853,7 +853,7 @@
         }
         // If websocket failed, fallback to fetch
         try {
-          const resp = await fetch("https://accessories-pictures-newfoundland-cookies.trycloudflare.com/alerts");
+          const resp = await fetch("https://warnverlaynwwsalerts.dpdns.org/alerts");
           if (!resp.ok) return null;
           const data = await resp.json();
           let arr = null;
