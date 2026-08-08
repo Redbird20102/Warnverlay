@@ -536,7 +536,7 @@
     let warnverlaySocket = null;
     function startWarnverlayWebSocket() {
       try {
-        warnverlaySocket = new WebSocket("wss://accessories-pictures-newfoundland-cookies.trycloudflare.com/ws/ws");
+        warnverlaySocket = new WebSocket("wss://warnverlaynwwsalerts.dpdns.org/ws");
         wsActive = false;
         wsError = false;
 
@@ -585,7 +585,7 @@
       }
       // If websocket is unavailable or has no data, fallback to fetch
       try {
-        const response = await fetch('https://accessories-pictures-newfoundland-cookies.trycloudflare.com/alerts');
+        const response = await fetch('https://warnverlaynwwsalerts.dpdns.org/alerts');
         if (!response.ok) throw new Error("Warnverlay API error");
         const data = await response.json();
         let arr = null;
