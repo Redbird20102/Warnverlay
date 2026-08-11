@@ -56,9 +56,113 @@
       box-shadow: 0 0 20px #ff4d4d, 0 0 40px #66000099;
       border-color: #fff;
     }
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      backdrop-filter: blur(4px);
+    }
+    .modal-box {
+      width: min(90%, 580px);
+      padding: 28px;
+      background: rgba(20, 0, 0, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 24px;
+      box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+      text-align: left;
+      color: #f7e4c1;
+      backdrop-filter: blur(12px);
+      position: relative;
+      overflow: hidden;
+    }
+    .modal-box::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top right, rgba(255, 128, 64, 0.18), transparent 45%);
+      pointer-events: none;
+    }
+    .modal-box h2 {
+      margin-top: 0;
+      margin-bottom: 0.8em;
+      font-size: 2rem;
+      letter-spacing: 1px;
+      color: #ffd36a;
+      text-shadow: 0 0 18px rgba(255, 211, 106, 0.55);
+    }
+    .modal-box p {
+      margin: 0 0 1.4em;
+      line-height: 1.65;
+      color: #f6f0e7;
+      font-size: 1.05rem;
+      letter-spacing: 0.02em;
+    }
+    .modal-close {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 14px 26px;
+      background: linear-gradient(135deg, #ff6b6b, #ff2f2f);
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-family: 'Bebas Neue', sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 14px 30px rgba(255, 77, 77, 0.25);
+      position: relative;
+      z-index: 1;
+    }
+    .modal-close:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 18px 36px rgba(255, 77, 77, 0.35);
+    }
+    .modal-close:focus {
+      outline: none;
+      box-shadow: 0 0 0 4px rgba(255, 73, 73, 0.35);
+    }
   </style>
 </head>
 <body>
+  <div class="modal-backdrop" id="updateModal">
+    <div class="modal-box">
+      <h2>Overlay Creator Update</h2>
+      <p>A new update is out on Overlay Creator! Features added: Chroma key, Gradients, Loop animations, Drop shadow for images. Tutorial coming soon!</p>
+      <button class="modal-close" onclick="closeUpdateModal()">Close</button>
+    </div>
+  </div>
+  <script>
+    const UPDATE_MODAL_KEY = 'warnverlayOverlayCreatorUpdateDismissed';
+
+    function closeUpdateModal() {
+      const modal = document.getElementById('updateModal');
+      if (modal) {
+        modal.style.display = 'none';
+        try {
+          localStorage.setItem(UPDATE_MODAL_KEY, 'true');
+        } catch (error) {
+          console.warn('Unable to save modal dismissal:', error);
+        }
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const dismissed = localStorage.getItem(UPDATE_MODAL_KEY) === 'true';
+      if (dismissed) {
+        const modal = document.getElementById('updateModal');
+        if (modal) {
+          modal.style.display = 'none';
+        }
+      }
+    });
+  </script>
   <h1>Welcome to Warnverlay Access 3 BETA</h1>
   <p>select the Resolution below</p>
   <div class="resolution-container">
@@ -76,6 +180,5 @@
   </div>
 </body>
 </html>
-
 
 
