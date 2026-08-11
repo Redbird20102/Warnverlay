@@ -165,6 +165,17 @@
             background-position: 0 0, 0 10px, 10px -10px, -10px 0;
             background-color: #ffffff;
             border: 2px dashed #999;
+            overflow: hidden;
+        }
+
+        .canvas::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            border: 0px solid rgba(255, 255, 255, 1);
+            z-index: 10002;
+            box-sizing: border-box;
         }
 
         /** Browsers without container queries: approximate 16:9 in viewport */
@@ -193,12 +204,31 @@
 
         .box {
             position: absolute;
-            z-index: 5;
+            z-index: 2;
             cursor: move;
             user-select: none;
             transition: box-shadow 0.2s, border 0.2s;
             border: none;
             overflow: visible;
+        }
+
+        .canvas-shadow-layer {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .box.selected,
+        .box.multi-selected {
+            z-index: 9999;
+        }
+
+        .box.selected .resize-handle,
+        .box.multi-selected .resize-handle,
+        .box.selected .delete-button,
+        .box.multi-selected .delete-button {
+            z-index: 10001;
         }
 
         /* Skew moves the whole layer (motion + handles); outline sits on .box-motion inside. */
@@ -224,6 +254,14 @@
             transform-origin: center center;
             pointer-events: auto;
             overflow: visible;
+            z-index: 1;
+        }
+
+        .box-shadow-layer {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
         }
 
         /* Clip transition overflow; sits inside .box-motion next to handles. */
@@ -245,6 +283,7 @@
             pointer-events: none;
             transform-origin: center center;
             position: relative;
+            z-index: 0;
         }
 
         /** Static light band — gradient from JS (opaque, soft-edged); duration set inline per box. */
@@ -267,8 +306,41 @@
             }
         }
 
+        @keyframes box-zoom-in-out {
+            0% { transform: scale(1.00); }
+            50% { transform: scale(1.08); }
+            100% { transform: scale(1.00); }
+        }
+
+        @keyframes box-pulse {
+            0%, 100% { transform: scale(1.00); }
+            50% { transform: scale(1.06); }
+        }
+
+        @keyframes box-float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-6px); }
+        }
+
+        .box-animation-layer {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            transform-origin: center center;
+            will-change: transform;
+        }
+
         .box:hover {
             box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .box-text {
+            position: relative;
+            z-index: 2;
+        }
+
+        .box-body {
+            z-index: 0;
         }
 
         /* Background layer — boxes/interaction chrome render above via higher z-index */
@@ -351,7 +423,7 @@
         /* Resize handles: positions are skew-space corners/edges; transform set in JS (translate + inverse skew). */
         .resize-handle {
             position: absolute;
-            z-index: 2;
+            z-index: 10000;
             width: 12px;
             height: 12px;
             margin: 0;
@@ -420,7 +492,7 @@
             position: absolute;
             top: -25px;
             right: 0;
-            z-index: 3;
+            z-index: 10001;
             background: #dc3545;
             color: white;
             border: none;
@@ -1251,6 +1323,9 @@
 
     <script>
         const canvas = document.getElementById('canvas');
+        const canvasShadowLayer = document.createElement('div');
+        canvasShadowLayer.className = 'canvas-shadow-layer';
+        canvas.appendChild(canvasShadowLayer);
         const addBoxBtn = document.getElementById('addBoxBtn');
         const colorPicker = document.getElementById('colorPicker');
         const outlineWidthPicker = document.getElementById('outlineWidthPicker');
@@ -1821,6 +1896,32 @@
                 html += `<label style="font-size:12px;display:flex;align-items:center;gap:8px;margin-top:6px;cursor:pointer;">
                     <input type="checkbox" id="mediaAspectLock" ${state.lockAspect ? 'checked' : ''}> Lock aspect ratio
                 </label>`;
+                html += `<label style="font-size:12px;display:flex;align-items:center;gap:8px;margin-top:8px;cursor:pointer;">
+                    <input type="checkbox" id="mediaDropShadowEnabled" ${state.dropShadowEnabled ? 'checked' : ''}> Drop shadow
+                </label>`;
+                html += `<label class="slider-field" style="margin-top:6px;">
+                    <div class="slider-field-head"><span>Shadow blur</span><span class="slider-value small-value" id="mediaShadowVal">${Math.round((state.dropShadowSize || 12) * 10) / 10}</span></div>
+                    <input type="range" class="property-input" id="mediaShadowRange" min="0" max="40" step="0.5" value="${state.dropShadowSize || 12}">
+                </label>`;
+                html += `<label style="font-size:12px;display:flex;align-items:center;gap:8px;margin-top:6px;align-items:center;">
+                    <span>Shadow color</span>
+                    <input type="color" id="mediaShadowColor" value="${(state.dropShadowColor || '#000000').toLowerCase()}">
+                </label>`;
+                if (state.mediaType === 'image') {
+                    html += `<label style="font-size:12px;display:flex;align-items:center;gap:8px;margin-top:8px;cursor:pointer;">
+                        <input type="checkbox" id="mediaChromaKeyEnabled" ${state.chromaKeyEnabled ? 'checked' : ''}> Chroma key
+                    </label>`;
+                    html += `<label style="font-size:12px;display:flex;align-items:center;gap:8px;margin-top:6px;align-items:center;">
+                        <span>Key color</span>
+                        <input type="color" id="mediaChromaKeyColor" value="${normalizeHex(state.chromaKeyColor || '#00ff00')}">
+                    </label>`;
+                    html += `<label class="slider-field" style="margin-top:6px;">
+                        <div class="slider-field-head"><span>Tolerance</span><span class="slider-value small-value" id="mediaChromaKeyToleranceVal">${Math.round(state.chromaKeyTolerance || 30)}</span></div>
+                        <input type="range" class="property-input" id="mediaChromaKeyTolerance" min="0" max="100" step="1" value="${Math.round(state.chromaKeyTolerance || 30)}">
+                    </label>`;
+                } else {
+                    html += '<p style="font-size:12px;color:#888;margin-top:8px;">Chroma key is available for images only.</p>';
+                }
                 html += '<button type="button" id="removeCanvasMediaBtn" style="margin-top:10px;padding:6px 10px;width:100%;border-radius:4px;border:1px solid #dc3545;background:#fff;color:#c82333;cursor:pointer;font-size:13px;">Remove from canvas</button>';
                 html += '</div>';
             }
@@ -1874,6 +1975,9 @@
             const wRange = panel.querySelector('#mediaWRange');
             const hRange = panel.querySelector('#mediaHRange');
             const aspectLock = panel.querySelector('#mediaAspectLock');
+            const shadowEnabled = panel.querySelector('#mediaDropShadowEnabled');
+            const shadowRange = panel.querySelector('#mediaShadowRange');
+            const shadowColor = panel.querySelector('#mediaShadowColor');
             const remBtn = panel.querySelector('#removeCanvasMediaBtn');
 
             const applySizeFromSliders = (fromWidth) => {
@@ -1909,6 +2013,54 @@
                     if (canvasImageState) canvasImageState.lockAspect = aspectLock.checked;
                 });
             }
+            if (shadowEnabled) {
+                shadowEnabled.addEventListener('change', () => {
+                    if (!canvasImageState) return;
+                    canvasImageState.dropShadowEnabled = shadowEnabled.checked;
+                    applyMediaShadowStyle();
+                });
+            }
+            if (shadowRange) {
+                shadowRange.addEventListener('input', () => {
+                    if (!canvasImageState) return;
+                    canvasImageState.dropShadowSize = Number(shadowRange.value) || 0;
+                    document.getElementById('mediaShadowVal').textContent = String(Math.round(canvasImageState.dropShadowSize * 10) / 10);
+                    applyMediaShadowStyle();
+                });
+            }
+            if (shadowColor) {
+                shadowColor.addEventListener('input', () => {
+                    if (!canvasImageState) return;
+                    canvasImageState.dropShadowColor = shadowColor.value || '#000000';
+                    applyMediaShadowStyle();
+                });
+            }
+            const chromaEnabled = panel.querySelector('#mediaChromaKeyEnabled');
+            const chromaColor = panel.querySelector('#mediaChromaKeyColor');
+            const chromaTolerance = panel.querySelector('#mediaChromaKeyTolerance');
+            if (chromaEnabled) {
+                chromaEnabled.addEventListener('change', () => {
+                    if (!canvasImageState) return;
+                    canvasImageState.chromaKeyEnabled = chromaEnabled.checked;
+                    updateCanvasMediaChromaState().then(() => renderMediaPanel());
+                });
+            }
+            if (chromaColor) {
+                chromaColor.addEventListener('input', () => {
+                    if (!canvasImageState) return;
+                    canvasImageState.chromaKeyColor = chromaColor.value || '#00ff00';
+                    if (canvasImageState.chromaKeyEnabled) updateCanvasMediaChromaState();
+                });
+            }
+            if (chromaTolerance) {
+                chromaTolerance.addEventListener('input', () => {
+                    if (!canvasImageState) return;
+                    canvasImageState.chromaKeyTolerance = Number(chromaTolerance.value) || 0;
+                    const val = document.getElementById('mediaChromaKeyToleranceVal');
+                    if (val) val.textContent = String(canvasImageState.chromaKeyTolerance);
+                    if (canvasImageState.chromaKeyEnabled) updateCanvasMediaChromaState();
+                });
+            }
             if (remBtn) {
                 remBtn.addEventListener('click', () => removeCanvasMedia());
             }
@@ -1917,11 +2069,28 @@
         function createCanvasMedia({
             src,
             mediaType = 'image',
+            mime = '',
             aspectRatio = 1,
             naturalWidth = 1,
             naturalHeight = 1,
             revokeSrc = null,
             fileName = '',
+            x = 5,
+            y = 5,
+            width = null,
+            height = null,
+            lockAspect = true,
+            dropShadowEnabled = false,
+            dropShadowSize = 12,
+            dropShadowColor = '#000000',
+            dropShadowOpacity = 100,
+            dropShadowAngle = 45,
+            dropShadowDistance = 5,
+            dropShadowSpread = 0,
+            chromaKeyEnabled = false,
+            chromaKeyColor = '#00ff00',
+            chromaKeyTolerance = 30,
+            originalSrc = null,
         }) {
             removeCanvasMedia();
 
@@ -1946,11 +2115,13 @@
             wrapper.appendChild(mediaEl);
 
             const canvasRect = canvas.getBoundingClientRect();
-            let widthPct = Math.min(80, (naturalWidth / canvasRect.width) * 100);
-            let heightPct = Math.min(80, (naturalHeight / canvasRect.height) * 100);
-            const scale = Math.min(1, 80 / widthPct, 80 / heightPct);
-            widthPct *= scale;
-            heightPct *= scale;
+            let widthPct = width != null ? Math.max(5, Math.min(100, width)) : Math.min(80, (naturalWidth / canvasRect.width) * 100);
+            let heightPct = height != null ? Math.max(5, Math.min(100, height)) : Math.min(80, (naturalHeight / canvasRect.height) * 100);
+            if (width == null || height == null) {
+                const scale = Math.min(1, 80 / widthPct, 80 / heightPct);
+                widthPct *= scale;
+                heightPct *= scale;
+            }
             if (widthPct < 15 && heightPct < 15) {
                 const minScale = Math.max(15 / widthPct, 15 / heightPct);
                 widthPct *= minScale;
@@ -1963,15 +2134,29 @@
                 element: wrapper,
                 mediaEl,
                 mediaType,
-                x: 5,
-                y: 5,
+                mime,
+                src,
+                originalSrc: originalSrc || src,
+                x: Number.isFinite(x) ? x : 5,
+                y: Number.isFinite(y) ? y : 5,
                 width: widthPct,
                 height: heightPct,
                 aspectRatio: ar,
                 naturalWidth,
                 naturalHeight,
-                lockAspect: true,
+                lockAspect: typeof lockAspect === 'boolean' ? lockAspect : true,
+                dropShadowEnabled: !!dropShadowEnabled,
+                dropShadowSize: Math.max(0, Number(dropShadowSize) || 12),
+                dropShadowColor: dropShadowColor || '#000000',
+                dropShadowOpacity: Math.max(0, Math.min(100, Number(dropShadowOpacity) || 100)),
+                dropShadowAngle: Math.max(0, Math.min(360, Number(dropShadowAngle) || 45)),
+                dropShadowDistance: Math.max(0, Math.min(50, Number(dropShadowDistance) || 5)),
+                dropShadowSpread: Math.max(0, Math.min(50, Number(dropShadowSpread) || 0)),
+                chromaKeyEnabled: !!chromaKeyEnabled,
+                chromaKeyColor: normalizeHex(chromaKeyColor || '#00ff00'),
+                chromaKeyTolerance: Math.max(0, Math.min(100, Number(chromaKeyTolerance) || 30)),
                 revokeSrc,
+                fileName,
                 dragOffsetX: 0,
                 dragOffsetY: 0,
                 isDragging: false,
@@ -1991,6 +2176,7 @@
                 state.element.style.top = `${state.y}%`;
                 state.element.style.width = `${state.width}%`;
                 state.element.style.height = `${state.height}%`;
+                applyMediaShadowStyle();
             };
 
             const clampMediaRect = () => {
@@ -2145,6 +2331,7 @@
                         createCanvasMedia({
                             src: dataUrl,
                             mediaType: 'video',
+                            mime,
                             aspectRatio: (vid.videoWidth / vid.videoHeight) || 1,
                             naturalWidth: vid.videoWidth,
                             naturalHeight: vid.videoHeight,
@@ -2202,6 +2389,7 @@
                 createCanvasMedia({
                     src: blobUrl,
                     mediaType: 'image',
+                    mime,
                     aspectRatio: im.naturalWidth / im.naturalHeight || 1,
                     naturalWidth: im.naturalWidth,
                     naturalHeight: im.naturalHeight,
@@ -2974,6 +3162,86 @@
             ctx.restore();
         }
 
+        function applyMediaShadowStyle() {
+            if (!canvasImageState || !canvasImageState.element) return;
+            const st = canvasImageState;
+            if (st.dropShadowEnabled && st.dropShadowSize > 0) {
+                const angleRad = (st.dropShadowAngle || 45) * Math.PI / 180;
+                const distance = st.dropShadowDistance || 5;
+                const offsetX = Math.round(Math.cos(angleRad) * distance);
+                const offsetY = Math.round(Math.sin(angleRad) * distance);
+                const blur = Math.max(0, Number(st.dropShadowSize) || 0);
+                const opacity = ((st.dropShadowOpacity || 100) / 100);
+                const color = st.dropShadowColor || '#000000';
+                const rgbaColor = hexToRgba(color, opacity);
+                const shadow = `drop-shadow(${offsetX}px ${offsetY}px ${blur}px ${rgbaColor})`;
+                st.element.style.filter = shadow;
+                st.element.style.webkitFilter = shadow;
+            } else {
+                st.element.style.filter = 'none';
+                st.element.style.webkitFilter = 'none';
+            }
+        }
+
+        function updateCanvasMediaChromaState() {
+            if (!canvasImageState || canvasImageState.mediaType !== 'image') return Promise.resolve();
+            const state = canvasImageState;
+            if (!state.chromaKeyEnabled) {
+                state.src = state.originalSrc || state.src;
+                if (state.mediaEl) state.mediaEl.src = state.src;
+                return Promise.resolve();
+            }
+            return processImageChromaKeyDataUrl(state.originalSrc || state.src, state.chromaKeyColor, state.chromaKeyTolerance)
+                .then((dataUrl) => {
+                    state.src = dataUrl;
+                    if (state.mediaEl) state.mediaEl.src = dataUrl;
+                    return dataUrl;
+                })
+                .catch((err) => {
+                    console.warn('Chroma key processing failed:', err);
+                    state.chromaKeyEnabled = false;
+                    state.src = state.originalSrc || state.src;
+                    if (state.mediaEl) state.mediaEl.src = state.src;
+                    return state.src;
+                });
+        }
+
+        function processImageChromaKeyDataUrl(src, hexColor, tolerance) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => {
+                    try {
+                        const canvasEl = document.createElement('canvas');
+                        canvasEl.width = img.naturalWidth || img.width;
+                        canvasEl.height = img.naturalHeight || img.height;
+                        const ctx = canvasEl.getContext('2d');
+                        ctx.drawImage(img, 0, 0);
+                        const imageData = ctx.getImageData(0, 0, canvasEl.width, canvasEl.height);
+                        const keyRgb = hexToRgb(normalizeHex(hexColor || '#00ff00'));
+                        const tol = Math.max(0, Math.min(255, Number(tolerance) || 30));
+                        for (let i = 0; i < imageData.data.length; i += 4) {
+                            const dr = imageData.data[i] - keyRgb.r;
+                            const dg = imageData.data[i + 1] - keyRgb.g;
+                            const db = imageData.data[i + 2] - keyRgb.b;
+                            const dist = Math.sqrt(dr * dr + dg * dg + db * db);
+                            if (dist <= tol) {
+                                imageData.data[i + 3] = 0;
+                            }
+                        }
+                        ctx.putImageData(imageData, 0, 0);
+                        resolve(canvasEl.toDataURL('image/png'));
+                    } catch (err) {
+                        reject(err);
+                    }
+                };
+                img.onerror = () => {
+                    reject(new Error('Image load failed for chroma key processing')); // eslint-disable-line prefer-promise-reject-errors
+                };
+                img.src = src;
+            });
+        }
+
         function fitCanvasMediaToScreen() {
             if (!canvasImageState) return;
             const st = canvasImageState;
@@ -2996,6 +3264,7 @@
             st.element.style.top = `${st.y}%`;
             st.element.style.width = `${st.width}%`;
             st.element.style.height = `${st.height}%`;
+            applyMediaShadowStyle();
             renderMediaPanel();
         }
 
@@ -3052,6 +3321,39 @@
                 drawContainMedia(ctx, st.mediaEl, mx, my, mw, mh);
             }
 
+            // Draw all glow/shadow effects first so they remain behind every shape and text layer.
+            boxes.forEach((box) => {
+                const x0 = (box.x / 100) * ow;
+                const y0 = (box.y / 100) * oh;
+                const bw = (box.width / 100) * ow;
+                const bh = (box.height / 100) * oh;
+                if (bw <= 0 || bh <= 0) return;
+
+                const th = (box.skewX * Math.PI) / 180;
+                const ph = (box.skewY * Math.PI) / 180;
+                const tanT = Math.tan(th);
+                const tanP = Math.tan(ph);
+
+                if (box.glowEnabled && (box.glowSize || 0) > 0) {
+                    const s = Math.max(1, Math.min(80, Number(box.glowSize) || 0));
+                    const spread = Math.max(1, Math.round(s * 0.45));
+                    const blurPx = Math.max(2, (s + spread) * pxScale);
+                    ctx.save();
+                    ctx.setTransform(1, tanP, tanT, 1 + tanT * tanP, x0, y0);
+                    ctx.shadowBlur = blurPx;
+                    ctx.shadowColor = box.glowColor || '#ffffff';
+                    ctx.shadowOffsetX = 0;
+                    ctx.shadowOffsetY = 0;
+                    ctx.fillStyle = box.color || '#000000';
+                    ctx.beginPath();
+                    pathRoundRect(ctx, 0, 0, bw, bh, (box.borderRadius / 100) * bw, (box.borderRadius / 100) * bh);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                    ctx.shadowColor = 'transparent';
+                    ctx.restore();
+                }
+            });
+
             boxes.forEach((box) => {
                 const x0 = (box.x / 100) * ow;
                 const y0 = (box.y / 100) * oh;
@@ -3068,28 +3370,6 @@
 
                 ctx.save();
                 ctx.setTransform(1, tanP, tanT, 1 + tanT * tanP, x0, y0);
-
-                // Glow must be drawn before clip(): clipping removes everything outside the path,
-                // so filter/drop-shadow on a clipped fill never shows a halo.
-                if (box.glowEnabled && (box.glowSize || 0) > 0) {
-                    const s = Math.max(1, Math.min(80, Number(box.glowSize) || 0));
-                    const spread = Math.max(1, Math.round(s * 0.45));
-                    const blurPx = Math.max(2, (s + spread) * pxScale);
-                    ctx.shadowBlur = blurPx;
-                    ctx.shadowColor = box.glowColor || '#ffffff';
-                    ctx.shadowOffsetX = 0;
-                    ctx.shadowOffsetY = 0;
-                    ctx.fillStyle = box.color || '#000000';
-                    ctx.beginPath();
-                    pathRoundRect(ctx, 0, 0, bw, bh, radX, radY);
-                    ctx.fill();
-                    ctx.shadowBlur = 0;
-                    ctx.shadowColor = 'transparent';
-                    if (box.bevel > 0) {
-                        eraseBevelCornerTriangles(ctx, bw, bh, box.bevel);
-                    }
-                }
-
                 ctx.beginPath();
                 pathRoundRect(ctx, 0, 0, bw, bh, radX, radY);
                 ctx.clip();
@@ -3209,6 +3489,14 @@
                 };
             }
 
+            static defaultAnimation() {
+                return {
+                    type: 'None',
+                    duration: 2.0,
+                    loop: false,
+                };
+            }
+
             constructor(x, y, width, height, color, outlineWidth, outlineColor, borderRadius = 0, bevel = 0, skewX = 0, skewY = 0) {
                 this.id = nextBoxId++;
                 this.x = x;
@@ -3222,15 +3510,30 @@
                 this.bevel = bevel;
                 this.skewX = skewX;
                 this.skewY = skewY;
+                this.gradientEnabled = false;
+                this.gradientStyle = 'linear';
+                this.gradientAngle = 90;
+                this.gradientColor1 = '#ffffff';
+                this.gradientColor2 = '#000000';
+                this.textGradientEnabled = false;
+                this.textGradientStyle = 'linear';
+                this.textGradientAngle = 90;
+                this.textGradientColor1 = '#ffffff';
+                this.textGradientColor2 = '#000000';
                 this.groupId = null;
                 this.skewLayer = null;
                 this.motionLayer = null;
+                this.animationLayer = null;
                 this.innerElement = null;
                 this.transitionIn = { ...Box.defaultTransition() };
                 this.transitionOut = { ...Box.defaultTransition() };
+                this.animationType = 'None';
+                this.animationDuration = 2.0;
+                this.animationLoop = false;
                 this.transitionAnimFrame = null;
                 this.transitionPlaying = false;
                 this.element = null;
+                this.shadowElement = null;
                 this.isDragging = false;
                 this.dragOffsetX = 0;
                 this.dragOffsetY = 0;
@@ -3250,8 +3553,22 @@
                 this.glowEnabled = false;
                 this.glowColor = '#ffffff';
                 this.glowSize = 12;
+                this.dropShadowEnabled = false;
+                this.dropShadowSize = 0;
+                this.dropShadowColor = '#000000';
+                this.dropShadowOpacity = 100;
+                this.dropShadowAngle = 45;
+                this.dropShadowDistance = 5;
+                this.dropShadowSpread = 0;
                 this.textShadowSize = 0;
                 this.textShadowColor = '#000000';
+                this.textDropShadowEnabled = false;
+                this.textDropShadowSize = 5;
+                this.textDropShadowColor = '#000000';
+                this.textDropShadowOpacity = 100;
+                this.textDropShadowAngle = 45;
+                this.textDropShadowDistance = 5;
+                this.textDropShadowSpread = 0;
                 this.textOutlineWidth = 0;
                 this.textOutlineColor = '#000000';
                 this.textOutlinePosition = 'center';
@@ -3282,6 +3599,10 @@
                 motion.className = 'box-motion';
                 this.motionLayer = motion;
 
+                const animationLayer = document.createElement('div');
+                animationLayer.className = 'box-animation-layer';
+                this.animationLayer = animationLayer;
+
                 const clip = document.createElement('div');
                 clip.className = 'box-clip';
                 const body = document.createElement('div');
@@ -3290,11 +3611,12 @@
                 // Text layer — sits on top of box-body, shows this.text
                 const textLayer = document.createElement('div');
                 textLayer.className = 'box-text';
-                textLayer.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;box-sizing:border-box;padding:4px;overflow:hidden;';
+                textLayer.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;box-sizing:border-box;padding:4px;overflow:hidden;z-index:2;';
                 this.textElement = textLayer;
                 body.appendChild(textLayer);
                 clip.appendChild(body);
-                motion.appendChild(clip);
+                animationLayer.appendChild(clip);
+                motion.appendChild(animationLayer);
 
                 // Resize handles (inside motion so they move with transitions + outline)
                 const handles = ['top-left', 'top', 'top-right', 'left', 'right', 'bottom-left', 'bottom', 'bottom-right'];
@@ -3327,6 +3649,17 @@
                 return div;
             }
 
+            createShadowElement() {
+                if (!canvasShadowLayer) return;
+                const shadow = document.createElement('div');
+                shadow.className = 'box-shadow';
+                shadow.style.position = 'absolute';
+                shadow.style.pointerEvents = 'none';
+                shadow.style.inset = '0';
+                canvasShadowLayer.appendChild(shadow);
+                this.shadowElement = shadow;
+            }
+
             updateResizeHandleTransforms() {
                 if (!this.element) return;
                 const inv = `skewX(${-this.skewX}deg) skewY(${-this.skewY}deg)`;
@@ -3338,6 +3671,7 @@
             render() {
                 if (!this.element) {
                     canvas.appendChild(this.createElement());
+                    this.createShadowElement();
                 }
                 this.updateElement();
             }
@@ -3350,6 +3684,13 @@
                     this.element.style.height = this.height + '%';
                     this.element.style.border = 'none';
                     this.element.style.borderRadius = '';
+                }
+                if (this.shadowElement) {
+                    this.shadowElement.style.left = this.x + '%';
+                    this.shadowElement.style.top = this.y + '%';
+                    this.shadowElement.style.width = this.width + '%';
+                    this.shadowElement.style.height = this.height + '%';
+                    this.shadowElement.style.transform = `skewX(${this.skewX}deg) skewY(${this.skewY}deg)`;
                 }
                 if (this.skewLayer) {
                     this.skewLayer.style.transform = `skewX(${this.skewX}deg) skewY(${this.skewY}deg)`;
@@ -3365,26 +3706,63 @@
                 }
                 this.updateResizeHandleTransforms();
                 if (this.innerElement && !this.transitionPlaying) {
+                    // Always clean up previous light sweep properties first
+                    this.innerElement.classList.remove('light-sweep');
+                    this.innerElement.style.removeProperty('background-image');
+                    this.innerElement.style.removeProperty('background-size');
+                    this.innerElement.style.removeProperty('background-repeat');
+                    this.textElement.classList.remove('light-sweep');
+                    this.textElement.style.removeProperty('animation');
+
+                    const hasGradient = !!this.gradientEnabled;
+                    const gradientImage = hasGradient
+                        ? (this.gradientStyle === 'radial'
+                            ? `radial-gradient(circle at center, ${this.gradientColor1}, ${this.gradientColor2})`
+                            : `linear-gradient(${Number(this.gradientAngle) || 0}deg, ${this.gradientColor1}, ${this.gradientColor2})`)
+                        : null;
+
                     if (this.lightSweepEnabled) {
-                        this.innerElement.classList.add('light-sweep');
                         const angle = Number(this.lightSweepAngle);
                         const sweepSec = Math.max(0.3, Math.min(120, Number(this.lightSweepDuration) || 3.2));
                         const delaySec = Math.max(0, Math.min(60, Number(this.lightSweepDelay) || 0));
-                        this.innerElement.style.animationDuration = `${sweepSec}s`;
-                        this.innerElement.style.animationDelay = `${delaySec}s`;
+
+                        if (this.text) {
+                            this.textElement.classList.add('light-sweep');
+                            this.textElement.style.animationDuration = `${sweepSec}s`;
+                            this.textElement.style.animationDelay = `${delaySec}s`;
+                            this.innerElement.style.backgroundColor = this.color;
+                            if (gradientImage) {
+                                this.innerElement.style.backgroundImage = gradientImage;
+                            }
+                        } else {
+                            this.innerElement.classList.add('light-sweep');
+                            this.innerElement.style.animationDuration = `${sweepSec}s`;
+                            this.innerElement.style.animationDelay = `${delaySec}s`;
+                            this.innerElement.style.backgroundColor = this.color;
+
+                            const sweepImage = buildLightSweepBackgroundImage(
+                                Number.isFinite(angle) ? angle : 105,
+                                this.color,
+                                this.lightSweepHighlightColor || '#ffffff',
+                                !!this.lightSweepFillOnly,
+                                this.lightSweepWidth,
+                                this.lightSweepOpacity / 100,
+                            );
+
+                            if (gradientImage) {
+                                this.innerElement.style.backgroundImage = `${sweepImage}, ${gradientImage}`;
+                                this.innerElement.style.backgroundSize = '260% 260%, auto';
+                                this.innerElement.style.backgroundRepeat = 'no-repeat, no-repeat';
+                            } else {
+                                this.innerElement.style.backgroundImage = sweepImage;
+                                this.innerElement.style.backgroundSize = '260% 260%';
+                                this.innerElement.style.backgroundRepeat = 'no-repeat';
+                            }
+                        }
+                    } else if (gradientImage) {
                         this.innerElement.style.backgroundColor = this.color;
-                        this.innerElement.style.backgroundImage = buildLightSweepBackgroundImage(
-                            Number.isFinite(angle) ? angle : 105,
-                            this.color,
-                            this.lightSweepHighlightColor || '#ffffff',
-                            !!this.lightSweepFillOnly,
-                            this.lightSweepWidth,
-                            this.lightSweepOpacity / 100,
-                        );
+                        this.innerElement.style.backgroundImage = gradientImage;
                     } else {
-                        this.innerElement.classList.remove('light-sweep');
-                        this.innerElement.style.removeProperty('background-image');
-                        this.innerElement.style.removeProperty('animation');
                         this.innerElement.style.backgroundColor = this.color;
                     }
                     this.innerElement.style.borderRadius = `${this.borderRadius}%`;
@@ -3392,6 +3770,22 @@
                     this.innerElement.style.opacity = '1';
                     this.innerElement.style.transform = '';
                     this.innerElement.style.clipPath = this.bevel > 0 ? `polygon(${this.bevel}% 0, ${100 - this.bevel}% 0, 100% ${this.bevel}%, 100% ${100 - this.bevel}%, ${100 - this.bevel}% 100%, ${this.bevel}% 100%, 0 ${100 - this.bevel}%, 0 ${this.bevel}%)` : 'none';
+                }
+
+                if (this.animationLayer) {
+                    this.animationLayer.style.animation = 'none';
+                    this.animationLayer.style.transform = 'none';
+                    const type = this.animationType || 'None';
+                    const loop = !!this.animationLoop;
+                    const duration = Math.max(0.2, Math.min(10, Number(this.animationDuration) || 2));
+                    if (type === 'ZoomInOut') {
+                        this.animationLayer.style.animation = `box-zoom-in-out ${duration}s ease-in-out ${loop ? 'infinite' : '1'}`;
+                    } else if (type === 'Pulse') {
+                        this.animationLayer.style.animation = `box-pulse ${duration}s ease-in-out ${loop ? 'infinite' : '1'}`;
+                    } else if (type === 'Float') {
+                        this.animationLayer.style.animation = `box-float ${duration}s ease-in-out ${loop ? 'infinite' : '1'}`;
+                    }
+                    this.animationLayer.style.animationFillMode = 'both';
                 }
                 // Update text layer
                 if (this.textElement) {
@@ -3411,6 +3805,54 @@
                     if (textShadowSizeValue > 0) {
                         textShadowValue = `2px 2px ${textShadowSizeValue}px ${textShadowColorValue}`;
                     }
+                    
+                    // Add text drop shadow if enabled
+                    if (this.textDropShadowEnabled && this.textDropShadowSize > 0) {
+                        const angleRad = (this.textDropShadowAngle || 45) * Math.PI / 180;
+                        const distance = this.textDropShadowDistance || 5;
+                        const offsetX = Math.round(Math.cos(angleRad) * distance);
+                        const offsetY = Math.round(Math.sin(angleRad) * distance);
+                        const spread = this.textDropShadowSpread || 0;
+                        const blur = Math.max(0, this.textDropShadowSize || 0);
+                        const opacity = ((this.textDropShadowOpacity || 100) / 100);
+                        const color = this.textDropShadowColor || '#000000';
+                        const r = parseInt(color.slice(1, 3), 16);
+                        const g = parseInt(color.slice(3, 5), 16);
+                        const b = parseInt(color.slice(5, 7), 16);
+                        const rgba = `rgba(${r}, ${g}, ${b}, ${opacity})`;
+                        const shadowValues = [`${offsetX}px ${offsetY}px ${blur}px ${rgba}`];
+                        if (spread > 0) {
+                            const stepCount = Math.max(1, Math.min(4, Math.floor(spread / 8) + 1));
+                            for (let i = 1; i <= stepCount; i += 1) {
+                                shadowValues.push(`${offsetX + i}px ${offsetY}px ${blur}px ${rgba}`);
+                                shadowValues.push(`${offsetX - i}px ${offsetY}px ${blur}px ${rgba}`);
+                                shadowValues.push(`${offsetX}px ${offsetY + i}px ${blur}px ${rgba}`);
+                                shadowValues.push(`${offsetX}px ${offsetY - i}px ${blur}px ${rgba}`);
+                            }
+                        }
+                        const fullShadowValue = shadowValues.join(', ');
+                        textShadowValue = textShadowValue !== 'none' ? `${fullShadowValue}, ${textShadowValue}` : fullShadowValue;
+                    }
+
+                    const hasTextGradient = !!this.textGradientEnabled;
+                    const textGradientImage = hasTextGradient
+                        ? (this.textGradientStyle === 'radial'
+                            ? `radial-gradient(circle at center, ${this.textGradientColor1}, ${this.textGradientColor2})`
+                            : `linear-gradient(${Number(this.textGradientAngle) || 0}deg, ${this.textGradientColor1}, ${this.textGradientColor2})`)
+                        : null;
+
+                    if (hasTextGradient) {
+                        this.textElement.style.backgroundImage = textGradientImage;
+                        this.textElement.style.webkitBackgroundClip = 'text';
+                        this.textElement.style.backgroundClip = 'text';
+                        this.textElement.style.color = 'transparent';
+                    } else {
+                        this.textElement.style.removeProperty('background-image');
+                        this.textElement.style.removeProperty('-webkit-background-clip');
+                        this.textElement.style.removeProperty('background-clip');
+                        this.textElement.style.color = this.fontColor;
+                    }
+
                     if (outlineWidthValue > 0 && this.textOutlinePosition === 'outside') {
                         const outlineShadow = this.textOutlineStyle === 'rounded'
                             ? buildTextOutlineShadowRounded(outlineColorValue, outlineWidthValue)
@@ -3466,24 +3908,32 @@
                 input.focus();
                 input.select();
 
-                const finishEditing = () => {
-                    this.text = input.value;
-                    this.textElement.removeChild(input);
+                const finishEditing = (revert = false) => {
+                    // Ensure the input is removed if it\'s still there
+                    if (this.textElement.contains(input)) {
+                        this.textElement.removeChild(input);
+                    }
+                    if (!revert) {
+                        this.text = input.value;
+                    }
                     this.textElement.style.pointerEvents = 'none';
-                    this.updateElement();
+                    this.updateElement(); // Re-render the text with the new value (or original if reverted)
                 };
 
-                input.addEventListener('blur', finishEditing);
+                input.addEventListener('blur', () => finishEditing());
                 input.addEventListener('keydown', (evt) => {
                     if (evt.key === 'Enter') {
                         finishEditing();
+                        input.blur(); // Trigger blur to ensure consistency
                     } else if (evt.key === 'Escape') {
-                        this.textElement.removeChild(input);
-                        this.textElement.style.pointerEvents = 'none';
-                        this.updateElement();
+                        finishEditing(true); // Revert changes
+                        input.blur(); // Trigger blur to ensure consistency
                     }
-                    evt.stopPropagation();
+                    evt.stopPropagation(); // Stop propagation for keydown events within the input
                 });
+
+                // Prevent event propagation from the input field to the canvas click listener
+                input.addEventListener('click', (e) => e.stopPropagation());
             }
 
             getRect() {
@@ -3824,6 +4274,7 @@
 
         function addBox() {
             const box = new Box(10, 10, 30, 20, defaultColor, defaultOutlineWidth, defaultOutlineColor, defaultRoundRadius, defaultBevel, defaultSkewX, defaultSkewY);
+            box.glowEnabled = false;
             boxes.push(box);
             box.render();
             box.select();
@@ -3832,9 +4283,10 @@
         }
 
         function addText() {
-            const text = prompt('Enter text (use (AlertName), (Areas), or (ExpireTime) for dynamic text):', '(AlertName)');
+            const text = prompt('Enter text (use (AlertName), (Areas), (AlertInstructions), or (ExpireTime) for dynamic text):', '(AlertName)');
             if (!text) return;
             const box = new Box(10, 10, 30, 10, 'transparent', 0, 'transparent', 0, 0, 0, 0);
+            box.glowEnabled = false;
             box.text = text;
             box.fontColor = '#ffffff';
             boxes.push(box);
@@ -4115,14 +4567,39 @@
         }
 
         function syncMotionLayerGlow(box) {
-            if (!box.motionLayer) return;
+            if (!box.shadowElement) return;
+            let boxShadow = '';
+            
+            // Drop shadow
+            if (box.dropShadowEnabled && box.dropShadowSize > 0) {
+                const angleRad = (box.dropShadowAngle || 45) * Math.PI / 180;
+                const distance = box.dropShadowDistance || 5;
+                const offsetX = Math.round(Math.cos(angleRad) * distance);
+                const offsetY = Math.round(Math.sin(angleRad) * distance);
+                const blur = box.dropShadowSize || 0;
+                const spread = box.dropShadowSpread || 0;
+                const opacity = ((box.dropShadowOpacity || 100) / 100);
+                const color = box.dropShadowColor || '#000000';
+                const rgbaColor = hexToRgba(color, opacity);
+                boxShadow = `${offsetX}px ${offsetY}px ${blur}px ${spread}px ${rgbaColor}`;
+            }
+            
+            // Glow shadow
             if (box.glowEnabled && (box.glowSize || 0) > 0) {
                 const s = Math.max(1, Math.min(80, Number(box.glowSize) || 0));
                 const spread = Math.max(1, Math.round(s * 0.45));
-                box.motionLayer.style.boxShadow = `0 0 ${s}px ${spread}px ${box.glowColor || '#ffffff'}`;
-            } else {
-                box.motionLayer.style.boxShadow = '';
+                const glowShadow = `0 0 ${s}px ${spread}px ${box.glowColor || '#ffffff'}`;
+                boxShadow = boxShadow ? `${boxShadow}, ${glowShadow}` : glowShadow;
             }
+            
+            box.shadowElement.style.boxShadow = boxShadow;
+        }
+        
+        function hexToRgba(hex, alpha = 1) {
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
         }
 
         let transitionPlayback = null;
@@ -5189,6 +5666,32 @@
                     <label>Fill:
                         <input type="color" class="property-input" value="${box.color}" data-id="${box.id}">
                     </label>
+                    <label style="display:flex;align-items:center;gap:8px;margin-top:10px;cursor:pointer;font-size:13px;">
+                        <input type="checkbox" class="gradient-enabled" ${box.gradientEnabled ? 'checked' : ''}>
+                        Gradient fill
+                    </label>
+                    <div class="gradient-controls" style="margin-left:18px;opacity:${box.gradientEnabled ? '1' : '0.5'};pointer-events:${box.gradientEnabled ? 'auto' : 'none'};transition:opacity 0.2s;">
+                        <label style="font-size:12px;display:block;margin:4px 0;">Color 1:
+                            <input type="color" class="property-input gradient-color1-input" value="${box.gradientColor1}" style="margin-left:6px;">
+                        </label>
+                        <label style="font-size:12px;display:block;margin:4px 0;">Color 2:
+                            <input type="color" class="property-input gradient-color2-input" value="${box.gradientColor2}" style="margin-left:6px;">
+                        </label>
+                        <label class="slider-field" style="margin:4px 0;">
+                            <div class="slider-field-head">
+                                <span>Angle °</span>
+                                <span class="slider-value small-value gradient-angle-display">${box.gradientAngle}</span>
+                            </div>
+                            <input type="range" class="property-input gradient-angle-input" value="${box.gradientAngle}" min="0" max="360" step="1">
+                        </label>
+                        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
+                            <button type="button" class="gradient-style-btn" data-gradient-style="linear" data-gradient-angle="90" title="Vertical gradient" style="width:32px;height:28px;border:${box.gradientStyle === 'linear' && box.gradientAngle === 90 ? '2px solid #fff' : '1px solid #666'};border-radius:6px;background:linear-gradient(180deg, ${box.gradientColor1}, ${box.gradientColor2});"></button>
+                            <button type="button" class="gradient-style-btn" data-gradient-style="linear" data-gradient-angle="180" title="Horizontal gradient" style="width:32px;height:28px;border:${box.gradientStyle === 'linear' && box.gradientAngle === 180 ? '2px solid #fff' : '1px solid #666'};border-radius:6px;background:linear-gradient(90deg, ${box.gradientColor1}, ${box.gradientColor2});"></button>
+                            <button type="button" class="gradient-style-btn" data-gradient-style="linear" data-gradient-angle="135" title="Diagonal gradient" style="width:32px;height:28px;border:${box.gradientStyle === 'linear' && box.gradientAngle === 135 ? '2px solid #fff' : '1px solid #666'};border-radius:6px;background:linear-gradient(45deg, ${box.gradientColor1}, ${box.gradientColor2});"></button>
+                            <button type="button" class="gradient-style-btn" data-gradient-style="radial" data-gradient-angle="0" title="Radial gradient" style="width:32px;height:28px;border:${box.gradientStyle === 'radial' ? '2px solid #fff' : '1px solid #666'};border-radius:6px;background:radial-gradient(circle at center, ${box.gradientColor1}, ${box.gradientColor2});"></button>
+                            <button type="button" class="gradient-style-btn" data-gradient-style="linear" data-gradient-angle="320" title="Soft diagonal" style="width:32px;height:28px;border:${box.gradientStyle === 'linear' && box.gradientAngle === 320 ? '2px solid #fff' : '1px solid #666'};border-radius:6px;background:linear-gradient(50deg, ${box.gradientColor1}, ${box.gradientColor2});"></button>
+                        </div>
+                    </div>
                     <label>Outline px:
                         <input type="number" class="property-input outline-width-input" value="${box.outlineWidth}" min="0" max="20">
                     </label>
@@ -5280,13 +5783,104 @@
                         <input type="range" class="property-input glow-size-input" value="${box.glowSize}" min="0" max="48" step="1">
                     </label>
                     <div style="margin-top:12px;padding-top:10px;border-top:1px solid #444;">
+                        <div style="font-size:12px;font-weight:bold;margin-bottom:6px;color:#ff9800;">💧 Drop Shadow</div>
+                        <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer;font-size:13px;">
+                            <input type="checkbox" class="drop-shadow-enabled" ${box.dropShadowEnabled ? 'checked' : ''}>
+                            Enable Drop Shadow
+                        </label>
+                        <label style="font-size:12px;display:block;margin:4px 0;">Drop shadow color:
+                            <input type="color" class="property-input drop-shadow-color-input" value="${box.dropShadowColor}" style="vertical-align:middle;margin-left:6px;">
+                        </label>
+                        <label class="slider-field">
+                            <div class="slider-field-head">
+                                <span>Opacity %</span>
+                                <span class="slider-value small-value drop-shadow-opacity-display">${box.dropShadowOpacity}</span>
+                            </div>
+                            <input type="range" class="property-input drop-shadow-opacity-input" value="${box.dropShadowOpacity}" min="0" max="100" step="1">
+                        </label>
+                        <label class="slider-field">
+                            <div class="slider-field-head">
+                                <span>Angle °</span>
+                                <span class="slider-value small-value drop-shadow-angle-display">${box.dropShadowAngle}</span>
+                            </div>
+                            <input type="range" class="property-input drop-shadow-angle-input" value="${box.dropShadowAngle}" min="0" max="360" step="1">
+                        </label>
+                        <label class="slider-field">
+                            <div class="slider-field-head">
+                                <span>Distance px</span>
+                                <span class="slider-value small-value drop-shadow-distance-display">${box.dropShadowDistance}</span>
+                            </div>
+                            <input type="range" class="property-input drop-shadow-distance-input" value="${box.dropShadowDistance}" min="0" max="50" step="1">
+                        </label>
+                        <label class="slider-field">
+                            <div class="slider-field-head">
+                                <span>Spread px</span>
+                                <span class="slider-value small-value drop-shadow-spread-display">${box.dropShadowSpread}</span>
+                            </div>
+                            <input type="range" class="property-input drop-shadow-spread-input" value="${box.dropShadowSpread}" min="0" max="50" step="1">
+                        </label>
+                        <label class="slider-field">
+                            <div class="slider-field-head">
+                                <span>Size px</span>
+                                <span class="slider-value small-value drop-shadow-size-display">${box.dropShadowSize}</span>
+                            </div>
+                            <input type="range" class="property-input drop-shadow-size-input" value="${box.dropShadowSize}" min="0" max="50" step="1">
+                        </label>
+                    </div>
+                    <div style="margin-top:12px;padding-top:10px;border-top:1px solid #444;">
+                        <div style="font-size:12px;font-weight:bold;margin-bottom:6px;color:#7ec8ff;">🎞️ Animation</div>
+                        <label style="font-size:12px;display:block;margin:4px 0;">Animation type:
+                            <select class="property-input animation-type-input" style="margin-left:6px;width:100%;box-sizing:border-box;">
+                                <option value="None" ${box.animationType === 'None' ? 'selected' : ''}>None</option>
+                                <option value="ZoomInOut" ${box.animationType === 'ZoomInOut' ? 'selected' : ''}>Zoom In & Out</option>
+                                <option value="Pulse" ${box.animationType === 'Pulse' ? 'selected' : ''}>Pulse</option>
+                                <option value="Float" ${box.animationType === 'Float' ? 'selected' : ''}>Float</option>
+                            </select>
+                        </label>
+                        <label style="font-size:12px;display:block;margin:4px 0;">Duration (s):
+                            <input type="number" class="property-input animation-duration-input" value="${Number(box.animationDuration || 2).toFixed(1)}" min="0.2" max="10" step="0.1" style="width:82px;margin-left:6px;">
+                        </label>
+                        <label style="font-size:12px;display:flex;align-items:center;gap:8px;margin:6px 0;cursor:pointer;">
+                            <input type="checkbox" class="animation-loop-input" ${box.animationLoop ? 'checked' : ''}>
+                            Loop Animations
+                        </label>
+                    </div>
+                    <div style="margin-top:12px;padding-top:10px;border-top:1px solid #444;">
                         <div style="font-size:12px;font-weight:bold;margin-bottom:6px;color:#ffeb3b;">📝 Text / Live Token</div>
                         <label style="font-size:12px;display:block;margin-bottom:4px;">Text (or token):
                             <input type="text" class="property-input box-text-input" value="${(box.text || '').replace(/"/g,'&quot;')}" placeholder="(AlertName) / (Areas) / (ExpireTime)" style="width:100%;box-sizing:border-box;margin-top:2px;">
                         </label>
-                        <div style="font-size:11px;color:#aaa;margin-bottom:6px;line-height:1.3;">
-                            Tokens (case-sensitive): <code>(AlertName)</code>, <code>(TornadoWarnings)</code>, <code>(SevereThunderstormWarnings)</code>, <code>(FloodAlerts)</code>, <code>(WinterWeatherAlerts)</code> → event-text, <code>(Areas)</code> → area-text, <code>(ExpireTime)</code> → expire-date.
-                            Any other text is rendered as a static overlay label.
+                        <div style="font-size:11px;color:#aaa;margin-bottom:6px;line-height:1.4;">
+                            <strong style="color:#ddd;">Dynamic Tokens (case-sensitive):</strong><br>
+                            • <code>(TornadoWarnings)</code>, <code>(SevereThunderstormWarnings)</code>, <code>(FloodAlerts)</code>, <code>(WinterWeatherAlerts)</code> → displays the alert/warning counts<br>
+                            • <code>(AlertName)</code> → displays the alert/warning name<br>
+                            • <code>(Areas)</code> → displays affected areas<br>
+                            • <code>(AlertInstructions)</code> → displays the alert instructions<br>
+                            • <code>(ExpireTime)</code> → displays expiration time<br>
+                            <span style="color:#999;">Any other text will appear as-is on the overlay.</span>
+                        </div>
+                        <label style="font-size:12px;display:block;margin:4px 0;">
+                            <input type="checkbox" class="property-input text-gradient-enabled" style="vertical-align:middle;margin-right:8px;" ${box.textGradientEnabled ? 'checked' : ''}>
+                            Text gradient
+                        </label>
+                        <div class="text-gradient-controls" style="margin-left:18px;opacity:${box.textGradientEnabled ? '1' : '0.5'};pointer-events:${box.textGradientEnabled ? 'auto' : 'none'};transition:opacity 0.2s;">
+                            <label style="font-size:12px;display:block;margin:4px 0;">Color 1:
+                                <input type="color" class="property-input text-gradient-color1-input" value="${box.textGradientColor1}" style="margin-left:6px;">
+                            </label>
+                            <label style="font-size:12px;display:block;margin:4px 0;">Color 2:
+                                <input type="color" class="property-input text-gradient-color2-input" value="${box.textGradientColor2}" style="margin-left:6px;">
+                            </label>
+                            <label class="slider-field" style="margin:4px 0;">
+                                <div class="slider-field-head">
+                                    <span>Angle °</span>
+                                    <span class="slider-value small-value text-gradient-angle-display">${box.textGradientAngle}</span>
+                                </div>
+                                <input type="range" class="property-input text-gradient-angle-input" value="${box.textGradientAngle}" min="0" max="360" step="1">
+                            </label>
+                            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
+                                <button type="button" class="text-gradient-style-btn" data-text-gradient-style="linear" title="Linear text gradient" style="width:32px;height:28px;border:${box.textGradientStyle === 'linear' ? '2px solid #fff' : '1px solid #666'};border-radius:6px;background:linear-gradient(90deg, ${box.textGradientColor1}, ${box.textGradientColor2});"></button>
+                                <button type="button" class="text-gradient-style-btn" data-text-gradient-style="radial" title="Radial text gradient" style="width:32px;height:28px;border:${box.textGradientStyle === 'radial' ? '2px solid #fff' : '1px solid #666'};border-radius:6px;background:radial-gradient(circle at center, ${box.textGradientColor1}, ${box.textGradientColor2});"></button>
+                            </div>
                         </div>
                         <label style="font-size:12px;display:block;margin:4px 0;">Font color:
                             <input type="color" class="property-input font-color-input" value="${box.fontColor}" style="vertical-align:middle;margin-left:6px;">
@@ -5297,6 +5891,48 @@
                         </label>
                         <label style="font-size:12px;display:block;margin:4px 0;">Text shadow color:
                             <input type="color" class="property-input text-shadow-color-input" value="${box.textShadowColor}" style="vertical-align:middle;margin-left:6px;">
+                        </label>
+                        <label style="display:flex;align-items:center;gap:8px;margin-top:8px;cursor:pointer;font-size:13px;">
+                            <input type="checkbox" class="text-drop-shadow-enabled" ${box.textDropShadowEnabled ? 'checked' : ''}>
+                            Text drop shadow
+                        </label>
+                        <label style="font-size:12px;display:block;margin:4px 0;">Text drop shadow color:
+                            <input type="color" class="property-input text-drop-shadow-color-input" value="${box.textDropShadowColor}" style="vertical-align:middle;margin-left:6px;">
+                        </label>
+                        <label class="slider-field">
+                            <div class="slider-field-head">
+                                <span>Opacity %</span>
+                                <span class="slider-value small-value text-drop-shadow-opacity-display">${box.textDropShadowOpacity}</span>
+                            </div>
+                            <input type="range" class="property-input text-drop-shadow-opacity-input" value="${box.textDropShadowOpacity}" min="0" max="100" step="1">
+                        </label>
+                        <label class="slider-field">
+                            <div class="slider-field-head">
+                                <span>Angle °</span>
+                                <span class="slider-value small-value text-drop-shadow-angle-display">${box.textDropShadowAngle}</span>
+                            </div>
+                            <input type="range" class="property-input text-drop-shadow-angle-input" value="${box.textDropShadowAngle}" min="0" max="360" step="1">
+                        </label>
+                        <label class="slider-field">
+                            <div class="slider-field-head">
+                                <span>Distance px</span>
+                                <span class="slider-value small-value text-drop-shadow-distance-display">${box.textDropShadowDistance}</span>
+                            </div>
+                            <input type="range" class="property-input text-drop-shadow-distance-input" value="${box.textDropShadowDistance}" min="0" max="50" step="1">
+                        </label>
+                        <label class="slider-field">
+                            <div class="slider-field-head">
+                                <span>Spread px</span>
+                                <span class="slider-value small-value text-drop-shadow-spread-display">${box.textDropShadowSpread}</span>
+                            </div>
+                            <input type="range" class="property-input text-drop-shadow-spread-input" value="${box.textDropShadowSpread}" min="0" max="50" step="1">
+                        </label>
+                        <label class="slider-field">
+                            <div class="slider-field-head">
+                                <span>Size px</span>
+                                <span class="slider-value small-value text-drop-shadow-size-display">${box.textDropShadowSize}</span>
+                            </div>
+                            <input type="range" class="property-input text-drop-shadow-size-input" value="${box.textDropShadowSize}" min="0" max="50" step="1">
                         </label>
                         <label style="font-size:12px;display:block;margin:4px 0;">Text outline px:
                             <input type="number" class="property-input text-outline-width-input" value="${box.textOutlineWidth}" min="0" max="20" step="0.1" style="width:80px;margin-left:6px;">
@@ -5347,6 +5983,75 @@
                     box.color = e.target.value;
                     box.updateElement();
                 });
+
+                const gradientEnabledInput = item.querySelector('.gradient-enabled');
+                const gradientColor1Input = item.querySelector('.gradient-color1-input');
+                const gradientColor2Input = item.querySelector('.gradient-color2-input');
+                const gradientAngleInput = item.querySelector('.gradient-angle-input');
+                const gradientAngleDisplay = item.querySelector('.gradient-angle-display');
+                const gradientControls = item.querySelector('.gradient-controls');
+                const gradientStyleButtons = item.querySelectorAll('.gradient-style-btn');
+
+                function updateGradientControls() {
+                    const enabled = !!box.gradientEnabled;
+                    gradientControls.style.opacity = enabled ? '1' : '0.5';
+                    gradientControls.style.pointerEvents = enabled ? 'auto' : 'none';
+                }
+                updateGradientControls();
+
+                gradientEnabledInput.addEventListener('change', (e) => {
+                    box.gradientEnabled = e.target.checked;
+                    updateGradientControls();
+                    box.updateElement();
+                });
+                gradientColor1Input.addEventListener('input', (e) => {
+                    box.gradientColor1 = e.target.value;
+                    box.updateElement();
+                });
+                gradientColor1Input.addEventListener('change', (e) => {
+                    box.gradientColor1 = e.target.value;
+                    box.updateElement();
+                });
+                gradientColor2Input.addEventListener('input', (e) => {
+                    box.gradientColor2 = e.target.value;
+                    box.updateElement();
+                });
+                gradientColor2Input.addEventListener('change', (e) => {
+                    box.gradientColor2 = e.target.value;
+                    box.updateElement();
+                });
+                gradientAngleInput.addEventListener('input', (e) => {
+                    box.gradientAngle = Math.max(0, Math.min(360, parseInt(e.target.value, 10) || 0));
+                    gradientAngleDisplay.textContent = box.gradientAngle;
+                    box.updateElement();
+                });
+                gradientAngleInput.addEventListener('change', (e) => {
+                    box.gradientAngle = Math.max(0, Math.min(360, parseInt(e.target.value, 10) || 0));
+                    gradientAngleDisplay.textContent = box.gradientAngle;
+                    box.updateElement();
+                });
+                function updateGradientStyleButtons() {
+                    gradientStyleButtons.forEach((button) => {
+                        const style = button.getAttribute('data-gradient-style');
+                        const angle = Number(button.getAttribute('data-gradient-angle')) || 0;
+                        button.style.border = style === box.gradientStyle && (style === 'radial' || angle === box.gradientAngle)
+                            ? '2px solid #fff'
+                            : '1px solid #666';
+                    });
+                }
+                gradientStyleButtons.forEach((button) => {
+                    button.addEventListener('click', () => {
+                        const style = button.getAttribute('data-gradient-style');
+                        const angle = Number(button.getAttribute('data-gradient-angle')) || 0;
+                        box.gradientStyle = style || 'linear';
+                        box.gradientAngle = angle;
+                        gradientAngleInput.value = String(box.gradientAngle);
+                        gradientAngleDisplay.textContent = String(box.gradientAngle);
+                        updateGradientStyleButtons();
+                        box.updateElement();
+                    });
+                });
+                updateGradientStyleButtons();
 
                 const widthInput = item.querySelector('.outline-width-input');
                 widthInput.addEventListener('change', (e) => {
@@ -5543,8 +6248,121 @@
                     glowSizeInput.addEventListener('change', (e) => updateGlowSize(e.target.value));
                 }
 
+                // Drop shadow controls
+                const dropShadowEnabled = item.querySelector('.drop-shadow-enabled');
+                const dropShadowColorInput = item.querySelector('.drop-shadow-color-input');
+                const dropShadowOpacityInput = item.querySelector('.drop-shadow-opacity-input');
+                const dropShadowOpacityDisplay = item.querySelector('.drop-shadow-opacity-display');
+                const dropShadowAngleInput = item.querySelector('.drop-shadow-angle-input');
+                const dropShadowAngleDisplay = item.querySelector('.drop-shadow-angle-display');
+                const dropShadowDistanceInput = item.querySelector('.drop-shadow-distance-input');
+                const dropShadowDistanceDisplay = item.querySelector('.drop-shadow-distance-display');
+                const dropShadowSpreadInput = item.querySelector('.drop-shadow-spread-input');
+                const dropShadowSpreadDisplay = item.querySelector('.drop-shadow-spread-display');
+                const dropShadowSizeInput = item.querySelector('.drop-shadow-size-input');
+                const dropShadowSizeDisplay = item.querySelector('.drop-shadow-size-display');
+
+                if (dropShadowEnabled) {
+                    dropShadowEnabled.addEventListener('change', (e) => {
+                        box.dropShadowEnabled = e.target.checked;
+                        box.updateElement();
+                    });
+                }
+                if (dropShadowColorInput) {
+                    dropShadowColorInput.addEventListener('input', (e) => {
+                        box.dropShadowColor = e.target.value;
+                        box.updateElement();
+                    });
+                    dropShadowColorInput.addEventListener('change', (e) => {
+                        box.dropShadowColor = e.target.value;
+                        box.updateElement();
+                    });
+                }
+                function updateDropShadowOpacity(value) {
+                    box.dropShadowOpacity = Math.max(0, Math.min(100, parseInt(value, 10) || 100));
+                    if (dropShadowOpacityDisplay) dropShadowOpacityDisplay.textContent = String(box.dropShadowOpacity);
+                    box.updateElement();
+                }
+                if (dropShadowOpacityInput) {
+                    dropShadowOpacityInput.addEventListener('input', (e) => updateDropShadowOpacity(e.target.value));
+                    dropShadowOpacityInput.addEventListener('change', (e) => updateDropShadowOpacity(e.target.value));
+                }
+                function updateDropShadowAngle(value) {
+                    box.dropShadowAngle = Math.max(0, Math.min(360, parseInt(value, 10) || 45));
+                    if (dropShadowAngleDisplay) dropShadowAngleDisplay.textContent = String(box.dropShadowAngle);
+                    box.updateElement();
+                }
+                if (dropShadowAngleInput) {
+                    dropShadowAngleInput.addEventListener('input', (e) => updateDropShadowAngle(e.target.value));
+                    dropShadowAngleInput.addEventListener('change', (e) => updateDropShadowAngle(e.target.value));
+                }
+                function updateDropShadowDistance(value) {
+                    box.dropShadowDistance = Math.max(0, Math.min(50, parseInt(value, 10) || 5));
+                    if (dropShadowDistanceDisplay) dropShadowDistanceDisplay.textContent = String(box.dropShadowDistance);
+                    box.updateElement();
+                }
+                if (dropShadowDistanceInput) {
+                    dropShadowDistanceInput.addEventListener('input', (e) => updateDropShadowDistance(e.target.value));
+                    dropShadowDistanceInput.addEventListener('change', (e) => updateDropShadowDistance(e.target.value));
+                }
+                function updateDropShadowSpread(value) {
+                    box.dropShadowSpread = Math.max(0, Math.min(50, parseInt(value, 10) || 0));
+                    if (dropShadowSpreadDisplay) dropShadowSpreadDisplay.textContent = String(box.dropShadowSpread);
+                    box.updateElement();
+                }
+                if (dropShadowSpreadInput) {
+                    dropShadowSpreadInput.addEventListener('input', (e) => updateDropShadowSpread(e.target.value));
+                    dropShadowSpreadInput.addEventListener('change', (e) => updateDropShadowSpread(e.target.value));
+                }
+                function updateDropShadowSize(value) {
+                    box.dropShadowSize = Math.max(0, Math.min(50, parseInt(value, 10) || 0));
+                    if (dropShadowSizeDisplay) dropShadowSizeDisplay.textContent = String(box.dropShadowSize);
+                    box.updateElement();
+                }
+                if (dropShadowSizeInput) {
+                    dropShadowSizeInput.addEventListener('input', (e) => updateDropShadowSize(e.target.value));
+                    dropShadowSizeInput.addEventListener('change', (e) => updateDropShadowSize(e.target.value));
+                }
+
+                const animationTypeInput = item.querySelector('.animation-type-input');
+                const animationDurationInput = item.querySelector('.animation-duration-input');
+                const animationLoopInput = item.querySelector('.animation-loop-input');
+                if (animationTypeInput) {
+                    animationTypeInput.addEventListener('change', (e) => {
+                        box.animationType = e.target.value || 'None';
+                        box.updateElement();
+                    });
+                }
+                if (animationDurationInput) {
+                    animationDurationInput.addEventListener('input', (e) => {
+                        const v = Math.max(0.2, Math.min(10, parseFloat(e.target.value) || 2));
+                        box.animationDuration = v;
+                        animationDurationInput.value = v.toFixed(1);
+                        box.updateElement();
+                    });
+                    animationDurationInput.addEventListener('change', (e) => {
+                        const v = Math.max(0.2, Math.min(10, parseFloat(e.target.value) || 2));
+                        box.animationDuration = v;
+                        animationDurationInput.value = v.toFixed(1);
+                        box.updateElement();
+                    });
+                }
+                if (animationLoopInput) {
+                    animationLoopInput.addEventListener('change', (e) => {
+                        box.animationLoop = !!e.target.checked;
+                        box.updateElement();
+                    });
+                }
+
                 const textInput = item.querySelector('.box-text-input');
                 const fontColorInput = item.querySelector('.font-color-input');
+                const textGradientEnabledInput = item.querySelector('.text-gradient-enabled');
+                const textGradientColor1Input = item.querySelector('.text-gradient-color1-input');
+                const textGradientColor2Input = item.querySelector('.text-gradient-color2-input');
+                const textGradientAngleInput = item.querySelector('.text-gradient-angle-input');
+                const textGradientAngleDisplay = item.querySelector('.text-gradient-angle-display');
+                const textGradientStyleButtons = item.querySelectorAll('.text-gradient-style-btn');
+                const textGradientControls = item.querySelector('.text-gradient-controls');
                 const fontFamilySearchInput = item.querySelector('.font-family-search-input');
                 const fontFamilySelect = item.querySelector('.font-family-select');
                 const fontSizeInput = item.querySelector('.font-size-input');
@@ -5601,6 +6419,67 @@
                         box.updateElement();
                     });
                 }
+                function updateTextGradientControls() {
+                    const enabled = !!box.textGradientEnabled;
+                    textGradientControls.style.opacity = enabled ? '1' : '0.5';
+                    textGradientControls.style.pointerEvents = enabled ? 'auto' : 'none';
+                }
+                if (textGradientEnabledInput) {
+                    textGradientEnabledInput.addEventListener('change', (e) => {
+                        box.textGradientEnabled = e.target.checked;
+                        updateTextGradientControls();
+                        box.updateElement();
+                    });
+                }
+                if (textGradientColor1Input) {
+                    textGradientColor1Input.addEventListener('input', (e) => {
+                        box.textGradientColor1 = e.target.value;
+                        box.updateElement();
+                    });
+                    textGradientColor1Input.addEventListener('change', (e) => {
+                        box.textGradientColor1 = e.target.value;
+                        box.updateElement();
+                    });
+                }
+                if (textGradientColor2Input) {
+                    textGradientColor2Input.addEventListener('input', (e) => {
+                        box.textGradientColor2 = e.target.value;
+                        box.updateElement();
+                    });
+                    textGradientColor2Input.addEventListener('change', (e) => {
+                        box.textGradientColor2 = e.target.value;
+                        box.updateElement();
+                    });
+                }
+                if (textGradientAngleInput) {
+                    const updateTextGradientAngle = (value) => {
+                        box.textGradientAngle = Math.max(0, Math.min(360, parseInt(value, 10) || 0));
+                        if (textGradientAngleDisplay) textGradientAngleDisplay.textContent = String(box.textGradientAngle);
+                        box.updateElement();
+                    };
+                    textGradientAngleInput.addEventListener('input', (e) => updateTextGradientAngle(e.target.value));
+                    textGradientAngleInput.addEventListener('change', (e) => updateTextGradientAngle(e.target.value));
+                }
+                function updateTextGradientStyleButtons() {
+                    textGradientStyleButtons.forEach((button) => {
+                        const style = button.getAttribute('data-text-gradient-style');
+                        if (style === box.textGradientStyle) {
+                            button.style.border = '2px solid #fff';
+                        } else {
+                            button.style.border = '1px solid #666';
+                        }
+                    });
+                }
+                textGradientStyleButtons.forEach((button) => {
+                    button.addEventListener('click', () => {
+                        const style = button.getAttribute('data-text-gradient-style');
+                        box.textGradientStyle = style || 'linear';
+                        updateTextGradientStyleButtons();
+                        box.updateElement();
+                    });
+                });
+                updateTextGradientStyleButtons();
+                updateTextGradientControls();
                 const textShadowSizeInput = item.querySelector('.text-shadow-size-input');
                 const textShadowSizeDisplay = item.querySelector('.text-shadow-size-display');
                 const textShadowColorInput = item.querySelector('.text-shadow-color-input');
@@ -5638,6 +6517,83 @@
                         box.updateElement();
                     });
                 }
+                
+                // Text drop shadow controls
+                const textDropShadowEnabled = item.querySelector('.text-drop-shadow-enabled');
+                const textDropShadowColorInput = item.querySelector('.text-drop-shadow-color-input');
+                const textDropShadowOpacityInput = item.querySelector('.text-drop-shadow-opacity-input');
+                const textDropShadowOpacityDisplay = item.querySelector('.text-drop-shadow-opacity-display');
+                const textDropShadowAngleInput = item.querySelector('.text-drop-shadow-angle-input');
+                const textDropShadowAngleDisplay = item.querySelector('.text-drop-shadow-angle-display');
+                const textDropShadowDistanceInput = item.querySelector('.text-drop-shadow-distance-input');
+                const textDropShadowDistanceDisplay = item.querySelector('.text-drop-shadow-distance-display');
+                const textDropShadowSpreadInput = item.querySelector('.text-drop-shadow-spread-input');
+                const textDropShadowSpreadDisplay = item.querySelector('.text-drop-shadow-spread-display');
+                const textDropShadowSizeInput = item.querySelector('.text-drop-shadow-size-input');
+                const textDropShadowSizeDisplay = item.querySelector('.text-drop-shadow-size-display');
+
+                if (textDropShadowEnabled) {
+                    textDropShadowEnabled.addEventListener('change', (e) => {
+                        box.textDropShadowEnabled = e.target.checked;
+                        box.updateElement();
+                    });
+                }
+                if (textDropShadowColorInput) {
+                    textDropShadowColorInput.addEventListener('input', (e) => {
+                        box.textDropShadowColor = e.target.value;
+                        box.updateElement();
+                    });
+                    textDropShadowColorInput.addEventListener('change', (e) => {
+                        box.textDropShadowColor = e.target.value;
+                        box.updateElement();
+                    });
+                }
+                function updateTextDropShadowOpacity(value) {
+                    box.textDropShadowOpacity = Math.max(0, Math.min(100, parseInt(value, 10) || 100));
+                    if (textDropShadowOpacityDisplay) textDropShadowOpacityDisplay.textContent = String(box.textDropShadowOpacity);
+                    box.updateElement();
+                }
+                if (textDropShadowOpacityInput) {
+                    textDropShadowOpacityInput.addEventListener('input', (e) => updateTextDropShadowOpacity(e.target.value));
+                    textDropShadowOpacityInput.addEventListener('change', (e) => updateTextDropShadowOpacity(e.target.value));
+                }
+                function updateTextDropShadowAngle(value) {
+                    box.textDropShadowAngle = Math.max(0, Math.min(360, parseInt(value, 10) || 45));
+                    if (textDropShadowAngleDisplay) textDropShadowAngleDisplay.textContent = String(box.textDropShadowAngle);
+                    box.updateElement();
+                }
+                if (textDropShadowAngleInput) {
+                    textDropShadowAngleInput.addEventListener('input', (e) => updateTextDropShadowAngle(e.target.value));
+                    textDropShadowAngleInput.addEventListener('change', (e) => updateTextDropShadowAngle(e.target.value));
+                }
+                function updateTextDropShadowDistance(value) {
+                    box.textDropShadowDistance = Math.max(0, Math.min(50, parseInt(value, 10) || 5));
+                    if (textDropShadowDistanceDisplay) textDropShadowDistanceDisplay.textContent = String(box.textDropShadowDistance);
+                    box.updateElement();
+                }
+                if (textDropShadowDistanceInput) {
+                    textDropShadowDistanceInput.addEventListener('input', (e) => updateTextDropShadowDistance(e.target.value));
+                    textDropShadowDistanceInput.addEventListener('change', (e) => updateTextDropShadowDistance(e.target.value));
+                }
+                function updateTextDropShadowSpread(value) {
+                    box.textDropShadowSpread = Math.max(0, Math.min(50, parseInt(value, 10) || 0));
+                    if (textDropShadowSpreadDisplay) textDropShadowSpreadDisplay.textContent = String(box.textDropShadowSpread);
+                    box.updateElement();
+                }
+                if (textDropShadowSpreadInput) {
+                    textDropShadowSpreadInput.addEventListener('input', (e) => updateTextDropShadowSpread(e.target.value));
+                    textDropShadowSpreadInput.addEventListener('change', (e) => updateTextDropShadowSpread(e.target.value));
+                }
+                function updateTextDropShadowSize(value) {
+                    box.textDropShadowSize = Math.max(0, Math.min(50, parseInt(value, 10) || 0));
+                    if (textDropShadowSizeDisplay) textDropShadowSizeDisplay.textContent = String(box.textDropShadowSize);
+                    box.updateElement();
+                }
+                if (textDropShadowSizeInput) {
+                    textDropShadowSizeInput.addEventListener('input', (e) => updateTextDropShadowSize(e.target.value));
+                    textDropShadowSizeInput.addEventListener('change', (e) => updateTextDropShadowSize(e.target.value));
+                }
+
                 if (textOutlineWidthInput) {
                     const updateTextOutlineWidth = (value) => {
                         box.textOutlineWidth = Math.max(0, Math.min(20, parseFloat(value) || 0));
@@ -6102,6 +7058,8 @@
 
         // Stored designs per alert type: { 'Tornado Warning': [ {x,y,width,height,...}, ... ], ... }
         let alertDesigns = {};
+        // Stored media per alert type: { 'Tornado Warning': { src, mediaType, x, y, width, height, aspectRatio, naturalWidth, naturalHeight, lockAspect, fileName } }
+        let alertMedia = {};
 
         // ---- Modal functions ----
 
@@ -6225,6 +7183,11 @@
                 if (!confirm(`Overwrite the existing design for "${targetAlertType}" with a copy of "${sourceAlertType}"?`)) return;
             }
             alertDesigns[targetAlertType] = sourceDesign.map(item => ({ ...item }));
+            if (alertMedia[sourceAlertType]) {
+                alertMedia[targetAlertType] = { ...alertMedia[sourceAlertType] };
+            } else {
+                delete alertMedia[targetAlertType];
+            }
             hideDuplicateModal();
             renderDesignedAlertsPanel();
             if (currentAlertType === targetAlertType) {
@@ -6254,13 +7217,23 @@
         // ---- Design save / load ----
 
         function saveCurrentDesign() {
-            if (!currentAlertType || !boxes.length) return;
+            if (!currentAlertType) return;
             alertDesigns[currentAlertType] = boxes.map(box => ({
                 x: box.x, y: box.y, width: box.width, height: box.height,
                 color: box.color,
+                gradientEnabled: box.gradientEnabled,
+                gradientStyle: box.gradientStyle,
+                gradientAngle: box.gradientAngle,
+                gradientColor1: box.gradientColor1,
+                gradientColor2: box.gradientColor2,
                 outlineWidth: box.outlineWidth, outlineColor: box.outlineColor,
                 borderRadius: box.borderRadius, bevel: box.bevel,
                 skewX: box.skewX, skewY: box.skewY,
+                textGradientEnabled: box.textGradientEnabled,
+                textGradientStyle: box.textGradientStyle,
+                textGradientAngle: box.textGradientAngle,
+                textGradientColor1: box.textGradientColor1,
+                textGradientColor2: box.textGradientColor2,
                 lightSweepEnabled: box.lightSweepEnabled,
                 lightSweepAngle: box.lightSweepAngle,
                 lightSweepHighlightColor: box.lightSweepHighlightColor,
@@ -6272,6 +7245,16 @@
                 glowEnabled: box.glowEnabled,
                 glowColor: box.glowColor,
                 glowSize: box.glowSize,
+                dropShadowEnabled: box.dropShadowEnabled,
+                dropShadowSize: box.dropShadowSize,
+                dropShadowColor: box.dropShadowColor,
+                dropShadowOpacity: box.dropShadowOpacity,
+                dropShadowAngle: box.dropShadowAngle,
+                dropShadowDistance: box.dropShadowDistance,
+                dropShadowSpread: box.dropShadowSpread,
+                animationType: box.animationType || 'None',
+                animationDuration: Number(box.animationDuration) || 2,
+                animationLoop: !!box.animationLoop,
                 transitionIn: box.transitionIn,
                 transitionOut: box.transitionOut,
                 text: box.text,
@@ -6282,6 +7265,13 @@
                 textAlign: box.textAlign,
                 textShadowSize: box.textShadowSize || 0,
                 textShadowColor: box.textShadowColor || '#000000',
+                textDropShadowEnabled: box.textDropShadowEnabled || false,
+                textDropShadowSize: Number(box.textDropShadowSize) || 5,
+                textDropShadowColor: box.textDropShadowColor || '#000000',
+                textDropShadowOpacity: Number(box.textDropShadowOpacity) || 100,
+                textDropShadowAngle: Number(box.textDropShadowAngle) || 45,
+                textDropShadowDistance: Number(box.textDropShadowDistance) || 5,
+                textDropShadowSpread: Number(box.textDropShadowSpread) || 0,
                 textOutlineWidth: box.textOutlineWidth || 0,
                 textOutlineColor: box.textOutlineColor || '#000000',
                 textOutlinePosition: box.textOutlinePosition || 'center',
@@ -6297,6 +7287,37 @@
                     )
                     : null
             }));
+
+            if (canvasImageState && canvasImageState.src) {
+                alertMedia[currentAlertType] = {
+                    src: canvasImageState.src,
+                    mediaType: canvasImageState.mediaType,
+                    mime: canvasImageState.mime || '',
+                    x: canvasImageState.x,
+                    y: canvasImageState.y,
+                    width: canvasImageState.width,
+                    height: canvasImageState.height,
+                    aspectRatio: canvasImageState.aspectRatio,
+                    naturalWidth: canvasImageState.naturalWidth,
+                    naturalHeight: canvasImageState.naturalHeight,
+                    lockAspect: !!canvasImageState.lockAspect,
+                    dropShadowEnabled: !!canvasImageState.dropShadowEnabled,
+                    dropShadowSize: Number(canvasImageState.dropShadowSize) || 0,
+                    dropShadowColor: canvasImageState.dropShadowColor || '#000000',
+                    dropShadowOpacity: Number(canvasImageState.dropShadowOpacity) || 100,
+                    dropShadowAngle: Number(canvasImageState.dropShadowAngle) || 45,
+                    dropShadowDistance: Number(canvasImageState.dropShadowDistance) || 5,
+                    dropShadowSpread: Number(canvasImageState.dropShadowSpread) || 0,
+                    chromaKeyEnabled: !!canvasImageState.chromaKeyEnabled,
+                    chromaKeyColor: canvasImageState.chromaKeyColor || '#00ff00',
+                    chromaKeyTolerance: Number(canvasImageState.chromaKeyTolerance) || 30,
+                    originalSrc: canvasImageState.originalSrc || canvasImageState.src,
+                    fileName: canvasImageState.fileName || ''
+                };
+            } else {
+                delete alertMedia[currentAlertType];
+            }
+
             console.log('[debug] saveCurrentDesign -> saved', currentAlertType, 'boxes:', alertDesigns[currentAlertType].length);
         }
 
@@ -6307,6 +7328,7 @@
             selectedBox = null;
             selectedBoxes = new Set();
             hideGroupOverlay();
+            removeCanvasMedia();
 
             const design = alertDesigns[alertType];
             console.log('[debug] loadDesign ->', alertType, 'hasDesign:', Array.isArray(design) ? design.length : 0);
@@ -6314,6 +7336,16 @@
                 design.forEach(d => {
                     const box = new Box(d.x, d.y, d.width, d.height, d.color,
                         d.outlineWidth, d.outlineColor, d.borderRadius, d.bevel, d.skewX, d.skewY);
+                    box.gradientEnabled = !!d.gradientEnabled;
+                    box.gradientStyle = d.gradientStyle || 'linear';
+                    box.gradientAngle = d.gradientAngle != null ? d.gradientAngle : 90;
+                    box.gradientColor1 = d.gradientColor1 || '#ffffff';
+                    box.gradientColor2 = d.gradientColor2 || '#000000';
+                    box.textGradientEnabled = !!d.textGradientEnabled;
+                    box.textGradientStyle = d.textGradientStyle || 'linear';
+                    box.textGradientAngle = d.textGradientAngle != null ? d.textGradientAngle : 90;
+                    box.textGradientColor1 = d.textGradientColor1 || '#ffffff';
+                    box.textGradientColor2 = d.textGradientColor2 || '#000000';
                     box.lightSweepEnabled = !!d.lightSweepEnabled;
                     box.lightSweepAngle = d.lightSweepAngle || 105;
                     box.lightSweepHighlightColor = d.lightSweepHighlightColor || '#ffffff';
@@ -6325,6 +7357,16 @@
                     box.glowEnabled = !!d.glowEnabled;
                     box.glowColor = d.glowColor || '#ffffff';
                     box.glowSize = d.glowSize || 0;
+                    box.dropShadowEnabled = !!d.dropShadowEnabled;
+                    box.dropShadowSize = Number(d.dropShadowSize) || 0;
+                    box.dropShadowColor = d.dropShadowColor || '#000000';
+                    box.dropShadowOpacity = Number(d.dropShadowOpacity) || 100;
+                    box.dropShadowAngle = Number(d.dropShadowAngle) || 45;
+                    box.dropShadowDistance = Number(d.dropShadowDistance) || 5;
+                    box.dropShadowSpread = Number(d.dropShadowSpread) || 0;
+                    box.animationType = d.animationType || 'None';
+                    box.animationDuration = Number(d.animationDuration) || 2;
+                    box.animationLoop = !!d.animationLoop;
                     box.transitionIn = d.transitionIn || { ...Box.defaultTransition() };
                     box.transitionOut = d.transitionOut || { ...Box.defaultTransition() };
                     box.text = d.text || '';
@@ -6335,6 +7377,23 @@
                     box.textAlign = d.textAlign || 'center';
                     box.textShadowSize = d.textShadowSize || 0;
                     box.textShadowColor = d.textShadowColor || '#000000';
+                    box.textDropShadowEnabled = !!d.textDropShadowEnabled;
+                    box.textDropShadowSize = Number(d.textDropShadowSize) || 5;
+                    box.textDropShadowColor = d.textDropShadowColor || '#000000';
+                    box.textDropShadowOpacity = Number(d.textDropShadowOpacity) || 100;
+                    box.textDropShadowAngle = Number(d.textDropShadowAngle) || 45;
+                    box.textDropShadowDistance = Number(d.textDropShadowDistance) || 5;
+                    box.textDropShadowSpread = Number(d.textDropShadowSpread) || 0;
+                    // Previously we forced text-shadow off for some placeholder elements.
+                    // Only clear the shadow when the loaded design explicitly does NOT provide shadow values.
+                    if (d.id === 'event-text' || d.id === 'area-text' || d.id === 'expire-date' ||
+                        d.id === 'event-text-tornado-warnings' || d.id === 'event-text-severe-thunderstorm-warnings' ||
+                        d.id === 'event-text-flood-alerts' || d.id === 'event-text-winter-weather-alerts') {
+                        if (typeof d.textShadowSize === 'undefined' && typeof d.textShadowColor === 'undefined') {
+                            box.textShadowSize = 0;
+                            box.textShadowColor = 'transparent'; // preserve legacy behavior when design provides no values
+                        }
+                    }
                     box.textOutlineWidth = d.textOutlineWidth || 0;
                     box.textOutlineColor = d.textOutlineColor || '#000000';
                     box.textOutlinePosition = d.textOutlinePosition || 'center';
@@ -6345,10 +7404,37 @@
             }
             checkCollisions();
             renderBoxList();
+            if (alertMedia[alertType]) {
+                const mediaCfg = alertMedia[alertType];
+                createCanvasMedia({
+                    src: mediaCfg.src,
+                    mediaType: mediaCfg.mediaType,
+                    aspectRatio: mediaCfg.aspectRatio,
+                    naturalWidth: mediaCfg.naturalWidth,
+                    naturalHeight: mediaCfg.naturalHeight,
+                    revokeSrc: null,
+                    fileName: mediaCfg.fileName || '',
+                    x: mediaCfg.x,
+                    y: mediaCfg.y,
+                    width: mediaCfg.width,
+                    height: mediaCfg.height,
+                    lockAspect: mediaCfg.lockAspect,
+                    dropShadowEnabled: !!mediaCfg.dropShadowEnabled,
+                    dropShadowSize: mediaCfg.dropShadowSize,
+                    dropShadowColor: mediaCfg.dropShadowColor || '#000000',
+                    dropShadowOpacity: Number(mediaCfg.dropShadowOpacity) || 100,
+                    dropShadowAngle: Number(mediaCfg.dropShadowAngle) || 45,
+                    dropShadowDistance: Number(mediaCfg.dropShadowDistance) || 5,
+                    dropShadowSpread: Number(mediaCfg.dropShadowSpread) || 0,
+                    chromaKeyEnabled: !!mediaCfg.chromaKeyEnabled,
+                    chromaKeyColor: mediaCfg.chromaKeyColor || '#00ff00',
+                    chromaKeyTolerance: Number(mediaCfg.chromaKeyTolerance) || 30,
+                    originalSrc: mediaCfg.originalSrc || mediaCfg.src || '',
+                });
+            }
         }
 
-        // ---- CSS Generation ----
-
+        // ---- CSS Generation ----n
         // Generate a single CSS file for one alert type
         function generateCSSForAlert(alertType, elements) {
             const cls = getAlertCssClass(alertType);
@@ -6360,30 +7446,87 @@
             if (!elements || !elements.length) return css;
 
             elements.forEach((el, i) => {
+                if ((el.glowEnabled && el.glowSize > 0) || (el.dropShadowEnabled && el.dropShadowSize > 0)) {
+                    css += `body.${cls} .overlay-el-shadow-${i} {\n`;
+                    css += `    position: fixed;\n`;
+                    css += `    left: ${el.x}%;\n`;
+                    css += `    top: ${el.y}%;\n`;
+                    css += `    width: ${el.width}%;\n`;
+                    css += `    height: ${el.height}%;\n`;
+                    css += `    box-sizing: border-box;\n`;
+                    css += `    pointer-events: none;\n`;
+                    css += `    z-index: 0;\n`;
+                    css += `    background-color: transparent;\n`;
+                    
+                    let boxShadows = [];
+                    if (el.dropShadowEnabled && el.dropShadowSize > 0) {
+                        const angleRad = (el.dropShadowAngle || 45) * Math.PI / 180;
+                        const distance = el.dropShadowDistance || 5;
+                        const offsetX = Math.round(Math.cos(angleRad) * distance);
+                        const offsetY = Math.round(Math.sin(angleRad) * distance);
+                        const blur = Math.max(0, el.dropShadowSize || 0);
+                        const spread = el.dropShadowSpread || 0;
+                        const opacity = (el.dropShadowOpacity || 100) / 100;
+                        const color = el.dropShadowColor || '#000000';
+                        const r = parseInt(color.slice(1, 3), 16);
+                        const g = parseInt(color.slice(3, 5), 16);
+                        const b = parseInt(color.slice(5, 7), 16);
+                        const rgba = `rgba(${r}, ${g}, ${b}, ${opacity})`;
+                        boxShadows.push(`${offsetX}px ${offsetY}px ${blur}px ${spread}px ${rgba}`);
+                    }
+                    if (el.glowEnabled && el.glowSize > 0) {
+                        const spread = Math.max(1, Math.round(el.glowSize * 0.45));
+                        boxShadows.push(`0 0 ${el.glowSize}px ${spread}px ${el.glowColor}`);
+                    }
+                    css += `    box-shadow: ${boxShadows.join(', ')};\n`;
+                    
+                    if (el.borderRadius > 0) css += `    border-radius: ${el.borderRadius}%;\n`;
+                    if (el.bevel > 0) {
+                        css += `    clip-path: polygon(${el.bevel}% 0, ${100 - el.bevel}% 0, 100% ${el.bevel}%, 100% ${100 - el.bevel}%, ${100 - el.bevel}% 100%, ${el.bevel}% 100%, 0 ${100 - el.bevel}%, 0 ${el.bevel}%);\n`;
+                    }
+                    if (el.skewX !== 0 || el.skewY !== 0) css += `    transform: skewX(${el.skewX}deg) skewY(${el.skewY}deg);\n`;
+                    css += `}\n\n`;
+                }
                 css += `body.${cls} .overlay-el-${i} {\n`;
                 css += `    position: fixed;\n`;
                 css += `    left: ${el.x}%;\n`;
                 css += `    top: ${el.y}%;\n`;
                 css += `    width: ${el.width}%;\n`;
                 css += `    height: ${el.height}%;\n`;
+                const hasGradient = !!el.gradientEnabled;
+                const gradientImage = hasGradient ? (el.gradientStyle === 'radial'
+                    ? `radial-gradient(circle at center, ${el.gradientColor1 || '#ffffff'}, ${el.gradientColor2 || '#000000'})`
+                    : `linear-gradient(${el.gradientAngle || 0}deg, ${el.gradientColor1 || '#ffffff'}, ${el.gradientColor2 || '#000000'})`) : null;
                 css += `    background-color: ${el.color};\n`;
+                if (gradientImage) css += `    background-image: ${gradientImage};\n`;
                 css += `    box-sizing: border-box;\n`;
                 css += `    pointer-events: none;\n`;
-                css += `    z-index: 0;\n`;
+                css += `    z-index: 1;\n`;
+                css += `    overflow: hidden;\n`;
+                css += `    background-clip: padding-box;\n`;
+                if (el.animationType && el.animationType !== 'None') {
+                    const animType = el.animationType === 'ZoomInOut' ? 'box-zoom-in-out' : (el.animationType === 'Pulse' ? 'box-pulse' : 'box-float');
+                    const loopCount = !!el.animationLoop ? 'infinite' : '1';
+                    const duration = Math.max(0.2, Math.min(10, Number(el.animationDuration) || 2));
+                    css += `    animation: ${animType} ${duration}s ease-in-out ${loopCount};\n`;
+                }
                 if (el.borderRadius > 0) css += `    border-radius: ${el.borderRadius}%;\n`;
                 if (el.bevel > 0) {
                     css += `    clip-path: polygon(${el.bevel}% 0, ${100 - el.bevel}% 0, 100% ${el.bevel}%, 100% ${100 - el.bevel}%, ${100 - el.bevel}% 100%, ${el.bevel}% 100%, 0 ${100 - el.bevel}%, 0 ${el.bevel}%);\n`;
                 }
                 if (el.skewX !== 0 || el.skewY !== 0) css += `    transform: skewX(${el.skewX}deg) skewY(${el.skewY}deg);\n`;
                 if (el.outlineWidth > 0) css += `    border: ${el.outlineWidth}px solid ${el.outlineColor};\n`;
-                if (el.glowEnabled && el.glowSize > 0) {
-                    const spread = Math.max(1, Math.round(el.glowSize * 0.45));
-                    css += `    box-shadow: 0 0 ${el.glowSize}px ${spread}px ${el.glowColor};\n`;
-                }
                 if (el.lightSweepEnabled && el.lightSweepBgImage) {
-                    css += `    background-image: ${el.lightSweepBgImage};\n`;
-                    css += `    background-size: 260% 260%;\n`;
-                    css += `    background-repeat: no-repeat;\n`;
+                    const sweepImage = el.lightSweepBgImage;
+                    if (gradientImage) {
+                        css += `    background-image: ${sweepImage}, ${gradientImage};\n`;
+                        css += `    background-size: 260% 260%, auto;\n`;
+                        css += `    background-repeat: no-repeat, no-repeat;\n`;
+                    } else {
+                        css += `    background-image: ${sweepImage};\n`;
+                        css += `    background-size: 260% 260%;\n`;
+                        css += `    background-repeat: no-repeat;\n`;
+                    }
                     css += `    animation: overlay-light-sweep ${el.lightSweepDuration}s linear ${Math.max(0, Number(el.lightSweepDelay) || 0)}s infinite;\n`;
                 }
                 css += `}\n\n`;
@@ -6399,6 +7542,9 @@
                 } else if (el.text === '(Areas)') {
                     selector = '#area-text';
                     textSelector = '#area-text';
+                } else if (el.text === '(AlertInstructions)') {
+                    selector = '#alert-instructions';
+                    textSelector = '#alert-instructions';
                 } else if (el.text === '(ExpireTime)') {
                     selector = '#expire-date-container';
                     textSelector = '#expire-date';
@@ -6424,16 +7570,56 @@
                     css += `    color: ${el.fontColor || '#ffffff'};\n`;
                     css += `    font-weight: ${el.fontWeight || 'bold'};\n`;
                     css += `    text-align: ${el.textAlign || 'center'};\n`;
+                    
+                    let textShadows = [];
+                    if ((el.textDropShadowEnabled || false) && (el.textDropShadowSize || 0) > 0) {
+                        const angleRad = (el.textDropShadowAngle || 45) * Math.PI / 180;
+                        const distance = el.textDropShadowDistance || 5;
+                        const offsetX = Math.round(Math.cos(angleRad) * distance);
+                        const offsetY = Math.round(Math.sin(angleRad) * distance);
+                        const blur = Math.max(0, el.textDropShadowSize || 0);
+                        const spread = el.textDropShadowSpread || 0;
+                        const opacity = (el.textDropShadowOpacity || 100) / 100;
+                        const color = el.textDropShadowColor || '#000000';
+                        const r = parseInt(color.slice(1, 3), 16);
+                        const g = parseInt(color.slice(3, 5), 16);
+                        const b = parseInt(color.slice(5, 7), 16);
+                        const rgba = `rgba(${r}, ${g}, ${b}, ${opacity})`;
+                        textShadows.push(`${offsetX}px ${offsetY}px ${blur}px ${rgba}`);
+                        if (spread > 0) {
+                            const stepCount = Math.max(1, Math.min(4, Math.floor(spread / 8) + 1));
+                            for (let i = 1; i <= stepCount; i += 1) {
+                                textShadows.push(`${offsetX + i}px ${offsetY}px ${blur}px ${rgba}`);
+                                textShadows.push(`${offsetX - i}px ${offsetY}px ${blur}px ${rgba}`);
+                                textShadows.push(`${offsetX}px ${offsetY + i}px ${blur}px ${rgba}`);
+                                textShadows.push(`${offsetX}px ${offsetY - i}px ${blur}px ${rgba}`);
+                            }
+                        }
+                    }
                     if ((el.textShadowSize || 0) > 0) {
-                        css += `    text-shadow: 2px 2px ${el.textShadowSize}px ${el.textShadowColor || '#000000'};\n`;
+                        textShadows.push(`2px 2px ${el.textShadowSize}px ${el.textShadowColor || '#000000'}`);
+                    }
+                    if (textShadows.length > 0) {
+                        css += `    text-shadow: ${textShadows.join(', ')};\n`;
+                    }
+                    if ((el.textGradientEnabled || false) && el.textGradientColor1 && el.textGradientColor2) {
+                        const gradientValue = el.textGradientStyle === 'radial'
+                            ? `radial-gradient(circle at center, ${el.textGradientColor1}, ${el.textGradientColor2})`
+                            : `linear-gradient(${el.textGradientAngle || 0}deg, ${el.textGradientColor1}, ${el.textGradientColor2})`;
+                        css += `    background-image: ${gradientValue};\n`;
+                        css += `    -webkit-background-clip: text;\n`;
+                        css += `    background-clip: text;\n`;
+                        css += `    color: transparent;\n`;
+                    } else {
+                        css += `    color: ${el.fontColor || '#ffffff'};\n`;
                     }
                     if ((el.textOutlineWidth || 0) > 0) {
                         if ((el.textOutlinePosition || 'center') === 'outside') {
                             const outlineShadow = (el.textOutlineStyle || 'solid') === 'rounded'
                                 ? buildTextOutlineShadowRounded(el.textOutlineColor || '#000000', el.textOutlineWidth || 0)
                                 : buildTextOutlineShadowSolid(el.textOutlineColor || '#000000', el.textOutlineWidth || 0);
-                            if ((el.textShadowSize || 0) > 0) {
-                                css += `    text-shadow: ${outlineShadow}, 2px 2px ${el.textShadowSize}px ${el.textShadowColor || '#000000'};\n`;
+                            if (textShadows.length > 0) {
+                                css += `    text-shadow: ${outlineShadow}, ${textShadows.join(', ')};\n`;
                             } else {
                                 css += `    text-shadow: ${outlineShadow};\n`;
                             }
@@ -6463,6 +7649,19 @@
             css += '    0% { background-position: -40% 50%; }\n';
             css += '    100% { background-position: 140% 50%; }\n';
             css += '}\n\n';
+            css += '@keyframes box-zoom-in-out {\n';
+            css += '    0% { transform: scale(1.00); }\n';
+            css += '    50% { transform: scale(1.08); }\n';
+            css += '    100% { transform: scale(1.00); }\n';
+            css += '}\n\n';
+            css += '@keyframes box-pulse {\n';
+            css += '    0%, 100% { transform: scale(1.00); }\n';
+            css += '    50% { transform: scale(1.06); }\n';
+            css += '}\n\n';
+            css += '@keyframes box-float {\n';
+            css += '    0%, 100% { transform: translateY(0px); }\n';
+            css += '    50% { transform: translateY(-6px); }\n';
+            css += '}\n\n';
             css += '/* Hide loading overlay immediately (no AlertLoad.gif) */\n';
             css += '#loading-overlay { display: none !important; }\n\n';
             css += '/* Transparent body backgrounds for all alert types */\n';
@@ -6473,9 +7672,78 @@
             return css;
         }
 
+        function generateBgLoadingCSS() {
+            let css = '/* Warnverlay Loading State - Generated by Editor */\n';
+            css += 'body.bg-loading { background: transparent !important; }\n';
+            css += '#loading-overlay { display: none !important; }\n';
+            return css;
+        }
+
+        function generateBgAlertActiveCSS() {
+            const color = ALERT_BG_COLORS['bg-alert-active'] || '#111111';
+            let css = '/* Warnverlay Active Alert Fallback Background */\n';
+            css += `body.bg-alert-active { background: ${color} !important; }\n`;
+            return css;
+        }
+
+        function generateBgNoAlertsActiveCSS() {
+            const color = ALERT_BG_COLORS['bg-no-alerts'] || '#000000';
+            let css = '/* Warnverlay No Alerts Fallback Background */\n';
+            css += `body.bg-no-alerts { background: ${color} !important; }\n`;
+            return css;
+        }
+
+        function dataURLToUint8Array(dataUrl) {
+            var commaIndex = dataUrl.indexOf(',');
+            var header = dataUrl.substring(0, commaIndex);
+            var data = dataUrl.substring(commaIndex + 1);
+            var isBase64 = header.indexOf('base64') !== -1;
+            var raw = isBase64 ? atob(data) : decodeURIComponent(data);
+            var arr = new Uint8Array(raw.length);
+            for (var i = 0; i < raw.length; i += 1) {
+                arr[i] = raw.charCodeAt(i);
+            }
+            return arr;
+        }
+
+        function getMediaExtension(media) {
+            if (media.fileName) {
+                var match = media.fileName.match(/\.[^./?\\]+$/);
+                if (match) return match[0].toLowerCase();
+            }
+            if (media.mime) {
+                if (media.mime === 'image/png') return '.png';
+                if (media.mime === 'image/jpeg' || media.mime === 'image/jpg') return '.jpg';
+                if (media.mime === 'image/gif') return '.gif';
+                if (media.mime === 'image/webp') return '.webp';
+                if (media.mime === 'video/mp4') return '.mp4';
+                if (media.mime === 'video/webm') return '.webm';
+                if (media.mime === 'video/ogg') return '.ogv';
+            }
+            return '.img';
+        }
+
+        function sanitizeFileName(name) {
+            return String(name || 'media').replace(/[^a-z0-9._-]/gi, '_').replace(/_+/g, '_');
+        }
+
+        async function fetchArrayBufferFromSrc(src) {
+            if (!src) return null;
+            if (src.startsWith('data:')) {
+                return dataURLToUint8Array(src).buffer;
+            }
+            try {
+                var resp = await fetch(src);
+                if (!resp.ok) return null;
+                return await resp.arrayBuffer();
+            } catch (e) {
+                return null;
+            }
+        }
+
         // ---- Generate modified warnverlay.html ----
 
-        async function generateWarnverlayHTML() {
+        async function generateWarnverlayHTML(mediaPaths = {}) {
             let html;
             try {
                 const response = await fetch('./warnverlay.html');
@@ -6507,6 +7775,9 @@
             });
 
             var cssLinks = '<link rel="stylesheet" href="css/base.css">';
+            cssLinks += '\n  <link rel="stylesheet" href="css/bg-loading.css">';
+            cssLinks += '\n  <link rel="stylesheet" href="css/bg-alert-active.css">';
+            cssLinks += '\n  <link rel="stylesheet" href="css/bg-no-alerts.css">';
             Object.keys(alertDesigns).forEach(alertType => {
                 var cls = getAlertCssClass(alertType);
                 cssLinks += '\n  <link rel="stylesheet" href="css/' + cls + '.css">';
@@ -6643,7 +7914,7 @@
             );
 
             // 5. Add overlay creation code + design data before <\/script>
-            var overlayCode = generateOverlayCreationCode();
+var overlayCode = generateOverlayCreationCode(mediaPaths);
             html = html.replace('<\/script>', overlayCode + '\n  <\/script>');
 
             // 6. Loading overlay is hidden by CSS in base.css (#loading-overlay { display: none !important })
@@ -6652,13 +7923,18 @@
             return html;
         }
 
-        function generateOverlayCreationCode() {
+        function generateOverlayCreationCode(mediaPaths = {}) {
             // Prepare design data with CSS class mapping
             const designData = {};
             Object.entries(alertDesigns).forEach(([alertType, elements]) => {
                 const cls = getAlertCssClass(alertType);
                 const placeholders = {};
+                const mediaCfg = alertMedia[alertType] ? Object.assign({}, alertMedia[alertType]) : null;
+                if (mediaCfg) {
+                    mediaCfg.src = mediaPaths[alertType] || mediaCfg.src;
+                }
                 designData[cls] = {
+                    media: mediaCfg,
                     boxes: elements.map(el => {
                         var placeholder = null;
                         if (el.text === '(AlertName)') placeholder = 'event-text';
@@ -6667,6 +7943,7 @@
                         else if (el.text === '(FloodAlerts)') placeholder = 'event-text-flood-alerts';
                         else if (el.text === '(WinterWeatherAlerts)') placeholder = 'event-text-winter-weather-alerts';
                         else if (el.text === '(Areas)') placeholder = 'area-text';
+                        else if (el.text === '(AlertInstructions)') placeholder = 'alert-instructions';
                         else if (el.text === '(ExpireTime)') placeholder = 'expire-date';
                         if (placeholder) {
                             placeholders[placeholder] = {
@@ -6680,6 +7957,27 @@
                                 fontColor: el.fontColor,
                                 fontWeight: el.fontWeight,
                                 textAlign: el.textAlign,
+                                textGradientEnabled: !!el.textGradientEnabled,
+                                textGradientStyle: el.textGradientStyle || 'linear',
+                                textGradientAngle: el.textGradientAngle || 0,
+                                textGradientColor1: el.textGradientColor1 || '#ffffff',
+                                textGradientColor2: el.textGradientColor2 || '#000000',
+                                textShadowSize: el.textShadowSize || 0,
+                                textShadowColor: el.textShadowColor || '#000000',
+                                textDropShadowEnabled: !!el.textDropShadowEnabled,
+                                textDropShadowSize: Number(el.textDropShadowSize) || 0,
+                                textDropShadowColor: el.textDropShadowColor || '#000000',
+                                textDropShadowOpacity: Number(el.textDropShadowOpacity) || 100,
+                                textDropShadowAngle: Number(el.textDropShadowAngle) || 45,
+                                textDropShadowDistance: Number(el.textDropShadowDistance) || 5,
+                                textDropShadowSpread: Number(el.textDropShadowSpread) || 0,
+                                textOutlineWidth: el.textOutlineWidth || 0,
+                                textOutlineColor: el.textOutlineColor || '#000000',
+                                textOutlinePosition: el.textOutlinePosition || 'center',
+                                textOutlineStyle: el.textOutlineStyle || 'solid',
+                                animationType: el.animationType || 'None',
+                                animationDuration: Number(el.animationDuration) || 2,
+                                animationLoop: !!el.animationLoop,
                                 transitionIn: el.transitionIn || { type: 'None', duration: 0, delay: 0, easing: 'Linear', reverse: false, dirX: 0, dirY: -1, motionPath: null, autoRotate: false },
                                 transitionOut: el.transitionOut || { type: 'None', duration: 0, delay: 0, easing: 'Linear', reverse: false, dirX: 0, dirY: -1, motionPath: null, autoRotate: false }
                             };
@@ -6692,12 +7990,35 @@
                             skewX: el.skewX, skewY: el.skewY,
                             glowEnabled: el.glowEnabled, glowColor: el.glowColor, glowSize: el.glowSize,
                             lightSweepEnabled: el.lightSweepEnabled,
+                            // If this box is a placeholder, its own text should be empty in the generated output.
+                            // The actual text will be rendered in the dedicated placeholder element in warnverlay.html.
+                            text: placeholder ? '' : el.text,
                             lightSweepBgImage: el.lightSweepBgImage,
                             lightSweepDuration: el.lightSweepDuration,
-                        lightSweepDelay: el.lightSweepDelay || 0,
+                            lightSweepDelay: el.lightSweepDelay || 0,
+                            animationType: el.animationType || 'None',
+                            animationDuration: Number(el.animationDuration) || 2,
+                            animationLoop: !!el.animationLoop,
                             transitionIn: el.transitionIn || { type: 'None', duration: 0, delay: 0, easing: 'Linear', reverse: false, dirX: 0, dirY: -1, motionPath: null, autoRotate: false },
                             transitionOut: el.transitionOut || { type: 'None', duration: 0, delay: 0, easing: 'Linear', reverse: false, dirX: 0, dirY: -1, motionPath: null, autoRotate: false },
-                            placeholder: placeholder
+                            placeholder: placeholder,
+                            fontSize: el.fontSize, fontFamily: el.fontFamily, fontColor: el.fontColor, fontWeight: el.fontWeight, textAlign: el.textAlign,
+                            textShadowSize: el.textShadowSize, textShadowColor: el.textShadowColor,
+                            textDropShadowEnabled: !!el.textDropShadowEnabled,
+                            textDropShadowSize: Number(el.textDropShadowSize) || 0,
+                            textDropShadowColor: el.textDropShadowColor,
+                            textDropShadowOpacity: Number(el.textDropShadowOpacity) || 100,
+                            textDropShadowAngle: Number(el.textDropShadowAngle) || 45,
+                            textDropShadowDistance: Number(el.textDropShadowDistance) || 5,
+                            textDropShadowSpread: Number(el.textDropShadowSpread) || 0,
+                            dropShadowEnabled: !!el.dropShadowEnabled,
+                            dropShadowSize: Number(el.dropShadowSize) || 0,
+                            dropShadowColor: el.dropShadowColor || '#000000',
+                            dropShadowOpacity: Number(el.dropShadowOpacity) || 100,
+                            dropShadowAngle: Number(el.dropShadowAngle) || 45,
+                            dropShadowDistance: Number(el.dropShadowDistance) || 5,
+                            dropShadowSpread: Number(el.dropShadowSpread) || 0,
+                            textOutlineWidth: el.textOutlineWidth, textOutlineColor: el.textOutlineColor, textOutlinePosition: el.textOutlinePosition, textOutlineStyle: el.textOutlineStyle,
                         };
                     }),
                     placeholders: placeholders
@@ -6726,6 +8047,43 @@
             lines.push('      });');
             lines.push('    }');
             lines.push('');
+            lines.push('    function buildTextShadowStyle(config) {');
+            lines.push('      var shadows = [];');
+            lines.push('      if (config.textDropShadowEnabled && Number(config.textDropShadowSize || 0) > 0) {');
+            lines.push('        var angleRad = (Number(config.textDropShadowAngle || 45)) * Math.PI / 180;');
+            lines.push('        var distance = Number(config.textDropShadowDistance || 5);');
+            lines.push('        var offsetX = Math.round(Math.cos(angleRad) * distance);');
+            lines.push('        var offsetY = Math.round(Math.sin(angleRad) * distance);');
+            lines.push('        var blur = Math.max(0, Number(config.textDropShadowSize || 0));');
+            lines.push('        var spread = Number(config.textDropShadowSpread || 0);');
+            lines.push('        var opacity = (Number(config.textDropShadowOpacity || 100) / 100);');
+            lines.push('        var color = config.textDropShadowColor || "#000000";');
+            lines.push('        var r = 0, g = 0, b = 0;');
+            lines.push('        if (/^#[0-9a-fA-F]{6}$/.test(color)) {');
+            lines.push('          r = parseInt(color.slice(1, 3), 16);');
+            lines.push('          g = parseInt(color.slice(3, 5), 16);');
+            lines.push('          b = parseInt(color.slice(5, 7), 16);');
+            lines.push('        }');
+            lines.push('        var rgba = "rgba(" + r + ", " + g + ", " + b + ", " + opacity + ")";');
+            lines.push('        shadows.push(offsetX + "px " + offsetY + "px " + blur + "px " + rgba);');
+            lines.push('        if (spread > 0) {');
+            lines.push('          var stepCount = Math.max(1, Math.min(4, Math.floor(spread / 8) + 1));');
+            lines.push('          for (var i = 1; i <= stepCount; i += 1) {');
+            lines.push('            shadows.push((offsetX + i) + "px " + offsetY + "px " + blur + "px " + rgba);');
+            lines.push('            shadows.push((offsetX - i) + "px " + offsetY + "px " + blur + "px " + rgba);');
+            lines.push('            shadows.push(offsetX + "px " + (offsetY + i) + "px " + blur + "px " + rgba);');
+            lines.push('            shadows.push(offsetX + "px " + (offsetY - i) + "px " + blur + "px " + rgba);');
+            lines.push('          }');
+            lines.push('        }');
+            lines.push('      }');
+            lines.push('      var shadowSize = Number(config.textShadowSize) || 0;');
+            lines.push('      var shadowColor = config.textShadowColor || "#000000";');
+            lines.push('      if (shadowSize > 0) {');
+            lines.push('        shadows.push("2px 2px " + shadowSize + "px " + shadowColor);');
+            lines.push('      }');
+            lines.push('      return shadows.length ? shadows.join(", ") : "none";');
+            lines.push('    }');
+            lines.push('');
             lines.push('    function applyStyledPlaceholder(elementId, config) {');
             lines.push('      if (!config) return;');
             lines.push('      var el = document.getElementById(elementId);');
@@ -6738,22 +8096,71 @@
             lines.push('      el.style.position = "fixed";');
             lines.push('      el.style.left = config.x + "%";');
             lines.push('      el.style.top = config.y + "%";');
+            lines.push('      el.style.right = "auto";');
+            lines.push('      el.style.bottom = "auto";');
             lines.push('      el.style.width = config.width + "%";');
             lines.push('      el.style.height = config.height + "%";');
-            lines.push('      el.style.display = "flex";');
-            lines.push('      el.style.alignItems = "center";');
-            lines.push('      el.style.justifyContent = config.textAlign === "left" ? "flex-start" : config.textAlign === "right" ? "flex-end" : "center";');
+            lines.push('      var isScrollingPlaceholder = elementId === "area-text" || elementId === "alert-instructions";');
+            lines.push('      if (isScrollingPlaceholder) {');
+            lines.push('        el.style.display = "block";');
+            lines.push('        el.style.whiteSpace = "nowrap";');
+            lines.push('        el.style.textOverflow = "clip";');
+            lines.push('      } else {');
+            lines.push('        el.style.display = "flex";');
+            lines.push('        el.style.alignItems = "center";');
+            lines.push('        el.style.justifyContent = config.textAlign === "left" ? "flex-start" : config.textAlign === "right" ? "flex-end" : "center";');
+            lines.push('      }');
             lines.push('      el.style.pointerEvents = "none";');
             lines.push('      el.style.boxSizing = "border-box";');
             lines.push('      el.style.overflow = "hidden";');
             lines.push('      el.style.fontSize = (config.fontSize || 32) + "px";');
             lines.push('      el.style.fontFamily = config.fontFamily || "\'Bebas Neue\', sans-serif";');
-            lines.push('      el.style.color = config.fontColor || "#ffffff";');
             lines.push('      el.style.fontWeight = config.fontWeight || "bold";');
             lines.push('      el.style.textAlign = config.textAlign || "center";');
-            lines.push('      el.style.textShadow = "2px 2px 5px rgba(0,0,0,0.8)";');
+            lines.push('      var shadowSize = Number(config.textShadowSize) || 0;');
+            lines.push('      var shadowColor = config.textShadowColor || "#000000";');
+            lines.push('      var outlineWidth = Number(config.textOutlineWidth) || 0;');
+            lines.push('      var outlineColor = config.textOutlineColor || "#000000";');
+            lines.push('      var outlinePosition = config.textOutlinePosition || "center";');
+            lines.push('      var outlineStyle = config.textOutlineStyle || "solid";');
+            lines.push('      if (outlineWidth > 0 && outlineColor) {');
+            lines.push('        if (outlinePosition === "outside") {');
+            lines.push('          var outlineShadow = outlineStyle === "rounded"');
+            lines.push('            ? buildTextOutlineShadowRounded(outlineColor, outlineWidth)');
+            lines.push('            : buildTextOutlineShadowSolid(outlineColor, outlineWidth);');
+            lines.push('          el.style.textShadow = outlineShadow + (shadowSize > 0 ? ", 2px 2px " + shadowSize + "px " + shadowColor : "");');
+            lines.push('          el.style.setProperty("-webkit-text-stroke", "0px transparent");');
+            lines.push('          el.style.setProperty("text-stroke", "0px transparent");');
+            lines.push('        } else {');
+            lines.push('          el.style.setProperty("-webkit-text-stroke", outlineWidth + "px " + outlineColor);');
+            lines.push('          el.style.setProperty("text-stroke", outlineWidth + "px " + outlineColor);');
+            lines.push('          el.style.textShadow = shadowSize > 0 ? "2px 2px " + shadowSize + "px " + shadowColor : "none";');
+            lines.push('        }');
+            lines.push('      } else {');
+            lines.push('        el.style.textShadow = shadowSize > 0 ? "2px 2px " + shadowSize + "px " + shadowColor : "none";');
+            lines.push('        el.style.setProperty("-webkit-text-stroke", "0px transparent");');
+            lines.push('        el.style.setProperty("text-stroke", "0px transparent");');
+            lines.push('      }');
             lines.push('      el.style.margin = "0";');
             lines.push('      el.style.padding = "4px";');
+            lines.push('      if (config.textGradientEnabled && config.textGradientColor1 && config.textGradientColor2) {');
+            lines.push('        var gradient = config.textGradientStyle === "radial"');
+            lines.push('          ? "radial-gradient(circle at center, " + config.textGradientColor1 + ", " + config.textGradientColor2 + ")"');
+            lines.push('          : "linear-gradient(" + (config.textGradientAngle || 0) + "deg, " + config.textGradientColor1 + ", " + config.textGradientColor2 + ")";');
+            lines.push('        el.style.backgroundImage = gradient;');
+            lines.push('        el.style.webkitBackgroundClip = "text";');
+            lines.push('        el.style.backgroundClip = "text";');
+            lines.push('        el.style.webkitTextFillColor = "transparent";');
+            lines.push('        el.style.textFillColor = "transparent";');
+            lines.push('        el.style.color = "transparent";');
+            lines.push('      } else {');
+            lines.push('        el.style.color = config.fontColor || "#ffffff";');
+            lines.push('        el.style.removeProperty("background-image");');
+            lines.push('        el.style.removeProperty("-webkit-background-clip");');
+            lines.push('        el.style.removeProperty("background-clip");');
+            lines.push('        el.style.removeProperty("-webkit-text-fill-color");');
+            lines.push('        el.style.removeProperty("text-fill-color");');
+            lines.push('      }');
             lines.push('    }');
             lines.push('');
             lines.push('    function applyExpirePlaceholder(containerId, textId, config) {');
@@ -6775,11 +8182,28 @@
             lines.push('      if (text && config) {');
             lines.push('        text.style.fontSize = (config.fontSize || 32) + "px";');
             lines.push('        text.style.fontFamily = config.fontFamily || "\'Bebas Neue\', sans-serif";');
-            lines.push('        text.style.color = config.fontColor || "#ffffff";');
             lines.push('        text.style.fontWeight = config.fontWeight || "bold";');
             lines.push('        text.style.textAlign = config.textAlign || "center";');
             lines.push('        text.style.textShadow = "2px 2px 5px rgba(0,0,0,0.8)";');
             lines.push('        text.style.width = "100%";');
+            lines.push('        if (config.textGradientEnabled && config.textGradientColor1 && config.textGradientColor2) {');
+            lines.push('          var gradient = config.textGradientStyle === "radial"');
+            lines.push('            ? "radial-gradient(circle at center, " + config.textGradientColor1 + ", " + config.textGradientColor2 + ")"');
+            lines.push('            : "linear-gradient(" + (config.textGradientAngle || 0) + "deg, " + config.textGradientColor1 + ", " + config.textGradientColor2 + ")";');
+            lines.push('          text.style.backgroundImage = gradient;');
+            lines.push('          text.style.webkitBackgroundClip = "text";');
+            lines.push('          text.style.backgroundClip = "text";');
+            lines.push('          text.style.webkitTextFillColor = "transparent";');
+            lines.push('          text.style.textFillColor = "transparent";');
+            lines.push('          text.style.color = "transparent";');
+            lines.push('        } else {');
+            lines.push('          text.style.color = config.fontColor || "#ffffff";');
+            lines.push('          text.style.removeProperty("background-image");');
+            lines.push('          text.style.removeProperty("-webkit-background-clip");');
+            lines.push('          text.style.removeProperty("background-clip");');
+            lines.push('          text.style.removeProperty("-webkit-text-fill-color");');
+            lines.push('          text.style.removeProperty("text-fill-color");');
+            lines.push('        }');
             lines.push('      }');
             lines.push('    }');
             lines.push('');
@@ -7075,6 +8499,7 @@
             lines.push('      return Promise.all([');
             lines.push('        animatePlaceholderText("event-text", cssClass, "event-text", boardMode),');
             lines.push('        animatePlaceholderText("area-text", cssClass, "area-text", boardMode),');
+            lines.push('        animatePlaceholderText("alert-instructions", cssClass, "alert-instructions", boardMode),');
             lines.push('        animatePlaceholderText("expire-date-container", cssClass, "expire-date", boardMode)');
             lines.push('      ]);');
             lines.push('    }');
@@ -7084,29 +8509,200 @@
             lines.push('      if (!container) return;');
             lines.push('      container.innerHTML = "";');
             lines.push('      var data = getOverlayDesignData(cssClass);');
-            lines.push('      var elements = data.boxes || [];');
-            lines.push('      elements.forEach(function(el, i) {');
-            lines.push('        var div = document.createElement("div");');
-            lines.push('        div.className = "overlay-el-" + i;');
-            lines.push('        var s = "position:fixed;box-sizing:border-box;pointer-events:none;z-index:0;";');
-            lines.push('        s += "left:" + el.x + "%" + ";top:" + el.y + "%" + ";width:" + el.width + "%" + ";height:" + el.height + "%";');
-            lines.push('        s += "background-color:" + el.color + ";";');
-            lines.push('        if (el.borderRadius > 0) s += "border-radius:" + el.borderRadius + "%" + ";";');
-            lines.push('        if (el.bevel > 0) s += "clip-path:polygon(" + el.bevel + "% 0," + (100-el.bevel) + "% 0,100% " + el.bevel + "% ,100% " + (100-el.bevel) + "% ," + (100-el.bevel) + "% 100%," + el.bevel + "% 100%,0 " + (100-el.bevel) + "% ,0 " + el.bevel + "% );";');
-            lines.push('        if (el.skewX !== 0 || el.skewY !== 0) s += "transform:skewX(" + el.skewX + "deg) skewY(" + el.skewY + "deg);";');
-            lines.push('        if (el.outlineWidth > 0) s += "border:" + el.outlineWidth + "px solid " + el.outlineColor + ";";');
-            lines.push('        if (el.glowEnabled && el.glowSize > 0) {');
-            lines.push('          var spread = Math.max(1, Math.round(el.glowSize * 0.45));');
-            lines.push('          s += "box-shadow:0 0 " + el.glowSize + "px " + spread + "px " + el.glowColor + ";";');
+            lines.push('      if (data && data.media && data.media.src) {');
+            lines.push('        var mediaCfg = data.media;');
+            lines.push('        var mediaEl;');
+            lines.push('        if (mediaCfg.mediaType === "video") {');
+            lines.push('          mediaEl = document.createElement("video");');
+            lines.push('          mediaEl.muted = true;');
+            lines.push('          mediaEl.loop = true;');
+            lines.push('          mediaEl.autoplay = true;');
+            lines.push('          mediaEl.playsInline = true;');
+            lines.push('          mediaEl.setAttribute("playsinline", "");');
+            lines.push('          mediaEl.setAttribute("webkit-playsinline", "");');
+            lines.push('        } else {');
+            lines.push('          mediaEl = document.createElement("img");');
             lines.push('        }');
-            lines.push('        if (el.lightSweepEnabled && el.lightSweepBgImage) {');
-            lines.push('          s += "background-image:" + el.lightSweepBgImage + ";";');
-            lines.push('          s += "background-size:260% 260%;background-repeat:no-repeat;";');
-            lines.push('          s += "animation:overlay-light-sweep " + el.lightSweepDuration + "s linear infinite;";');
+            lines.push('        mediaEl.src = mediaCfg.src;');
+            lines.push('        mediaEl.draggable = false;');
+            lines.push('        mediaEl.style.position = "absolute";');
+            lines.push('        mediaEl.style.left = "0";');
+            lines.push('        mediaEl.style.top = "0";');
+            lines.push('        mediaEl.style.width = "100%";');
+            lines.push('        mediaEl.style.height = "100%";');
+            lines.push('        mediaEl.style.objectFit = "contain";');
+            lines.push('        mediaEl.style.pointerEvents = "none";');
+            lines.push('        var mediaWrapper = document.createElement("div");');
+            lines.push('        mediaWrapper.style.position = "fixed";');
+            lines.push('        mediaWrapper.style.left = mediaCfg.x + "%";');
+            lines.push('        mediaWrapper.style.top = mediaCfg.y + "%";');
+            lines.push('        mediaWrapper.style.width = mediaCfg.width + "%";');
+            lines.push('        mediaWrapper.style.height = mediaCfg.height + "%";');
+            lines.push('        mediaWrapper.style.pointerEvents = "none";');
+            lines.push('        mediaWrapper.style.boxSizing = "border-box";');
+            lines.push('        mediaWrapper.style.zIndex = "0";');
+            lines.push('        mediaWrapper.style.overflow = "hidden";');
+            lines.push('        if (mediaCfg.dropShadowEnabled && Number(mediaCfg.dropShadowSize || 0) > 0) {');
+            lines.push('          var angleRad = (Number(mediaCfg.dropShadowAngle || 45)) * Math.PI / 180;');
+            lines.push('          var distance = Number(mediaCfg.dropShadowDistance || 5);');
+            lines.push('          var offsetX = Math.round(Math.cos(angleRad) * distance);');
+            lines.push('          var offsetY = Math.round(Math.sin(angleRad) * distance);');
+            lines.push('          var blur = Math.max(0, Number(mediaCfg.dropShadowSize || 0));');
+            lines.push('          var spread = Number(mediaCfg.dropShadowSpread || 0);');
+            lines.push('          var opacity = (Number(mediaCfg.dropShadowOpacity || 100) / 100);');
+            lines.push('          var color = mediaCfg.dropShadowColor || "#000000";');
+            lines.push('          var r = parseInt(color.slice(1, 3), 16);');
+            lines.push('          var g = parseInt(color.slice(3, 5), 16);');
+            lines.push('          var b = parseInt(color.slice(5, 7), 16);');
+            lines.push('          var rgbaColor = "rgba(" + r + ", " + g + ", " + b + ", " + opacity + ")";');
+            lines.push('          var shadow = offsetX + "px " + offsetY + "px " + blur + "px " + spread + "px " + rgbaColor;');
+            lines.push('          mediaWrapper.style.filter = "drop-shadow(" + shadow + ")";');
+            lines.push('          mediaWrapper.style.webkitFilter = "drop-shadow(" + shadow + ")";');
             lines.push('        }');
-            lines.push('        div.style.cssText = s;');
-            lines.push('        container.appendChild(div);');
-            lines.push('      });');
+            lines.push('        mediaWrapper.appendChild(mediaEl);');
+            lines.push('        container.appendChild(mediaWrapper);');
+            lines.push('      }');
+      lines.push('      var elements = data.boxes || [];');
+      lines.push('      elements.forEach(function(el, i) {');
+      lines.push('        if ((el.glowEnabled && el.glowSize > 0) || (el.dropShadowEnabled && el.dropShadowSize > 0)) {');
+      lines.push('          var shadow = document.createElement("div");');
+      lines.push('          shadow.className = "overlay-el-shadow-" + i;');
+      lines.push('          var ss = "position:fixed;box-sizing:border-box;pointer-events:none;z-index:0;";');
+      lines.push('          ss += "left:" + el.x + "%" + ";top:" + el.y + "%" + ";width:" + el.width + "%" + ";height:" + el.height + "%";');
+      lines.push('          var boxShadows = [];');
+      lines.push('          if (el.dropShadowEnabled && el.dropShadowSize > 0) {');
+      lines.push('            var angleRad = (Number(el.dropShadowAngle || 45)) * Math.PI / 180;');
+      lines.push('            var distance = Number(el.dropShadowDistance || 5);');
+      lines.push('            var offsetX = Math.round(Math.cos(angleRad) * distance);');
+      lines.push('            var offsetY = Math.round(Math.sin(angleRad) * distance);');
+      lines.push('            var blur = Math.max(0, Number(el.dropShadowSize || 0));');
+      lines.push('            var spread = Number(el.dropShadowSpread || 0);');
+      lines.push('            var opacity = (Number(el.dropShadowOpacity || 100) / 100);');
+      lines.push('            var dsColor = el.dropShadowColor || "#000000";');
+      lines.push('            var dsR = parseInt(dsColor.slice(1, 3), 16);');
+      lines.push('            var dsG = parseInt(dsColor.slice(3, 5), 16);');
+      lines.push('            var dsB = parseInt(dsColor.slice(5, 7), 16);');
+      lines.push('            var dsRgba = "rgba(" + dsR + ", " + dsG + ", " + dsB + ", " + opacity + ")";');
+      lines.push('            boxShadows.push(offsetX + "px " + offsetY + "px " + blur + "px " + spread + "px " + dsRgba);');
+      lines.push('          }');
+      lines.push('          if (el.glowEnabled && el.glowSize > 0) {');
+      lines.push('            var glowSpread = Math.max(1, Math.round(el.glowSize * 0.45));');
+      lines.push('            boxShadows.push("0 0 " + el.glowSize + "px " + glowSpread + "px " + el.glowColor);');
+      lines.push('          }');
+      lines.push('          ss += "box-shadow:" + boxShadows.join(", ") + ";";');
+      lines.push('          if (el.skewX !== 0 || el.skewY !== 0) ss += "transform:skewX(" + el.skewX + "deg) skewY(" + el.skewY + "deg);";');
+      lines.push('          shadow.style.cssText = ss;');
+      lines.push('          container.appendChild(shadow);');
+      lines.push('        }');
+      lines.push('        var shell = document.createElement("div");');
+      lines.push('        shell.className = "overlay-el-shell-" + i;');
+      lines.push('        shell.style.position = "fixed";');
+      lines.push('        shell.style.left = el.x + "%";');
+      lines.push('        shell.style.top = el.y + "%";');
+      lines.push('        shell.style.width = el.width + "%";');
+      lines.push('        shell.style.height = el.height + "%";');
+      lines.push('        shell.style.pointerEvents = "none";');
+      lines.push('        shell.style.boxSizing = "border-box";');
+      lines.push('        shell.style.zIndex = "1";');
+      lines.push('        shell.style.overflow = "visible";');
+      lines.push('        var div = document.createElement("div");');
+      lines.push('        div.className = "overlay-el-" + i;');
+      lines.push('        div.style.position = "absolute";');
+      lines.push('        div.style.left = "0";');
+      lines.push('        div.style.top = "0";');
+      lines.push('        div.style.width = "100%";');
+      lines.push('        div.style.height = "100%";');
+      lines.push('        div.style.pointerEvents = "none";');
+      lines.push('        div.style.boxSizing = "border-box";');
+      lines.push('        if (el.borderRadius > 0) div.style.borderRadius = el.borderRadius + "%";');
+      lines.push('        if (el.bevel > 0) div.style.clipPath = "polygon(" + el.bevel + "% 0," + (100-el.bevel) + "% 0,100% " + el.bevel + "% ,100% " + (100-el.bevel) + "% ," + (100-el.bevel) + "% 100%," + el.bevel + "% 100%,0 " + (100-el.bevel) + "% ,0 " + el.bevel + "% )";');
+      lines.push('        if (el.skewX !== 0 || el.skewY !== 0) div.style.transform = "skewX(" + el.skewX + "deg) skewY(" + el.skewY + "deg)";');
+      lines.push('        if (el.outlineWidth > 0) div.style.border = el.outlineWidth + "px solid " + el.outlineColor;');
+      lines.push('        var inner = document.createElement("div");');
+      lines.push('        inner.className = "overlay-el-inner-" + i;');
+      lines.push('        inner.style.position = "absolute";');
+      lines.push('        inner.style.inset = "0";');
+      lines.push('        inner.style.pointerEvents = "none";');
+      lines.push('        inner.style.boxSizing = "border-box";');
+      lines.push('        inner.style.backgroundColor = el.color;');
+      lines.push('        if (el.borderRadius > 0) inner.style.borderRadius = el.borderRadius + "%";');
+      lines.push('        if (el.bevel > 0) inner.style.clipPath = "polygon(" + el.bevel + "% 0," + (100-el.bevel) + "% 0,100% " + el.bevel + "% ,100% " + (100-el.bevel) + "% ," + (100-el.bevel) + "% 100%," + el.bevel + "% 100%,0 " + (100-el.bevel) + "% ,0 " + el.bevel + "% )";');
+      lines.push('        if (el.skewX !== 0 || el.skewY !== 0) inner.style.transform = "skewX(" + el.skewX + "deg) skewY(" + el.skewY + "deg)";');
+      lines.push('        if (el.outlineWidth > 0) inner.style.border = el.outlineWidth + "px solid " + el.outlineColor;');
+      lines.push('        if (el.lightSweepEnabled && el.lightSweepBgImage) {');
+      lines.push('          inner.style.backgroundImage = el.lightSweepBgImage;');
+      lines.push('          inner.style.backgroundSize = "260% 260%";');
+      lines.push('          inner.style.backgroundRepeat = "no-repeat";');
+      lines.push('          inner.style.animation = "overlay-light-sweep " + el.lightSweepDuration + "s linear infinite";');
+      lines.push('        }');
+      lines.push('        if (el.animationType && el.animationType !== "None") {');
+      lines.push('          var animType = el.animationType === "ZoomInOut" ? "box-zoom-in-out" : (el.animationType === "Pulse" ? "box-pulse" : "box-float");');
+      lines.push('          var loopCount = !!el.animationLoop ? "infinite" : "1";');
+      lines.push('          var duration = Math.max(0.2, Math.min(10, Number(el.animationDuration) || 2));');
+      lines.push('          inner.style.animation = animType + " " + duration + "s ease-in-out " + loopCount;');
+      lines.push('        }');
+      lines.push('        div.appendChild(inner);');
+      lines.push('        shell.appendChild(div);');
+      // Add text content and styling if text exists
+      lines.push('        if (el.text) {');
+      lines.push('          var textSpan = document.createElement("span");');
+      lines.push('          textSpan.textContent = el.text;');
+      lines.push('          textSpan.style.cssText = "display:flex;align-items:center;justify-content:center;width:100%;height:100%;box-sizing:border-box;padding:4px;";');
+      lines.push('          textSpan.style.fontSize = (el.fontSize || 32) + "px";');
+      lines.push('          textSpan.style.fontFamily = el.fontFamily || "\'Bebas Neue\', sans-serif";');
+      lines.push('          textSpan.style.color = el.fontColor || "#ffffff";');
+      lines.push('          textSpan.style.fontWeight = el.fontWeight || "bold";');
+      lines.push('          textSpan.style.textAlign = el.textAlign || "center";');
+      lines.push('          var textShadows = [];');
+      lines.push('          if (el.textDropShadowEnabled && el.textDropShadowSize > 0) {');
+      lines.push('            var angleRad = (Number(el.textDropShadowAngle || 45)) * Math.PI / 180;');
+      lines.push('            var distance = Number(el.textDropShadowDistance || 5);');
+      lines.push('            var offsetX = Math.round(Math.cos(angleRad) * distance);');
+      lines.push('            var offsetY = Math.round(Math.sin(angleRad) * distance);');
+      lines.push('            var blur = Math.max(0, Number(el.textDropShadowSize || 0));');
+      lines.push('            var spread = Number(el.textDropShadowSpread || 0);');
+      lines.push('            var opacity = (Number(el.textDropShadowOpacity || 100) / 100);');
+      lines.push('            var dsColor = el.textDropShadowColor || "#000000";');
+      lines.push('            var dsR = parseInt(dsColor.slice(1, 3), 16);');
+      lines.push('            var dsG = parseInt(dsColor.slice(3, 5), 16);');
+      lines.push('            var dsB = parseInt(dsColor.slice(5, 7), 16);');
+      lines.push('            var dsRgba = "rgba(" + dsR + ", " + dsG + ", " + dsB + ", " + opacity + ")";');
+      lines.push('            textShadows.push(offsetX + "px " + offsetY + "px " + blur + "px " + dsRgba);');
+      lines.push('            if (spread > 0) {');
+      lines.push('              var stepCount = Math.max(1, Math.min(4, Math.floor(spread / 8) + 1));');
+      lines.push('              for (var i = 1; i <= stepCount; i += 1) {');
+      lines.push('                textShadows.push(offsetX + i + "px " + offsetY + "px " + blur + "px " + dsRgba);');
+      lines.push('                textShadows.push(offsetX - i + "px " + offsetY + "px " + blur + "px " + dsRgba);');
+      lines.push('                textShadows.push(offsetX + "px " + (offsetY + i) + "px " + blur + "px " + dsRgba);');
+      lines.push('                textShadows.push(offsetX + "px " + (offsetY - i) + "px " + blur + "px " + dsRgba);');
+      lines.push('              }');
+      lines.push('            }');
+      lines.push('          }');
+      lines.push('          if (el.textShadowSize > 0) {');
+      lines.push('            textShadows.push("2px 2px " + el.textShadowSize + "px " + el.textShadowColor);');
+      lines.push('          }');
+      lines.push('          textSpan.style.textShadow = textShadows.length > 0 ? textShadows.join(", ") : "none";');
+      lines.push('          // Handle text outline');
+      lines.push('          if (el.textOutlineWidth > 0 && el.textOutlineColor) {');
+      lines.push('            var outlineShadow = [];');
+      lines.push('            // Simple 8-direction outline');
+      lines.push('            for (var i = -1; i <= 1; i++) {');
+      lines.push('              for (var j = -1; j <= 1; j++) {');
+      lines.push('                if (i === 0 && j === 0) continue;');
+      lines.push('                outlineShadow.push(i * el.textOutlineWidth + "px " + j * el.textOutlineWidth + "px 0 " + el.textOutlineColor);');
+      lines.push('              }');
+      lines.push('            }');
+      lines.push('            if (textSpan.style.textShadow && textSpan.style.textShadow !== "none") {');
+      lines.push('              textSpan.style.textShadow = outlineShadow.join(", ") + ", " + textSpan.style.textShadow;');
+      lines.push('            } else {');
+      lines.push('              textSpan.style.textShadow = outlineShadow.join(", ");');
+      lines.push('            }');
+      lines.push('          }');
+      lines.push('          div.appendChild(textSpan);');
+      lines.push('        }');
+      lines.push('        shell.appendChild(div);');
+      lines.push('        container.appendChild(shell);');
+      lines.push('      });');
             lines.push('      applyPlaceholderStyles(cssClass);');
             lines.push('    }');
             lines.push('');
@@ -7123,17 +8719,30 @@
             lines.push('');
             lines.push('      window.displayAlertsSequentially = async function(alerts, alertIndex, areaIndex) {');
             lines.push('        var currentCss = document.body.className || "";');
+            lines.push('        var originalRunAreaTextMarquee = window.runAreaTextMarquee;');
+            lines.push('        window.runAreaTextMarquee = function(elements, newText) {');
+            lines.push('          var elementList = Array.isArray(elements) ? elements : [elements];');
+            lines.push('          var textList = Array.isArray(newText) ? newText : [newText];');
+            lines.push('          elementList.forEach(function(el, idx) {');
+            lines.push('            if (!el) return;');
+            lines.push('            var text = textList[idx] ?? textList[0] ?? "";');
+            lines.push('            if (el.textContent !== text) el.textContent = text;');
+            lines.push('            el.scrollLeft = 0;');
+            lines.push('          });');
+            lines.push('          return Promise.resolve();');
+            lines.push('        };');
             lines.push('        if (currentCss) {');
             lines.push('          await Promise.all([');
             lines.push('            animateAllPlaceholderText(currentCss, "out"),');
             lines.push('            animateAllOverlayElements(currentCss, "out")');
             lines.push('          ]);');
             lines.push('        }');
-            lines.push('        window._disablePlaceholderAnimationDuringDisplay = true;')
+            lines.push('        window._disablePlaceholderAnimationDuringDisplay = true;');
             lines.push('        try {');
             lines.push('          await originalDisplayAlertsSequentially(alerts, alertIndex, areaIndex);');
             lines.push('        } finally {');
             lines.push('          window._disablePlaceholderAnimationDuringDisplay = false;');
+            lines.push('          window.runAreaTextMarquee = originalRunAreaTextMarquee;');
             lines.push('        }');
             lines.push('        var nextCss = document.body.className || currentCss;');
             lines.push('        if (nextCss) {');
@@ -7141,6 +8750,11 @@
             lines.push('            animateAllPlaceholderText(nextCss, "in"),');
             lines.push('            animateAllOverlayElements(nextCss, "in")');
             lines.push('          ]);');
+            lines.push('        }');
+            lines.push('        if (originalRunAreaTextMarquee) {');
+            lines.push('          var areaEl = document.getElementById("area-text");');
+            lines.push('          var instructionsEl = document.getElementById("alert-instructions");');
+            lines.push('          await originalRunAreaTextMarquee([areaEl, instructionsEl], [areaEl ? areaEl.textContent || "" : "", instructionsEl ? instructionsEl.textContent || "" : ""]);');
             lines.push('        }');
             lines.push('      };');
             lines.push('    })();');
@@ -7164,31 +8778,49 @@
             }
 
             try {
-                // Generate modified warnverlay.html
-                var htmlContent = await generateWarnverlayHTML();
-                if (!htmlContent) return;
-
-                // Create ZIP with css/ subdirectory
-                var zip = new JSZip();
-                zip.file('warnverlay.html', htmlContent);
+                const zip = new JSZip();
                 if (nwsOfficesJsonText) {
                     zip.file('nwsoffices.json', nwsOfficesJsonText);
                 }
 
-                // Base CSS (keyframes + fallback backgrounds + loading overlay hide)
-                var cssFolder = zip.folder('css');
-                cssFolder.file('base.css', generateBaseCSS());
+                const mediaPathMap = {};
+                const mediaDir = zip.folder('media');
+                const usedMedia = Object.entries(alertMedia).filter(([_, media]) => media && media.src);
+                for (var i = 0; i < usedMedia.length; i += 1) {
+                    var alertType = usedMedia[i][0];
+                    var media = usedMedia[i][1];
+                    var ext = getMediaExtension(media);
+                    var fileNameBase = sanitizeFileName((media.fileName || alertType).replace(/\.[^./?\\]+$/, ''));
+                    var fileName = fileNameBase + ext;
+                    var uniqueName = fileName;
+                    var counter = 1;
+                    while (mediaDir.file(uniqueName)) {
+                        uniqueName = fileNameBase + '_' + counter + ext;
+                        counter += 1;
+                    }
+                    var arrayBuffer = await fetchArrayBufferFromSrc(media.src);
+                    if (!arrayBuffer) continue;
+                    mediaDir.file(uniqueName, arrayBuffer, { binary: true });
+                    mediaPathMap[alertType] = 'media/' + uniqueName;
+                }
 
-                // One CSS file per designed alert type
+                const cssFolder = zip.folder('css');
+                cssFolder.file('base.css', generateBaseCSS());
+                cssFolder.file('bg-loading.css', generateBgLoadingCSS());
+                cssFolder.file('bg-alert-active.css', generateBgAlertActiveCSS());
+                cssFolder.file('bg-no-alerts.css', generateBgNoAlertsActiveCSS());
                 Object.entries(alertDesigns).forEach(([alertType, elements]) => {
                     var cls = getAlertCssClass(alertType);
                     cssFolder.file(cls + '.css', generateCSSForAlert(alertType, elements));
                 });
 
-                // Generate and download
-                var blob = await zip.generateAsync({ type: 'blob' });
-                var url = URL.createObjectURL(blob);
-                var a = document.createElement('a');
+                const htmlContent = await generateWarnverlayHTML(mediaPathMap);
+                if (!htmlContent) return;
+                zip.file('warnverlay.html', htmlContent);
+
+                const blob = await zip.generateAsync({ type: 'blob' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
                 a.href = url;
                 a.download = 'custom-overlay.zip';
                 a.style.display = 'none';
@@ -7197,7 +8829,7 @@
                 document.body.removeChild(a);
                 setTimeout(() => URL.revokeObjectURL(url), 1000);
 
-                alert('Export complete! ' + designCount + ' alert type(s) designed.\nThe ZIP contains:\n  - warnverlay.html (uses CSS classes instead of PNGs)\n  - css/base.css (shared styles + fallback backgrounds)\n  - css/<alert-type>.css (one per designed alert type)');
+                alert('Export complete! ' + designCount + ' alert type(s) designed.\nThe ZIP contains:\n  - warnverlay.html\n  - css/base.css\n  - css/<alert-type>.css\n  - media/<media-files>');
                 renderDesignedAlertsPanel();
             } catch (err) {
                 console.error('Export failed:', err);
@@ -7327,12 +8959,10 @@
                     width: toNum(getVal('width'), 20),
                     height: toNum(getVal('height'), 10),
                     color: getVal('background-color') || '#2c5aa0',
-                    outlineWidth: 0,
-                    outlineColor: '#000000',
-                    borderRadius: 0,
-                    bevel: 0,
-                    skewX: 0,
-                    skewY: 0,
+                        gradientEnabled: false,
+                        gradientAngle: 90,
+                        gradientColor1: '#ffffff',
+                        gradientColor2: '#000000',
                     glowEnabled: false,
                     glowColor: '#ffffff',
                     glowSize: 0,
@@ -7390,11 +9020,43 @@
                     el.lightSweepBgImage = getVal('background-image');
                 }
 
+                // Gradient fill
+                const bgImage = getVal('background-image');
+                if (bgImage) {
+                    const linearMatch = /linear-gradient\s*\(\s*([0-9.]+)deg\s*,\s*([^,]+)\s*,\s*([^\)]+)\)/i.exec(bgImage);
+                    const radialMatch = /radial-gradient\s*\(\s*[^,]+\s*,\s*([^,]+)\s*,\s*([^\)]+)\)/i.exec(bgImage);
+                    if (linearMatch) {
+                        el.gradientEnabled = true;
+                        el.gradientStyle = 'linear';
+                        el.gradientAngle = parseFloat(linearMatch[1]);
+                        el.gradientColor1 = linearMatch[2].trim();
+                        el.gradientColor2 = linearMatch[3].trim();
+                    } else if (radialMatch) {
+                        el.gradientEnabled = true;
+                        el.gradientStyle = 'radial';
+                        el.gradientAngle = 0;
+                        el.gradientColor1 = radialMatch[1].trim();
+                        el.gradientColor2 = radialMatch[2].trim();
+                    }
+                }
+
                 elements[idx] = el;
             }
 
             // Compact sparse array
             return elements.filter(Boolean);
+        }
+
+        function parseWarnverlayHtmlDesignData(htmlText) {
+            if (!htmlText) return null;
+            const match = /var\s+OVERLAY_DESIGN_DATA\s*=\s*({[\s\S]*?});/.exec(htmlText);
+            if (!match) return null;
+            try {
+                return JSON.parse(match[1]);
+            } catch (err) {
+                console.warn('Could not parse OVERLAY_DESIGN_DATA from warnverlay.html', err);
+                return null;
+            }
         }
 
         /**
@@ -7412,32 +9074,34 @@
 
         /**
          * Handle the imported folder's files — look inside css/ for *.css (excluding base.css),
-         * parse each CSS file, and add the resulting design to alertDesigns.
+         * parse each CSS file, look for warnverlay.html, and add the resulting design to alertDesigns.
          */
         function processImportedFolder(files) {
             const cssFiles = [];
+            let warnverlayFile = null;
             for (const file of files) {
-                // webkitRelativePath looks like: "FolderName/css/bg-tor.css"
                 const rel = file.webkitRelativePath || file.name;
                 const parts = rel.split('/');
-                // Must be inside a css/ subfolder and end with .css, but not base.css
                 const inCss = parts.some(p => p.toLowerCase() === 'css');
                 const isCss = file.name.endsWith('.css');
                 const isBase = file.name.toLowerCase() === 'base.css';
                 if (inCss && isCss && !isBase) {
                     cssFiles.push(file);
                 }
+                if (file.name.toLowerCase() === 'warnverlay.html' || rel.toLowerCase().endsWith('/warnverlay.html')) {
+                    warnverlayFile = file;
+                }
             }
 
-            if (!cssFiles.length) {
-                alert('No alert CSS files found in a css/ subfolder.\nMake sure you selected the exported overlay folder (which contains warnverlay.html and a css/ directory).');
+            if (!cssFiles.length && !warnverlayFile) {
+                alert('No alert CSS files or warnverlay.html found in the imported folder.\nMake sure you selected the exported overlay folder (which contains warnverlay.html and a css/ directory).');
                 return;
             }
 
             let loaded = 0;
             let unfinished = 0;
             let skipped = 0;
-            const total = cssFiles.length;
+            const total = (warnverlayFile ? 1 : 0) + cssFiles.length;
             const afterAll = () => {
                 renderDesignedAlertsPanel();
                 renderAlertTypeList('');
@@ -7449,39 +9113,114 @@
             };
 
             let remaining = total;
+            const finishOne = () => {
+                remaining--;
+                if (remaining === 0) afterAll();
+            };
+
+            const applyImportedDesign = (alertType, elements) => {
+                if (!alertType) return;
+                alertDesigns[alertType] = elements || [];
+                if (elements && elements.length) loaded++;
+                else unfinished++;
+            };
+
+            const processHtmlFile = (file) => {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const htmlText = ev.target.result || '';
+                    const designData = parseWarnverlayHtmlDesignData(htmlText);
+                    if (designData) {
+                        Object.entries(designData).forEach(([cls, design]) => {
+                            const alertType = cssClassToAlertType(cls);
+                            const elements = Array.isArray(design.boxes) ? design.boxes.map(el => ({
+                                x: el.x, y: el.y, width: el.width, height: el.height,
+                                color: el.color,
+                                outlineWidth: el.outlineWidth || 0,
+                                outlineColor: el.outlineColor || '#000000',
+                                borderRadius: el.borderRadius || 0,
+                                bevel: el.bevel || 0,
+                                skewX: el.skewX || 0,
+                                skewY: el.skewY || 0,
+                                glowEnabled: !!el.glowEnabled,
+                                glowColor: el.glowColor || '#ffffff',
+                                glowSize: el.glowSize || 0,
+                                lightSweepEnabled: !!el.lightSweepEnabled,
+                                lightSweepAngle: el.lightSweepAngle || 105,
+                                lightSweepHighlightColor: el.lightSweepHighlightColor || '#ffffff',
+                                lightSweepFillOnly: !!el.lightSweepFillOnly,
+                                lightSweepWidth: el.lightSweepWidth || 20,
+                                lightSweepOpacity: el.lightSweepOpacity != null ? el.lightSweepOpacity : 100,
+                                lightSweepDuration: el.lightSweepDuration || 3.2,
+                                lightSweepDelay: el.lightSweepDelay || 0,
+                                lightSweepBgImage: el.lightSweepBgImage || null,
+                                transitionIn: el.transitionIn || { type: 'None', duration: 0, delay: 0, easing: 'Linear', reverse: false, dirX: 0, dirY: -1 },
+                                transitionOut: el.transitionOut || { type: 'None', duration: 0, delay: 0, easing: 'Linear', reverse: false, dirX: 0, dirY: -1 },
+                                text: el.placeholder && design.placeholders && design.placeholders[el.placeholder] ? design.placeholders[el.placeholder].token : el.text || '',
+                                placeholder: el.placeholder || null,
+                                fontSize: el.fontSize || 32,
+                                fontFamily: el.fontFamily || "'Bebas Neue', sans-serif",
+                                fontColor: el.fontColor || '#ffffff',
+                                fontWeight: el.fontWeight || 'bold',
+                                textAlign: el.textAlign || 'center',
+                                textShadowSize: el.textShadowSize || 0,
+                                textShadowColor: el.textShadowColor || '#000000',
+                                textOutlineWidth: el.textOutlineWidth || 0,
+                                textOutlineColor: el.textOutlineColor || '#000000',
+                                textOutlinePosition: el.textOutlinePosition || 'center',
+                                textOutlineStyle: el.textOutlineStyle || 'solid'
+                            })) : [];
+                            applyImportedDesign(alertType, elements);
+                        });
+                    } else {
+                        skipped++;
+                    }
+                    finishOne();
+                };
+                reader.onerror = () => {
+                    skipped++;
+                    finishOne();
+                };
+                reader.readAsText(file);
+            };
+
+            if (warnverlayFile) {
+                processHtmlFile(warnverlayFile);
+            }
+
             cssFiles.forEach(file => {
                 const reader = new FileReader();
                 reader.onload = (ev) => {
                     const cssText = ev.target.result || '';
-                    // Derive class name from filename (e.g. "bg-tor.css" → "bg-tor")
                     const cls = file.name.replace(/\.css$/, '');
                     const elements = parseCSSFileToDesign(cssText, cls);
-                            const alertType = cssClassToAlertType(cls);
-                    if (elements.length) {
-                        alertDesigns[alertType] = elements;
-                        loaded++;
-                    } else {
-                        alertDesigns[alertType] = [];
-                        unfinished++;
+                    const alertType = cssClassToAlertType(cls);
+                    if (!(alertType in alertDesigns)) {
+                        if (elements.length) {
+                            alertDesigns[alertType] = elements;
+                            loaded++;
+                        } else {
+                            alertDesigns[alertType] = [];
+                            unfinished++;
+                        }
                     }
-                    remaining--;
-                    if (remaining === 0) afterAll();
+                    finishOne();
                 };
                 reader.onerror = () => {
                     try {
                         const clsErr = file.name.replace(/\.css$/, '');
                         const alertTypeErr = cssClassToAlertType(clsErr);
-                        alertDesigns[alertTypeErr] = [];
-                        unfinished++;
+                        if (!(alertTypeErr in alertDesigns)) {
+                            alertDesigns[alertTypeErr] = [];
+                            unfinished++;
+                        }
                     } catch (e) { skipped++; }
-                    remaining--;
-                    if (remaining === 0) afterAll();
+                    finishOne();
                 };
                 reader.readAsText(file);
             });
 
             // After importing, offer to remember the folder for silent saves.
-            // Try to detect a root folder name from webkitRelativePath of any file.
             const first = files.find(f => f.webkitRelativePath);
             let rootName = null;
             if (first) {
