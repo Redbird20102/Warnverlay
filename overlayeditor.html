@@ -17,10 +17,10 @@
 
         body {
             font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
+            background-color: #dfe3e8;
             display: flex;
-            gap: 12px;
-            padding: 12px;
+            gap: 0;
+            padding: 0;
             height: 100vh;
             min-height: 0;
             overflow: hidden;
@@ -29,7 +29,7 @@
         .container {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 0;
             flex: 1;
             min-width: 0;
             min-height: 0;
@@ -37,14 +37,63 @@
 
         .toolbar {
             flex-shrink: 0;
-            background: white;
-            padding: 10px 12px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            background: #f5f6f7;
+            padding: 4px 8px;
+            border-radius: 0;
+            border-bottom: 1px solid #b8c0c8;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
             display: flex;
+            gap: 6px;
+            flex-wrap: nowrap;
+            align-items: center;
+            overflow-x: auto;
+            overflow-y: hidden;
+            min-height: 76px;
+        }
+
+        .toolbar-heading {
+            flex: 0 0 190px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 3px;
+            padding-bottom: 2px;
+        }
+
+        .toolbar-heading h1 {
+            font-size: 18px;
+            color: #212529;
+        }
+
+        .toolbar-heading p {
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        .toolbar-group {
+            flex: 0 0 auto;
+            display: flex;
+            align-items: center;
             gap: 8px;
             flex-wrap: wrap;
-            align-items: center;
+            padding: 5px 7px;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            background: #fafbfc;
+        }
+
+        .toolbar-group-label {
+            width: auto;
+            font-size: 11px;
+            font-weight: bold;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            white-space: nowrap;
+        }
+
+        .toolbar-group label {
+            white-space: nowrap;
         }
 
         details.toolbar-drawer summary::-webkit-details-marker {
@@ -76,10 +125,12 @@
         }
 
         details.toolbar-drawer {
-            flex-basis: 100%;
+            flex: 0 0 auto;
             margin: 0;
             padding: 0;
-            border-top: 1px solid #e8e8e8;
+            border: 1px solid #e0e4e8;
+            padding: 5px 7px;
+            background: #fafbfc;
         }
 
         .toolbar-drawer-inner .toolbar-row-transitions {
@@ -100,8 +151,14 @@
             transition: background-color 0.3s;
         }
 
-        .toolbar button:hover {
+        .toolbar button:hover:not(:disabled) {
             background-color: #0056b3;
+        }
+
+        .toolbar button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            opacity: 0.6;
         }
 
         .toolbar label {
@@ -132,14 +189,57 @@
             container-name: editor-stage;
             min-width: 0;
             min-height: 0;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            padding: 12px;
+            background: #dfe3e8;
+            border-radius: 0;
+            box-shadow: none;
+            padding: 0;
             display: flex;
             justify-content: center;
             align-items: center;
             overflow: hidden;
+        }
+
+        .canvas-viewport {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            display: block;
+            cursor: grab;
+            user-select: none;
+            touch-action: none;
+            scrollbar-width: auto;
+            scrollbar-color: #8b98a5 #eef1f4;
+        }
+
+        .canvas-scroll-content {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            min-width: 100%;
+            min-height: 100%;
+        }
+
+        .canvas-viewport::-webkit-scrollbar {
+            width: 14px;
+            height: 14px;
+        }
+
+        .canvas-viewport::-webkit-scrollbar-track {
+            background: #eef1f4;
+        }
+
+        .canvas-viewport::-webkit-scrollbar-thumb {
+            background: #8b98a5;
+            border: 3px solid #eef1f4;
+            border-radius: 8px;
+        }
+
+        .canvas-viewport.dragging {
+            cursor: grabbing;
         }
 
         .canvas {
@@ -166,6 +266,8 @@
             background-color: #ffffff;
             border: 2px dashed #999;
             overflow: hidden;
+            transform-origin: center center;
+            will-change: transform;
         }
 
         .canvas::after {
@@ -508,12 +610,13 @@
         }
 
         .sidebar {
-            width: 300px;
+            width: 350px;
             flex-shrink: 0;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            padding: 15px;
+            background: #243461;
+            color: #e8edf2;
+            border-radius: 0;
+            box-shadow: -1px 0 4px rgba(0, 0, 0, 0.2);
+            padding: 10px;
             overflow-y: auto;
             overflow-x: hidden;
             min-height: 0;
@@ -524,7 +627,7 @@
         .sidebar h3 {
             margin-bottom: 15px;
             font-size: 16px;
-            border-bottom: 2px solid #007bff;
+            border-bottom: 2px solid #36a269;
             padding-bottom: 10px;
         }
 
@@ -1176,44 +1279,113 @@
             padding-top: 10px;
             border-top: 1px solid rgba(78,205,196,0.2);
         }
+
+        @media (max-width: 1000px) {
+            body {
+                gap: 8px;
+                padding: 8px;
+            }
+
+            .sidebar {
+                width: 250px;
+            }
+
+            .toolbar-heading p {
+                display: none;
+            }
+        }
+
+        @media (max-width: 760px) {
+            body {
+                display: block;
+                overflow-y: auto;
+            }
+
+            .container {
+                height: 68vh;
+                min-height: 420px;
+            }
+
+            .toolbar {
+                max-height: 34vh;
+                overflow-y: auto;
+            }
+
+            .toolbar-group {
+                flex: 1 1 100%;
+            }
+
+            .sidebar {
+                width: 100%;
+                max-height: none;
+                margin-top: 8px;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="toolbar">
-            <button id="addBoxBtn">+ Add Box</button>
-            <button id="addTextBtn" style="background-color: #6c757d;">+ Add Text</button>
-            <button type="button" id="addMediaBtn" title="Add image or video from disk (also saved to Media library when small enough)">+ Add image/video</button>
+            <div class="toolbar-heading">
+                <h1>Warning Overlay Editor</h1>
+                <p>Choose an alert, add your design, then save it.</p>
+            </div>
+            <div class="toolbar-group">
+                <span class="toolbar-group-label">Edit</span>
+                <button id="undoBtn" title="Undo the last change (Ctrl+Z)" style="background-color: #6c757d;">↶ Undo</button>
+                <button id="redoBtn" title="Redo the last change (Ctrl+Y)" style="background-color: #6c757d;">↷ Redo</button>
+            </div>
+            <div class="toolbar-group">
+                <span class="toolbar-group-label">Add to canvas</span>
+                <button id="addBoxBtn">+ Rectangle</button>
+                <button id="addTextBtn" style="background-color: #6c757d;">+ Text</button>
+                <button type="button" id="addMediaBtn" title="Add an image or video from your computer">+ Image or video</button>
+            </div>
+            <div class="toolbar-group">
+                <span class="toolbar-group-label">View</span>
+                <button type="button" id="zoomOutBtn" title="Make the canvas smaller">−</button>
+                <button type="button" id="zoomResetBtn" title="Return the canvas to 100%">100%</button>
+                <button type="button" id="zoomInBtn" title="Make the canvas larger">+</button>
+            </div>
             <input type="file" id="mediaFileInput" accept="image/*,video/*" multiple style="display:none">
-            <button type="button" id="importFolderBtn" title="Import a previously exported overlay folder — loads CSS designs from the css/ subfolder">📂 Import Folder</button>
+            <div class="toolbar-group">
+                <span class="toolbar-group-label">Files</span>
+                <button type="button" id="importFolderBtn" title="Open a folder containing saved overlay designs">📂 Open designs folder</button>
+                <button type="button" id="selectAlertTypeBtn" style="background-color:#6f42c1;" title="Choose the warning type you are designing">⚠ Choose alert</button>
+                <button type="button" id="exportOverlayBtn" style="background-color:#28a745;font-weight:bold;" title="Save all designs as a ZIP file">💾 Save ZIP</button>
+                <button type="button" id="saveToFolderBtn" style="background-color:#17a2b8;color:#fff;" title="Save this alert's CSS file into a folder">📁 Save CSS file</button>
+            </div>
             <input type="file" id="folderFileInput" webkitdirectory multiple style="display:none">
-            <label title="PNG export uses a transparent background (alpha); stage content only">
-                Export 16∶9
+            <div class="toolbar-group">
+                <span class="toolbar-group-label">Export image</span>
+                <label title="The PNG uses a transparent background and includes only the canvas">
+                PNG size
                 <select id="exportSizeSelect" style="margin-left:4px;">
                     <option value="1280">720p — 1280×720</option>
                     <option value="1920" selected>1080p — 1920×1080</option>
                     <option value="2560">1440p — 2560×1440</option>
                     <option value="3840">4K — 3840×2160</option>
                 </select>
-            </label>
-            <button type="button" id="exportPngBtn" title="Save the stage as a transparent PNG at the chosen resolution">Export PNG</button>
-            <button type="button" id="selectAlertTypeBtn" style="background-color:#6f42c1;" title="Select which alert type to design">Alert Type</button>
-            <button type="button" id="exportOverlayBtn" style="background-color:#28a745;font-weight:bold;" title="Export overlay as ZIP with warnverlay.html + CSS">💾 Save & Export</button>
-            <button type="button" id="saveToFolderBtn" style="background-color:#17a2b8;color:#fff;" title="Save current design's CSS into a local folder (choose folder)">📁 Save to folder</button>
-            <label>
-                Default Color:
+                </label>
+                <button type="button" id="exportPngBtn" title="Save the canvas as a transparent PNG">Export PNG</button>
+            </div>
+            <div class="toolbar-group">
+                <span class="toolbar-group-label">New shape defaults</span>
+                <label>
+                Fill color
                 <input type="color" id="colorPicker" value="#2c5aa0">
-            </label>
-            <label>
-                Outline px:
+                </label>
+                <label>
+                Border width
                 <input type="number" id="outlineWidthPicker" value="0" min="0" max="20">
-            </label>
-            <label>
-                Outline Color:
+                </label>
+                <label>
+                Border color
                 <input type="color" id="outlineColorPicker" value="#000000">
-            </label>
+                </label>
+            </div>
             <details class="toolbar-drawer toolbar-drawer-shape">
-                <summary>Shape — round · bevel · slant</summary>
+                <summary>Shape details: rounded corners, bevel, and slant</summary>
                 <div class="toolbar-drawer-inner">
                     <label>
                         Round %:
@@ -1238,51 +1410,55 @@
                 </div>
             </details>
             <details class="toolbar-drawer toolbar-drawer-storyboard">
-                <summary>Storyboard · preview · transitions</summary>
+                <summary>Animation and preview</summary>
                 <div class="toolbar-drawer-inner">
                     <div class="toolbar-row-transitions" id="transitionToolbar">
-                        <span class="storyboard-label">Storyboard</span>
+                        <span class="storyboard-label">Animation</span>
                         <select id="storyboardBoardSelect" title="Which transition to edit">
-                            <option value="in">TransitionIn</option>
-                            <option value="out">TransitionOut</option>
+                            <option value="in">When it appears</option>
+                            <option value="out">When it disappears</option>
                         </select>
                         <label style="font-size:12px;display:flex;align-items:center;gap:6px;">
-                            Preview:
+                            Preview
                             <select id="transitionPreviewTargetSelect" title="Which box runs the preview"></select>
                         </label>
                         <label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer;" title="One box: In then Out. All boxes: same timeline — all In together, then all Out together when checked.">
                             <input type="checkbox" id="transitionPlayInThenOut">
-                            In→Out
+                            Appear then disappear
                         </label>
                         <button type="button" id="transitionPlayBtn">Play</button>
                         <button type="button" id="transitionPauseBtn">Pause</button>
                         <button type="button" id="transitionInOutToggle" title="Preview: Transition In vs Out (when In→Out is off)">In</button>
-                        <span style="font-size:12px;color:#666;">Edit boards ↑</span>
+                        <span style="font-size:12px;color:#666;">Choose an animation above</span>
                     </div>
                 </div>
             </details>
         </div>
         <div class="canvas-wrapper">
-            <div class="canvas" id="canvas"></div>
+            <div class="canvas-viewport" id="canvasViewport">
+                <div class="canvas-scroll-content" id="canvasScrollContent">
+                    <div class="canvas" id="canvas"></div>
+                </div>
+            </div>
         </div>
     </div>
 
     <div class="sidebar">
         <div class="unfinished-alerts-section">
-            <h3>Not finished <span class="designed-alerts-badge" id="unfinishedAlertsBadge">0</span></h3>
+            <h3>Alerts to finish <span class="designed-alerts-badge" id="unfinishedAlertsBadge">0</span></h3>
             <div id="unfinishedAlertsPanel"></div>
         </div>
         <div class="designed-alerts-section">
-            <h3>Designed Alerts <span class="designed-alerts-badge" id="designedAlertsBadge">0</span></h3>
+            <h3>Completed alerts <span class="designed-alerts-badge" id="designedAlertsBadge">0</span></h3>
             <div id="designedAlertsPanel"></div>
         </div>
-        <h3>Canvas media</h3>
+        <h3>Images and videos</h3>
         <div id="mediaPanel"></div>
-        <h3>Boxes</h3>
+        <h3>Selected item</h3>
         <div id="storyboardPanel"></div>
-        <h3>Layers</h3>
+        <h3>Layer order</h3>
         <div id="layersPanel"></div>
-        <h3>Grouped items</h3>
+        <h3>Groups</h3>
         <div id="groupedItemsPanel"></div>
         <div id="boxList"></div>
     </div>
@@ -1303,9 +1479,9 @@
     <div id="alertTypeModal" class="modal-overlay">
         <div class="modal-content">
             <button id="alertTypeModalCloseBtn" class="modal-close-button" type="button">Close</button>
-            <h2>⚠ Select Alert Type</h2>
-            <div class="modal-subtitle">Choose an alert type to design, then create your overlay on the canvas.</div>
-            <input type="text" id="alertSearch" class="modal-search" placeholder="Search alert types..." autocomplete="off">
+            <h2>⚠ Choose an alert type</h2>
+            <div class="modal-subtitle">Pick the warning you want to design on the canvas.</div>
+            <input type="text" id="alertSearch" class="modal-search" placeholder="Type to find an alert..." autocomplete="off">
             <div id="alertTypeList" class="modal-alert-list"></div>
             <div id="modalCurrentLabel" class="modal-current-label"></div>
         </div>
@@ -1314,8 +1490,8 @@
     <div id="duplicateDesignModal" class="modal-overlay hidden">
         <div class="modal-content">
             <button id="duplicateDesignModalCloseBtn" class="modal-close-button" type="button">Close</button>
-            <h2>Duplicate Design</h2>
-            <div class="modal-subtitle">Pick the alert type to copy this design into.</div>
+            <h2>Copy this design</h2>
+            <div class="modal-subtitle">Choose another alert that should use the same design.</div>
             <div style="font-size:13px;color:#ccc;margin-bottom:12px;">Source: <strong class="duplicate-modal-source"></strong></div>
             <div id="duplicateTargetList" class="modal-alert-list"></div>
         </div>
@@ -1323,9 +1499,80 @@
 
     <script>
         const canvas = document.getElementById('canvas');
+        const canvasViewport = document.getElementById('canvasViewport');
+        const canvasScrollContent = document.getElementById('canvasScrollContent');
         const canvasShadowLayer = document.createElement('div');
         canvasShadowLayer.className = 'canvas-shadow-layer';
         canvas.appendChild(canvasShadowLayer);
+        const stageViewportState = {
+            scale: 1,
+            x: 0,
+            y: 0,
+            minScale: 0.4,
+            maxScale: 2.5,
+            pointer: null
+        };
+
+        function clampStageViewport() {
+            if (!canvasViewport) return;
+            const viewportWidth = canvasViewport.clientWidth || 1;
+            const viewportHeight = canvasViewport.clientHeight || 1;
+            const baseWidth = canvas.offsetWidth || viewportWidth;
+            const baseHeight = canvas.offsetHeight || viewportHeight;
+            const scaledWidth = baseWidth * stageViewportState.scale;
+            const scaledHeight = baseHeight * stageViewportState.scale;
+
+            if (stageViewportState.scale <= 1) {
+                stageViewportState.x = 0;
+                stageViewportState.y = 0;
+                return;
+            }
+
+            const maxX = Math.max(0, (scaledWidth - viewportWidth) / 2);
+            const maxY = Math.max(0, (scaledHeight - viewportHeight) / 2);
+            stageViewportState.x = Math.max(-maxX, Math.min(maxX, stageViewportState.x));
+            stageViewportState.y = Math.max(-maxY, Math.min(maxY, stageViewportState.y));
+        }
+
+        function applyStageViewport() {
+            clampStageViewport();
+            if (canvasScrollContent && canvasViewport) {
+                const baseWidth = canvas.offsetWidth || canvasViewport.clientWidth || 1;
+                const baseHeight = canvas.offsetHeight || canvasViewport.clientHeight || 1;
+                const contentWidth = Math.max(canvasViewport.clientWidth, baseWidth * stageViewportState.scale);
+                const contentHeight = Math.max(canvasViewport.clientHeight, baseHeight * stageViewportState.scale);
+                canvasScrollContent.style.width = `${contentWidth}px`;
+                canvasScrollContent.style.height = `${contentHeight}px`;
+            }
+            canvas.style.transform = `translate(${stageViewportState.x}px, ${stageViewportState.y}px) scale(${stageViewportState.scale})`;
+        }
+
+        function setStageZoom(newScale, clientX = null, clientY = null) {
+            const previousScale = stageViewportState.scale;
+            const clampedScale = Math.min(stageViewportState.maxScale, Math.max(stageViewportState.minScale, newScale));
+            if (clampedScale === previousScale) return;
+
+            if (clientX !== null && clientY !== null && canvasViewport) {
+                const rect = canvasViewport.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                const worldX = ((clientX - centerX) - stageViewportState.x) / previousScale;
+                const worldY = ((clientY - centerY) - stageViewportState.y) / previousScale;
+                stageViewportState.x = (clientX - centerX) - worldX * clampedScale;
+                stageViewportState.y = (clientY - centerY) - worldY * clampedScale;
+            }
+
+            stageViewportState.scale = clampedScale;
+            applyStageViewport();
+        }
+
+        function resetStageViewport() {
+            stageViewportState.scale = 1;
+            stageViewportState.x = 0;
+            stageViewportState.y = 0;
+            applyStageViewport();
+        }
+
         const addBoxBtn = document.getElementById('addBoxBtn');
         const colorPicker = document.getElementById('colorPicker');
         const outlineWidthPicker = document.getElementById('outlineWidthPicker');
@@ -1333,6 +1580,92 @@
         const boxList = document.getElementById('boxList');
         const layersPanel = document.getElementById('layersPanel');
         const contextMenu = document.getElementById('contextMenu');
+
+        // ===== UNDO/REDO SYSTEM =====
+        let actionHistory = [];
+        let historyIndex = -1;
+        const MAX_HISTORY = 50;
+
+        class Action {
+            constructor(name, undo, redo) {
+                this.name = name;
+                this.undoFn = undo;
+                this.redoFn = redo;
+            }
+        }
+
+        function recordAction(name, undoFn, redoFn) {
+            // Remove any redo history when a new action is performed
+            actionHistory = actionHistory.slice(0, historyIndex + 1);
+            actionHistory.push(new Action(name, undoFn, redoFn));
+            if (actionHistory.length > MAX_HISTORY) {
+                actionHistory.shift();
+            } else {
+                historyIndex++;
+            }
+            updateUndoRedoButtons();
+        }
+
+        function undo() {
+            if (historyIndex >= 0) {
+                const action = actionHistory[historyIndex];
+                action.undoFn();
+                historyIndex--;
+                updateUndoRedoButtons();
+            }
+        }
+
+        function redo() {
+            if (historyIndex < actionHistory.length - 1) {
+                historyIndex++;
+                const action = actionHistory[historyIndex];
+                action.redoFn();
+                updateUndoRedoButtons();
+            }
+        }
+
+        function updateUndoRedoButtons() {
+            const undoBtn = document.getElementById('undoBtn');
+            const redoBtn = document.getElementById('redoBtn');
+            if (undoBtn) undoBtn.disabled = historyIndex < 0;
+            if (redoBtn) redoBtn.disabled = historyIndex >= actionHistory.length - 1;
+        }
+
+        // Text style presets
+        const TEXT_PRESETS_KEY = 'warnverlay_text_presets_v1';
+        let textPresets = {};
+
+        function loadTextPresets() {
+            try {
+                const saved = localStorage.getItem(TEXT_PRESETS_KEY);
+                if (saved) textPresets = JSON.parse(saved);
+            } catch (e) {
+                console.error('Error loading text presets:', e);
+            }
+            populateTextPresets();
+        }
+
+        function saveTextPresets() {
+            try {
+                localStorage.setItem(TEXT_PRESETS_KEY, JSON.stringify(textPresets));
+            } catch (e) {
+                console.error('Error saving text presets:', e);
+            }
+        }
+
+        function populateTextPresets() {
+            const select = document.getElementById('textPresetSelect');
+            if (!select) return;
+            const currentValue = select.value;
+            select.innerHTML = '<option value="">-- Presets --</option>';
+            Object.keys(textPresets).forEach(name => {
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name;
+                select.appendChild(opt);
+            });
+            select.value = currentValue;
+        }
 
         let boxes = [];
         let selectedBox = null;
@@ -2720,13 +3053,42 @@
         function deleteSelectedBoxes() {
             const sels = getSelectedBoxesArray();
             if (!sels.length) return;
+            const deletedBoxes = [];
+            const deletedIndices = [];
+            sels.forEach((b) => {
+                deletedBoxes.push(b);
+                deletedIndices.push(boxes.indexOf(b));
+            });
             sels.forEach((b) => b.delete());
-            // b.delete() mutates selection; hard reset to be safe
             selectedBox = null;
             selectedBoxes = new Set();
             syncBoxSelectionClasses();
             renderBoxList();
             renderStoryboardPanel();
+            recordAction('Delete boxes',
+                () => {
+                    deletedBoxes.forEach((b) => {
+                        boxes.push(b);
+                        b.element = null;
+                        b.shadowElement = null;
+                        b.render();
+                    });
+                    selectedBox = null;
+                    selectedBoxes = new Set();
+                    syncBoxSelectionClasses();
+                    renderBoxList();
+                    checkCollisions();
+                    renderStoryboardPanel();
+                },
+                () => {
+                    deletedBoxes.forEach((b) => b.delete());
+                    selectedBox = null;
+                    selectedBoxes = new Set();
+                    syncBoxSelectionClasses();
+                    renderBoxList();
+                    renderStoryboardPanel();
+                }
+            );
         }
 
         function duplicateSelectedBoxes() {
@@ -3608,11 +3970,23 @@
                 const body = document.createElement('div');
                 body.className = 'box-body';
                 this.innerElement = body;
-                // Text layer — sits on top of box-body, shows this.text
+                // Text layers: the shadow sits behind the gradient/solid fill so the fill always paints on top.
                 const textLayer = document.createElement('div');
-                textLayer.className = 'box-text';
-                textLayer.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;box-sizing:border-box;padding:4px;overflow:hidden;z-index:2;';
-                this.textElement = textLayer;
+                textLayer.className = 'box-text-layer';
+                textLayer.style.cssText = 'position:absolute;inset:0;display:block;pointer-events:none;box-sizing:border-box;padding:4px;overflow:hidden;z-index:2;';
+
+                const shadowLayer = document.createElement('div');
+                shadowLayer.className = 'box-text-shadow-layer';
+                shadowLayer.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;box-sizing:border-box;overflow:hidden;z-index:1;';
+                this.textShadowElement = shadowLayer;
+
+                const fillLayer = document.createElement('div');
+                fillLayer.className = 'box-text';
+                fillLayer.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;box-sizing:border-box;overflow:hidden;z-index:2;';
+                this.textElement = fillLayer;
+
+                textLayer.appendChild(shadowLayer);
+                textLayer.appendChild(fillLayer);
                 body.appendChild(textLayer);
                 clip.appendChild(body);
                 animationLayer.appendChild(clip);
@@ -3789,14 +4163,23 @@
                 }
                 // Update text layer
                 if (this.textElement) {
+                    const shadowLayer = this.textShadowElement || this.textElement;
                     loadGoogleFontFamily(this.fontFamily);
-                    this.textElement.textContent = this.text || '';
+
+                    const textValue = this.text || '';
+                    this.textElement.textContent = textValue;
+                    shadowLayer.textContent = textValue;
+
+                    [this.textElement, shadowLayer].forEach((layer) => {
+                        layer.style.fontFamily = this.fontFamily;
+                        layer.style.fontSize = this.fontSize + 'px';
+                        layer.style.fontWeight = this.fontWeight;
+                        layer.style.textAlign = this.textAlign;
+                        layer.style.justifyContent = this.textAlign === 'left' ? 'flex-start' : (this.textAlign === 'right' ? 'flex-end' : 'center');
+                    });
+                    shadowLayer.style.color = 'transparent';
                     this.textElement.style.color = this.fontColor;
-                    this.textElement.style.fontFamily = this.fontFamily;
-                    this.textElement.style.fontSize = this.fontSize + 'px';
-                    this.textElement.style.fontWeight = this.fontWeight;
-                    this.textElement.style.textAlign = this.textAlign;
-                    this.textElement.style.justifyContent = this.textAlign === 'left' ? 'flex-start' : (this.textAlign === 'right' ? 'flex-end' : 'center');
+
                     const outlineWidthValue = Number(this.textOutlineWidth) || 0;
                     const outlineColorValue = this.textOutlineColor || '#000000';
                     const textShadowSizeValue = Number(this.textShadowSize) || 0;
@@ -3805,7 +4188,7 @@
                     if (textShadowSizeValue > 0) {
                         textShadowValue = `2px 2px ${textShadowSizeValue}px ${textShadowColorValue}`;
                     }
-                    
+
                     // Add text drop shadow if enabled
                     if (this.textDropShadowEnabled && this.textDropShadowSize > 0) {
                         const angleRad = (this.textDropShadowAngle || 45) * Math.PI / 180;
@@ -3846,30 +4229,46 @@
                         this.textElement.style.webkitBackgroundClip = 'text';
                         this.textElement.style.backgroundClip = 'text';
                         this.textElement.style.color = 'transparent';
+                        this.textElement.style.textShadow = 'none';
                     } else {
                         this.textElement.style.removeProperty('background-image');
                         this.textElement.style.removeProperty('-webkit-background-clip');
                         this.textElement.style.removeProperty('background-clip');
                         this.textElement.style.color = this.fontColor;
+                        this.textElement.style.textShadow = 'none';
                     }
 
                     if (outlineWidthValue > 0 && this.textOutlinePosition === 'outside') {
                         const outlineShadow = this.textOutlineStyle === 'rounded'
                             ? buildTextOutlineShadowRounded(outlineColorValue, outlineWidthValue)
                             : buildTextOutlineShadowSolid(outlineColorValue, outlineWidthValue);
+                        shadowLayer.style.setProperty('-webkit-text-stroke', '0px transparent');
+                        shadowLayer.style.setProperty('text-stroke', '0px transparent');
+                        shadowLayer.style.textShadow = textShadowValue !== 'none' ? `${outlineShadow}, ${textShadowValue}` : outlineShadow;
                         this.textElement.style.setProperty('-webkit-text-stroke', '0px transparent');
                         this.textElement.style.setProperty('text-stroke', '0px transparent');
-                        this.textElement.style.textShadow = textShadowValue !== 'none' ? `${outlineShadow}, ${textShadowValue}` : outlineShadow;
                     } else {
                         if (outlineWidthValue > 0) {
                             const outlineValue = `${outlineWidthValue}px ${outlineColorValue}`;
-                            this.textElement.style.setProperty('-webkit-text-stroke', outlineValue);
-                            this.textElement.style.setProperty('text-stroke', outlineValue);
+                            shadowLayer.style.setProperty('-webkit-text-stroke', outlineValue);
+                            shadowLayer.style.setProperty('text-stroke', outlineValue);
+                            this.textElement.style.setProperty('-webkit-text-stroke', '0px transparent');
+                            this.textElement.style.setProperty('text-stroke', '0px transparent');
                         } else {
+                            shadowLayer.style.setProperty('-webkit-text-stroke', '0px transparent');
+                            shadowLayer.style.setProperty('text-stroke', '0px transparent');
                             this.textElement.style.setProperty('-webkit-text-stroke', '0px transparent');
                             this.textElement.style.setProperty('text-stroke', '0px transparent');
                         }
-                        this.textElement.style.textShadow = textShadowValue;
+                        shadowLayer.style.textShadow = textShadowValue;
+                    }
+
+                    if (!hasTextGradient) {
+                        shadowLayer.style.zIndex = '1';
+                        this.textElement.style.zIndex = '2';
+                    } else {
+                        shadowLayer.style.zIndex = '1';
+                        this.textElement.style.zIndex = '2';
                     }
                 }
             }
@@ -4280,6 +4679,28 @@
             box.select();
             checkCollisions();
             renderBoxList();
+            recordAction('Add box',
+                () => {
+                    const idx = boxes.indexOf(box);
+                    if (idx >= 0) boxes.splice(idx, 1);
+                    if (box.element) box.element.remove();
+                    if (box.shadowElement) box.shadowElement.remove();
+                    box.element = null;
+                    box.shadowElement = null;
+                    selectedBox = null;
+                    selectedBoxes.clear();
+                    syncBoxSelectionClasses();
+                    renderBoxList();
+                    checkCollisions();
+                },
+                () => {
+                    boxes.push(box);
+                    box.render();
+                    box.select();
+                    checkCollisions();
+                    renderBoxList();
+                }
+            );
         }
 
         function addText() {
@@ -4294,6 +4715,28 @@
             selectSingleBox(box);
             checkCollisions();
             renderBoxList();
+            recordAction('Add text',
+                () => {
+                    const idx = boxes.indexOf(box);
+                    if (idx >= 0) boxes.splice(idx, 1);
+                    if (box.element) box.element.remove();
+                    if (box.shadowElement) box.shadowElement.remove();
+                    box.element = null;
+                    box.shadowElement = null;
+                    selectedBox = null;
+                    selectedBoxes.clear();
+                    syncBoxSelectionClasses();
+                    renderBoxList();
+                    checkCollisions();
+                },
+                () => {
+                    boxes.push(box);
+                    box.render();
+                    selectSingleBox(box);
+                    checkCollisions();
+                    renderBoxList();
+                }
+            );
         }
 
         function isColliding(boxA, boxB) {
@@ -6810,6 +7253,69 @@
             }
         });
 
+        // Viewport pan + zoom controls
+        const zoomInBtn = document.getElementById('zoomInBtn');
+        const zoomOutBtn = document.getElementById('zoomOutBtn');
+        const zoomResetBtn = document.getElementById('zoomResetBtn');
+
+        if (zoomInBtn) {
+            zoomInBtn.addEventListener('click', () => setStageZoom(stageViewportState.scale * 1.15));
+        }
+
+        if (zoomOutBtn) {
+            zoomOutBtn.addEventListener('click', () => setStageZoom(stageViewportState.scale / 1.15));
+        }
+
+        if (zoomResetBtn) {
+            zoomResetBtn.addEventListener('click', resetStageViewport);
+        }
+
+        if (canvasViewport) {
+            canvasViewport.addEventListener('wheel', (event) => {
+                event.preventDefault();
+                const delta = event.deltaY < 0 ? 1.12 : 0.88;
+                setStageZoom(stageViewportState.scale * delta, event.clientX, event.clientY);
+            }, { passive: false });
+
+            let isPanning = false;
+            let panStartX = 0;
+            let panStartY = 0;
+            let panOriginX = 0;
+            let panOriginY = 0;
+
+            canvasViewport.addEventListener('pointerdown', (event) => {
+                const isMiddleMouse = event.button === 1;
+                const isPanHotkey = event.button === 0 && (event.shiftKey || event.altKey || event.metaKey || event.ctrlKey);
+                if (!isMiddleMouse && !isPanHotkey) return;
+                event.preventDefault();
+                isPanning = true;
+                panStartX = event.clientX;
+                panStartY = event.clientY;
+                panOriginX = stageViewportState.x;
+                panOriginY = stageViewportState.y;
+                canvasViewport.classList.add('dragging');
+                canvasViewport.setPointerCapture(event.pointerId);
+            });
+
+            canvasViewport.addEventListener('pointermove', (event) => {
+                if (!isPanning) return;
+                const dx = event.clientX - panStartX;
+                const dy = event.clientY - panStartY;
+                stageViewportState.x = panOriginX + dx;
+                stageViewportState.y = panOriginY + dy;
+                applyStageViewport();
+            });
+
+            const stopPanning = () => {
+                isPanning = false;
+                canvasViewport.classList.remove('dragging');
+            };
+
+            canvasViewport.addEventListener('pointerup', stopPanning);
+            canvasViewport.addEventListener('pointerleave', stopPanning);
+            canvasViewport.addEventListener('pointercancel', stopPanning);
+        }
+
         // Click on canvas to deselect
         canvas.addEventListener('click', (e) => {
             if (e.target === canvas) {
@@ -6966,6 +7472,10 @@
                 'Extreme Cold Warning',
                 'Dust Storm Warning',
                 'Special Marine Warning'
+            ],
+            'Background States': [
+                'Other Active Alerts',
+                'No Active Alerts'
             ]
         };
 
@@ -7035,6 +7545,8 @@
             'Extreme Heat Warning': 'bg-ehw',
             'Extreme Cold Warning': 'bg-ecw',
             'Dust Storm Warning': 'bg-dsw',
+            'Other Active Alerts': 'bg-alert-active',
+            'No Active Alerts': 'bg-no-alerts',
         };
 
         // Map CSS class → base background color (fallback if no overlay elements)
@@ -7443,6 +7955,64 @@
             css += `    background: transparent;\n`;
             css += `}\n\n`;
 
+            css += `body.${cls} #event-text,\n`;
+            css += `body.${cls} #area-text,\n`;
+            css += `body.${cls} #alert-instructions,\n`;
+            css += `body.${cls} #expire-date {\n`;
+            css += `    font-family: 'Bebas Neue', sans-serif;\n`;
+            css += `    font-weight: bold;\n`;
+            css += `}\n\n`;
+            css += `body.${cls} #event-text,\n`;
+            css += `body.${cls} #area-text {\n`;
+            css += `    color: white;\n`;
+            css += `    text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.8);\n`;
+            css += `}\n\n`;
+            css += `body.${cls} #event-text {\n`;
+            css += `    position: fixed;\n`;
+            css += `    left: -30.8%;\n`;
+            css += `    top: 95%;\n`;
+            css += `    width: 83%;\n`;
+            css += `    text-align: center;\n`;
+            css += `    display: none;\n`;
+            css += `}\n\n`;
+            css += `body.${cls} #area-text {\n`;
+            css += `    position: fixed;\n`;
+            css += `    left: 22%;\n`;
+            css += `    right: 2%;\n`;
+            css += `    top: 95%;\n`;
+            css += `    overflow: hidden;\n`;
+            css += `    white-space: nowrap;\n`;
+            css += `    display: none;\n`;
+            css += `    text-overflow: clip;\n`;
+            css += `}\n\n`;
+            css += `body.${cls} #alert-instructions {\n`;
+            css += `    position: fixed;\n`;
+            css += `    left: 5%;\n`;
+            css += `    right: 5%;\n`;
+            css += `    bottom: 8%;\n`;
+            css += `    color: white;\n`;
+            css += `    text-align: center;\n`;
+            css += `    pointer-events: none;\n`;
+            css += `    overflow: hidden;\n`;
+            css += `    white-space: nowrap;\n`;
+            css += `    display: none;\n`;
+            css += `    line-height: 1.2;\n`;
+            css += `}\n\n`;
+            css += `body.${cls} #expire-date-container {\n`;
+            css += `    position: fixed;\n`;
+            css += `    bottom: 5.2%;\n`;
+            css += `    right: 84%;\n`;
+            css += `    display: none;\n`;
+            css += `    align-items: center;\n`;
+            css += `    justify-content: center;\n`;
+            css += `    padding: 10px;\n`;
+            css += `}\n\n`;
+            css += `body.${cls} #expire-date {\n`;
+            css += `    color: black;\n`;
+            css += `    white-space: nowrap;\n`;
+            css += `    display: block;\n`;
+            css += `}\n\n`;
+
             if (!elements || !elements.length) return css;
 
             elements.forEach((el, i) => {
@@ -7672,26 +8242,7 @@
             return css;
         }
 
-        function generateBgLoadingCSS() {
-            let css = '/* Warnverlay Loading State - Generated by Editor */\n';
-            css += 'body.bg-loading { background: transparent !important; }\n';
-            css += '#loading-overlay { display: none !important; }\n';
-            return css;
-        }
 
-        function generateBgAlertActiveCSS() {
-            const color = ALERT_BG_COLORS['bg-alert-active'] || '#111111';
-            let css = '/* Warnverlay Active Alert Fallback Background */\n';
-            css += `body.bg-alert-active { background: ${color} !important; }\n`;
-            return css;
-        }
-
-        function generateBgNoAlertsActiveCSS() {
-            const color = ALERT_BG_COLORS['bg-no-alerts'] || '#000000';
-            let css = '/* Warnverlay No Alerts Fallback Background */\n';
-            css += `body.bg-no-alerts { background: ${color} !important; }\n`;
-            return css;
-        }
 
         function dataURLToUint8Array(dataUrl) {
             var commaIndex = dataUrl.indexOf(',');
@@ -7775,9 +8326,6 @@
             });
 
             var cssLinks = '<link rel="stylesheet" href="css/base.css">';
-            cssLinks += '\n  <link rel="stylesheet" href="css/bg-loading.css">';
-            cssLinks += '\n  <link rel="stylesheet" href="css/bg-alert-active.css">';
-            cssLinks += '\n  <link rel="stylesheet" href="css/bg-no-alerts.css">';
             Object.keys(alertDesigns).forEach(alertType => {
                 var cls = getAlertCssClass(alertType);
                 cssLinks += '\n  <link rel="stylesheet" href="css/' + cls + '.css">';
@@ -7813,6 +8361,11 @@
                 'function determineBackground(alerts) {',
                 '      if (alerts.length === 0) return "bg-no-alerts";',
                 sameBgMapLines.join('\n'),
+                '      for (var i = 0; i < alerts.length; i++) {',
+                '        var alert = alerts[i] || {};',
+                '        var key = String(alert.eventType || "").trim().toLowerCase();',
+                '        if (key && SAME_ALERT_BG_MAP[key]) return SAME_ALERT_BG_MAP[key];',
+                '      }',
                 '      // Determine a candidate CSS class based on priority checks with fallback',
                 '      var activeClasses = [];',
                 '      if (alerts.some(alert => alert.tornadoDetection === "OBSERVED" && alert.tornadoDamageThreatCatastrophic)) activeClasses.push("bg-tore");',
@@ -7875,7 +8428,7 @@
                 '      for (var i = 0; i < activeClasses.length; i++) {',
                 '        if (window.OVERLAY_DESIGN_DATA && window.OVERLAY_DESIGN_DATA[activeClasses[i]]) return activeClasses[i];',
                 '      }',
-                '      return activeClasses[0];',
+                '      return activeClasses[0] || "bg-alert-active";',
                 '    }'
             ];
             var newDetermineBg = dbgLines.join('\n');
@@ -7909,7 +8462,7 @@
             var newUpdateBg = ubgLines.join('\n');
 
             html = html.replace(
-                /function updateBackground\(image(?:,\s*animateIn\s*=\s*true)?\)\s*\{[\s\S]*?\n\s*\}/,
+                /function updateBackground\s*\([^)]*\)\s*\{[\s\S]*?\n\s*\}/,
                 newUpdateBg
             );
 
@@ -8806,9 +9359,6 @@ var overlayCode = generateOverlayCreationCode(mediaPaths);
 
                 const cssFolder = zip.folder('css');
                 cssFolder.file('base.css', generateBaseCSS());
-                cssFolder.file('bg-loading.css', generateBgLoadingCSS());
-                cssFolder.file('bg-alert-active.css', generateBgAlertActiveCSS());
-                cssFolder.file('bg-no-alerts.css', generateBgNoAlertsActiveCSS());
                 Object.entries(alertDesigns).forEach(([alertType, elements]) => {
                     var cls = getAlertCssClass(alertType);
                     cssFolder.file(cls + '.css', generateCSSForAlert(alertType, elements));
@@ -9442,6 +9992,52 @@ var overlayCode = generateOverlayCreationCode(mediaPaths);
 
         // Initial render of designed alerts panel
         renderDesignedAlertsPanel();
+
+        // ===== KEYBOARD SHORTCUTS & TEXT PRESETS =====
+        loadTextPresets();
+        updateUndoRedoButtons();
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Ctrl+Z / Cmd+Z for undo
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+                e.preventDefault();
+                undo();
+                return;
+            }
+            // Ctrl+Y / Cmd+Shift+Z for redo
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+                e.preventDefault();
+                redo();
+                return;
+            }
+            // Delete key to delete selected boxes
+            if (e.key === 'Delete' || e.key === 'Backspace') {
+                if (selectedBoxes.size > 0 && document.activeElement === document.body) {
+                    e.preventDefault();
+                    deleteSelectedBoxes();
+                    return;
+                }
+            }
+            // Ctrl+A to select all
+            if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+                e.preventDefault();
+                selectAllBoxes();
+                return;
+            }
+            // Ctrl+D to duplicate selected
+            if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+                e.preventDefault();
+                duplicateSelectedBoxes();
+                return;
+            }
+        });
+
+        // Undo/Redo button handlers
+        document.getElementById('undoBtn').addEventListener('click', undo);
+        document.getElementById('redoBtn').addEventListener('click', redo);
+
+
     </script>
 </body>
 </html>
