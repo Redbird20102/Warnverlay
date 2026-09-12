@@ -256,47 +256,8 @@
       box-shadow: 0 0 8px rgba(255, 0, 0, 0.6);
     }
 
-    #event-text, #area-text {
-      position: fixed; top: 95%;
-      color: white; font-family: 'Bebas Neue', sans-serif;
-      font-size: 2rem; font-weight: bold;
-    }
-    #event-text { left: -30.8%; width: 83%; text-align: center; }
-    #area-text {
-      left: 22%;
-      right: 2%;
-      overflow: hidden;
-      white-space: nowrap;
-      display: block;
-      text-overflow: clip;
-    }
-
-    #alert-instructions {
-      position: fixed;
-      left: 5%;
-      right: 5%;
-      bottom: 8%;
-      color: white;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 1.3rem;
-      font-weight: bold;
-      text-align: center;
-      pointer-events: none;
-      overflow: hidden;
-      white-space: nowrap;
-      display: block;
-      line-height: 1.2;
-    }
-
-    #expire-date-container {
-      position: fixed; bottom: 5.2%; right: 84%;
-      display: flex; align-items: center; justify-content: center;
-      padding: 10px;
-    }
-    #expire-date {
-      color: black; font-family: 'Bebas Neue', sans-serif;
-      font-size: 1.4rem; font-weight: bold;
-      white-space: nowrap;
+    #event-text, #area-text, #alert-instructions, #expire-date-container, #expire-date {
+      display: none;
     }
   </style>
 </head>
@@ -322,7 +283,7 @@
 
   <!-- Loading Overlay -->
   <div id="loading-overlay">
-    <img src="AlertLoad.gif" alt="Loading..." />
+    <img src="loading.gif" alt="Loading..." />
   </div>
   <!-- Background fade overlay -->
   <div id="bg-fade-overlay"></div>
@@ -1356,8 +1317,8 @@
       });
     }
 
-    // Determine the background image based on strict priority.
-    // If no alerts exist, return "No Weather Alerts.png".
+    // Determine the background class based on strict priority.
+    // If no alerts exist, use the custom no-alerts design.
     function determineBackground(alerts) {
       if (alerts.length === 0) {
         console.log("No active alerts—returning 'No Weather Alerts.png'");
@@ -1452,10 +1413,11 @@
     }
     
     // Update the page background if it has changed.
-    function updateBackground(image) {
-      // The background is now managed by the downloaded CSS files.
-      // We no longer set document.body.style.background here so it doesn't 
-      // override the custom light sweep animations or external CSS.
+    function updateBackground(cssClass) {
+      if (!cssClass) return;
+      const body = document.body;
+      if (!body) return;
+      body.className = cssClass;
     }
     
     // Helper to create a signature for the current alert list
@@ -1541,6 +1503,28 @@
     // Helper to update text content safely to prevent resetting CSS animations
     function updateTextSafely(element, newText) {
       if (!element) return;
+
+      const normalizedText = typeof newText === 'string'
+        ? newText.trim()
+        : (newText == null ? '' : String(newText)).trim();
+
+      if (!normalizedText) {
+        const parent = element.parentElement;
+        if (element.textContent !== '') {
+          element.textContent = '';
+        }
+        element.style.display = 'none';
+        if (parent && parent.id === 'expire-date-container') {
+          parent.style.display = 'none';
+        }
+        return;
+      }
+
+      element.style.display = '';
+      const parent = element.parentElement;
+      if (parent && parent.id === 'expire-date-container') {
+        parent.style.display = '';
+      }
       if (element.textContent !== newText) {
         element.textContent = newText;
       }
@@ -1745,7 +1729,7 @@
         return;
       }
 
-      // If using the generic background ("AlertActive.png"), cycle through alerts one at a time.
+      // If using the generic active-alert background, cycle through alerts one at a time.
       if (bgImage === "AlertActive.png") {
         // Use the full alerts list (not filteredForTornado) for display
         if (alerts.length === 0) {
