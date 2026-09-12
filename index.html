@@ -134,12 +134,13 @@
   <div class="modal-backdrop" id="updateModal">
     <div class="modal-box">
       <h2>Overlay Creator Update</h2>
-      <p>A new update is out on Overlay Creator! Features added: Chroma key, Gradients, Loop animations, Drop shadow for images. Tutorial coming soon!</p>
+      <p>A new update is out on Overlay Creator! we adjusted the layout so it looks alot more easier for everyone! Tutorial coming soon!</p>
       <button class="modal-close" onclick="closeUpdateModal()">Close</button>
     </div>
   </div>
   <script>
-    const UPDATE_MODAL_KEY = 'warnverlayOverlayCreatorUpdateDismissed';
+    const UPDATE_MODAL_VERSION = '2026-09-11';
+    const UPDATE_MODAL_KEY = `warnverlayOverlayCreatorUpdateDismissed-${UPDATE_MODAL_VERSION}`;
 
     function closeUpdateModal() {
       const modal = document.getElementById('updateModal');
@@ -154,7 +155,12 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-      const dismissed = localStorage.getItem(UPDATE_MODAL_KEY) === 'true';
+      let dismissed = false;
+      try {
+        dismissed = localStorage.getItem(UPDATE_MODAL_KEY) === 'true';
+      } catch (error) {
+        console.warn('Unable to read modal dismissal:', error);
+      }
       if (dismissed) {
         const modal = document.getElementById('updateModal');
         if (modal) {
