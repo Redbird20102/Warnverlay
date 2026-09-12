@@ -633,7 +633,7 @@
 
         .box-item {
             padding: 10px;
-            background: #f8f9fa;
+            background: #778797;
             border-radius: 4px;
             margin-bottom: 10px;
             cursor: pointer;
@@ -642,7 +642,7 @@
         }
 
         .box-item:hover {
-            background: #e9ecef;
+            background: #4a545e;
         }
 
         .box-item-label {
@@ -1034,7 +1034,7 @@
 
         .box-item.active {
             border-left-color: #007bff;
-            background: #e7f3ff;
+            background: #203346;
         }
 
         /* ===== Designed Alerts Sidebar Section ===== */
@@ -7285,7 +7285,7 @@
 
             canvasViewport.addEventListener('pointerdown', (event) => {
                 const isMiddleMouse = event.button === 1;
-                const isPanHotkey = event.button === 0 && (event.shiftKey || event.altKey || event.metaKey || event.ctrlKey);
+                const isPanHotkey = event.button === 0 && (event.altKey || event.metaKey || event.ctrlKey);
                 if (!isMiddleMouse && !isPanHotkey) return;
                 event.preventDefault();
                 isPanning = true;
