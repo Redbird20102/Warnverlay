@@ -1224,13 +1224,13 @@
       // Fetch only weather.gov alerts
       let alertsRaw = await fetchWeatherAlerts();
       registerOfficesFromAlerts(alertsRaw);
-      let filteredAlerts = filterAlerts(alertsRaw);
+      let filteredAlerts = applyStateToggles(alertsRaw);
+      filteredAlerts = applyOfficeFilters(filteredAlerts);
+      filteredAlerts = filterAlerts(filteredAlerts);
 
       // Apply settings toggles (from menu selections)
       filteredAlerts = getBaseAlerts(filteredAlerts);
       filteredAlerts = applyUserToggles(filteredAlerts);
-      filteredAlerts = applyStateToggles(filteredAlerts);
-      filteredAlerts = applyOfficeFilters(filteredAlerts);
 
       const hasRawData = Array.isArray(alertsRaw) && alertsRaw.length > 0;
 
