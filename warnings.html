@@ -479,7 +479,7 @@
 
     function applyOfficeFilters(alerts) {
       if (!selectedOfficeIds.length) return alerts;
-      return alerts.filter(a => a.officeId && selectedOfficeIds.includes((a.officeId || '').toUpperCase()));
+      return alerts.filter(a => !a.officeId || selectedOfficeIds.includes(a.officeId.toUpperCase()));
     }
 
     function parseOfficeIdFromSender(sender) {
