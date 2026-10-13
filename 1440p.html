@@ -1073,7 +1073,7 @@
 
     function applyOfficeFilters(alerts) {
       if (!selectedOfficeIds.length) return alerts;
-      return alerts.filter(a => a.officeId && selectedOfficeIds.includes(a.officeId));
+      return alerts.filter(a => !a.officeId || selectedOfficeIds.includes(a.officeId));
     }
 
     // removed new/updated filters per user request
